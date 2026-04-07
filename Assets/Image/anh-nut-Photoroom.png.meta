@@ -1,0 +1,476 @@
+fileFormatVersion: 2
+guid: aa64a82af6f6b174f8dfa0e0faa5f53b
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 2178441399889425679
+    second: anh-nut-Photoroom_0
+  - first:
+      213: 2129816964476889411
+    second: anh-nut-Photoroom_1
+  - first:
+      213: -4562417331014767908
+    second: anh-nut-Photoroom_2
+  - first:
+      213: 6164807047578044554
+    second: anh-nut-Photoroom_3
+  - first:
+      213: -6282855736794935570
+    second: anh-nut-Photoroom_4
+  - first:
+      213: -4473893792245541895
+    second: anh-nut-Photoroom_5
+  - first:
+      213: -7375259374446562712
+    second: anh-nut-Photoroom_6
+  - first:
+      213: -2604923852172560757
+    second: anh-nut-Photoroom_7
+  - first:
+      213: 4956874326468983857
+    second: anh-nut-Photoroom_8
+  - first:
+      213: -3111652339518540036
+    second: anh-nut-Photoroom_9
+  - first:
+      213: -4952713880084161103
+    second: anh-nut-Photoroom_10
+  - first:
+      213: -2136064487415622436
+    second: anh-nut-Photoroom_11
+  - first:
+      213: -2816519778989745302
+    second: anh-nut-Photoroom_12
+  - first:
+      213: 8297989686380830151
+    second: anh-nut-Photoroom_13
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 150
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_0
+      rect:
+        serializedVersion: 2
+        x: 30
+        y: 601
+        width: 195
+        height: 65
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f05f96c49e06b3e10800000000000000
+      internalID: 2178441399889425679
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_1
+      rect:
+        serializedVersion: 2
+        x: 1065
+        y: 601
+        width: 195
+        height: 65
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 349ee34be31ae8d10800000000000000
+      internalID: 2129816964476889411
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_2
+      rect:
+        serializedVersion: 2
+        x: 119
+        y: 266
+        width: 258
+        height: 263
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cda67c33c990fa0c0800000000000000
+      internalID: -4562417331014767908
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_3
+      rect:
+        serializedVersion: 2
+        x: 588
+        y: 267
+        width: 254
+        height: 262
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a88c6b3e85bcd8550800000000000000
+      internalID: 6164807047578044554
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_4
+      rect:
+        serializedVersion: 2
+        x: 871
+        y: 369
+        width: 364
+        height: 72
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eee0051deffcec8a0800000000000000
+      internalID: -6282855736794935570
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_5
+      rect:
+        serializedVersion: 2
+        x: 934
+        y: 301
+        width: 133
+        height: 27
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f31166bc4989e1c0800000000000000
+      internalID: -4473893792245541895
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_6
+      rect:
+        serializedVersion: 2
+        x: 1069
+        y: 301
+        width: 103
+        height: 27
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8623ebbbca0d5a990800000000000000
+      internalID: -7375259374446562712
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_7
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 175
+        width: 353
+        height: 63
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b86ff44de8379dbd0800000000000000
+      internalID: -2604923852172560757
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_9
+      rect:
+        serializedVersion: 2
+        x: 538
+        y: 175
+        width: 357
+        height: 63
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cf6fb76fea031d4d0800000000000000
+      internalID: -3111652339518540036
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_11
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 34
+        width: 257
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cd4d3428aac2b52e0800000000000000
+      internalID: -2136064487415622436
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_12
+      rect:
+        serializedVersion: 2
+        x: 659
+        y: 34
+        width: 175
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a6b547efe26b9e8d0800000000000000
+      internalID: -2816519778989745302
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: anh-nut-Photoroom_13
+      rect:
+        serializedVersion: 2
+        x: 1060
+        y: 34
+        width: 192
+        height: 80
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cd9596b7a1682370800000000000000
+      internalID: 8297989686380830151
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: a787c4edd5c46544ab051ca78a0bf22d
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      anh-nut-Photoroom_0: 2178441399889425679
+      anh-nut-Photoroom_1: 2129816964476889411
+      anh-nut-Photoroom_10: -4952713880084161103
+      anh-nut-Photoroom_11: -2136064487415622436
+      anh-nut-Photoroom_12: -2816519778989745302
+      anh-nut-Photoroom_13: 8297989686380830151
+      anh-nut-Photoroom_2: -4562417331014767908
+      anh-nut-Photoroom_3: 6164807047578044554
+      anh-nut-Photoroom_4: -6282855736794935570
+      anh-nut-Photoroom_5: -4473893792245541895
+      anh-nut-Photoroom_6: -7375259374446562712
+      anh-nut-Photoroom_7: -2604923852172560757
+      anh-nut-Photoroom_8: 4956874326468983857
+      anh-nut-Photoroom_9: -3111652339518540036
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
