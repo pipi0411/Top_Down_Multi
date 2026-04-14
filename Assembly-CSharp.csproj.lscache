@@ -53,7 +53,11 @@ TemporaryDependencyNodeTargetIdentifier=netstandard2.1
 
 [sourceFiles]
 Assets/
- Scripts/NetworkButtons.cs
+ Actions/PlayerActions.cs
+ Scripts/
+  JoinCodeDisplay.cs
+  NetworkButtons.cs
+  PlayerMovement.cs
  TextMesh Pro/Examples & Extras/Scripts/
   Benchmark01.cs
   Benchmark01_UGUI.cs
@@ -369,6 +373,8 @@ Library/PackageCache/com.unity.collections@538ace9075bc/
 Library/PackageCache/
  com.unity.ext.nunit@d8c07649098d/net40/unity-custom/nunit.framework.dll
  com.unity.nuget.mono-cecil@ecb9724e46ff/Mono.Cecil.dll
+ com.unity.nuget.newtonsoft-json@4dfd81071c64/Runtime/Newtonsoft.Json.dll
+ com.unity.services.wire@3619c710c17e/Plugins/websocket-sharp.dll
  com.unity.visualscripting@eb6004dcc707/Runtime/VisualScripting.Flow/Dependencies/NCalc/Unity.VisualScripting.Antlr3.Runtime.dll
 Library/ScriptAssemblies/
  PsdPlugin.dll
@@ -429,6 +435,17 @@ Library/ScriptAssemblies/
  Unity.RenderPipelines.Universal.Shaders.dll
  Unity.Rider.Editor.dll
  Unity.Searcher.Editor.dll
+ Unity.Services.Authentication.dll
+ Unity.Services.Authentication.Editor.Shared.dll
+ Unity.Services.Authentication.PlayerAccounts.dll
+ Unity.Services.Core.Analytics.dll
+ Unity.Services.Core.Components.dll
+ Unity.Services.Core.dll
+ Unity.Services.Core.Environments.dll
+ Unity.Services.Multiplayer.dll
+ Unity.Services.Multiplayer.Editor.Matchmaker.Authoring.dll
+ Unity.Services.Multiplayer.Editor.Shared.dll
+ Unity.Services.QoS.dll
  Unity.ShaderGraph.Editor.dll
  Unity.SurfaceCache.Runtime.dll
  Unity.TextMeshPro.dll

@@ -1,0 +1,328 @@
+fileFormatVersion: 2
+guid: e1e501d916df49344be16e1b946d92c5
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 308042886908279045
+    second: buttonLogin-Photoroom_0
+  - first:
+      213: 2617043185820429934
+    second: buttonLogin-Photoroom_1
+  - first:
+      213: 402035886717962177
+    second: buttonLogin-Photoroom_2
+  - first:
+      213: 4224158329685686298
+    second: buttonLogin-Photoroom_3
+  - first:
+      213: -4976628978724150436
+    second: buttonLogin-Photoroom_4
+  - first:
+      213: 4666526031867288399
+    second: buttonLogin-Photoroom_5
+  - first:
+      213: 1538740856315599101
+    second: buttonLogin-Photoroom_6
+  - first:
+      213: 7845562971006595158
+    second: buttonLogin-Photoroom_7
+  - first:
+      213: -3434885675667575112
+    second: buttonLogin-Photoroom_8
+  - first:
+      213: 7959465433702853948
+    second: buttonLogin-Photoroom_9
+  - first:
+      213: -1984009570006501839
+    second: buttonLogin-Photoroom_10
+  - first:
+      213: 3984218365465418815
+    second: buttonLogin-Photoroom_11
+  - first:
+      213: 7889360198470755381
+    second: buttonLogin-Photoroom_12
+  - first:
+      213: 7623493347800210679
+    second: buttonLogin-Photoroom_13
+  - first:
+      213: 3737901076682080623
+    second: buttonLogin-Photoroom_14
+  - first:
+      213: 1067602447187740104
+    second: buttonLogin-Photoroom_15
+  - first:
+      213: -5621575828521404586
+    second: buttonLogin-Photoroom_16
+  - first:
+      213: 7860822291081541267
+    second: buttonLogin-Photoroom_17
+  - first:
+      213: -704199271901534689
+    second: buttonLogin-Photoroom_18
+  - first:
+      213: -3873987216851495138
+    second: buttonLogin-Photoroom_19
+  - first:
+      213: -4497981546704380187
+    second: buttonLogin-Photoroom_20
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: WebGL
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: buttonLogin-Photoroom_15
+      rect:
+        serializedVersion: 2
+        x: 136
+        y: 362
+        width: 506
+        height: 179
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8c586f1f4c2e0de00800000000000000
+      internalID: 1067602447187740104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: buttonLogin-Photoroom_16
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 362
+        width: 505
+        height: 179
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6573f0f71962cf1b0800000000000000
+      internalID: -5621575828521404586
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: buttonLogin-Photoroom_18
+      rect:
+        serializedVersion: 2
+        x: 136
+        y: 101
+        width: 506
+        height: 178
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1668334e7e2a36f0800000000000000
+      internalID: -704199271901534689
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: buttonLogin-Photoroom_20
+      rect:
+        serializedVersion: 2
+        x: 735
+        y: 105
+        width: 506
+        height: 175
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ee5c665d95f391c0800000000000000
+      internalID: -4497981546704380187
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 7fc2c05ea9485ec4299267e3e0904c47
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      buttonLogin-Photoroom_0: 308042886908279045
+      buttonLogin-Photoroom_1: 2617043185820429934
+      buttonLogin-Photoroom_10: -1984009570006501839
+      buttonLogin-Photoroom_11: 3984218365465418815
+      buttonLogin-Photoroom_12: 7889360198470755381
+      buttonLogin-Photoroom_13: 7623493347800210679
+      buttonLogin-Photoroom_14: 3737901076682080623
+      buttonLogin-Photoroom_15: 1067602447187740104
+      buttonLogin-Photoroom_16: -5621575828521404586
+      buttonLogin-Photoroom_17: 7860822291081541267
+      buttonLogin-Photoroom_18: -704199271901534689
+      buttonLogin-Photoroom_19: -3873987216851495138
+      buttonLogin-Photoroom_2: 402035886717962177
+      buttonLogin-Photoroom_20: -4497981546704380187
+      buttonLogin-Photoroom_3: 4224158329685686298
+      buttonLogin-Photoroom_4: -4976628978724150436
+      buttonLogin-Photoroom_5: 4666526031867288399
+      buttonLogin-Photoroom_6: 1538740856315599101
+      buttonLogin-Photoroom_7: 7845562971006595158
+      buttonLogin-Photoroom_8: -3434885675667575112
+      buttonLogin-Photoroom_9: 7959465433702853948
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
