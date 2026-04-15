@@ -411,7 +411,7 @@ MonoBehaviour:
   m_Intensity: 1
   m_LightVolumeIntensity: 1
   m_LightVolumeEnabled: 0
-  m_ApplyToSortingLayers: 00000000
+  m_ApplyToSortingLayers: 0000000001d7a43d
   m_LightCookieSprite: {fileID: 0}
   m_DeprecatedPointLightCookieSprite: {fileID: 0}
   m_LightOrder: 0
@@ -537,6 +537,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &996019124 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 66633144740670258, guid: 406b044a9f4284146bf35036d107228b, type: 3}
+  m_PrefabInstance: {fileID: 6811291627508728644}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &996019132
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 996019124}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: ab1f63e7412419e479fd2e1e6400b53d, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1070956672
 GameObject:
   m_ObjectHideFlags: 0
@@ -1076,11 +1103,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 66633144740670258, guid: 406b044a9f4284146bf35036d107228b, type: 3}
       propertyPath: m_Name
-      value: Player
+      value: Player_Shadowblade
       objectReference: {fileID: 0}
     - target: {fileID: 1218582686244547845, guid: 406b044a9f4284146bf35036d107228b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: 1.859
       objectReference: {fileID: 0}
     - target: {fileID: 1218582686244547845, guid: 406b044a9f4284146bf35036d107228b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1121,7 +1148,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 66633144740670258, guid: 406b044a9f4284146bf35036d107228b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 996019132}
   m_SourcePrefab: {fileID: 100100000, guid: 406b044a9f4284146bf35036d107228b, type: 3}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:

@@ -22,26 +22,42 @@ public class NetworkButtons : MonoBehaviour
     [Header("Scene")]
     [SerializeField] private string gameplaySceneName = "SampleScene";
 
+    [Header("UI")]
+    [SerializeField] private TMP_Text errorText;
+
     private bool servicesInitialized;
 
     public void StartHost()
     {
+        ClearError();
         _ = StartHostWithRelayAsync();
     }
 
     public void StartClient()
     {
+        ClearError();
         _ = StartClientWithRelayAsync();
     }
 
     public async void StartHostWithRelayButton()
     {
+        ClearError();
         await StartHostWithRelayAsync();
     }
 
     public async void StartClientWithRelayButton()
     {
+        ClearError();
         await StartClientWithRelayAsync();
+    }
+
+    public void ExitGame()
+    {
+        Application.Quit();
+
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 
     private async Task StartHostWithRelayAsync()
@@ -68,8 +84,6 @@ public class NetworkButtons : MonoBehaviour
                 joinCodeText.text = joinCode;
             }
 
-            Debug.Log($"Multiplayer session host started. Join code: {joinCode}");
-
             if (NetworkManager.Singleton.NetworkConfig.EnableSceneManagement)
             {
                 NetworkManager.Singleton.SceneManager.LoadScene(gameplaySceneName, LoadSceneMode.Single);
@@ -90,7 +104,7 @@ public class NetworkButtons : MonoBehaviour
         string joinCode = joinCodeInput != null ? joinCodeInput.text.Trim() : string.Empty;
         if (string.IsNullOrEmpty(joinCode))
         {
-            Debug.LogWarning("Join code is empty.");
+            ShowError("Join code is empty");
             return;
         }
 
@@ -105,11 +119,9 @@ public class NetworkButtons : MonoBehaviour
 
             if (!NetworkManager.Singleton.StartClient())
             {
-                Debug.LogError("StartClient failed.");
+                ShowError("StartClient failed.");
                 return;
             }
-
-            Debug.Log("Multiplayer session client joined. Waiting for host scene sync.");
         }
         catch (Exception ex)
         {
@@ -143,5 +155,23 @@ public class NetworkButtons : MonoBehaviour
         }
 
         return transport;
+    }
+
+    private void ShowError(string message)
+    {
+        Debug.LogError(message);
+
+        if (errorText != null)
+        {
+            errorText.text = message;
+        }
+    }
+
+    private void ClearError()
+    {
+        if (errorText != null)
+        {
+            errorText.text = string.Empty;
+        }
     }
 }
