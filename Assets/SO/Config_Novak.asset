@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df2990ff29d2f4b4c9f901461ac69e81, type: 3}
+  m_Name: Config_Novak
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerConfig
+  Level: 1
+  Name: Novak
+  Icon: {fileID: 1548320837, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  CurrentHealth: 7
+  MaxHealth: 7
+  Armor: 5
+  MaxArmor: 5
+  Energy: 180
+  MaxEnergy: 180
+  CriticalChance: 20
+  CriticalDamage: 70
