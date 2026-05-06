@@ -10,6 +10,8 @@ public class ModeSelectUIManager : MonoBehaviour
     [SerializeField] private Button multiplayerButton;
     [SerializeField] private Button backButton;
 
+    private bool gameManagerSubscribed;
+
     private void OnEnable()
     {
         if (modeSelectPanel == null || singlePlayerButton == null || multiplayerButton == null || backButton == null)
@@ -24,8 +26,15 @@ public class ModeSelectUIManager : MonoBehaviour
 
         if (GameManager.Instance != null)
         {
-            GameManager.Instance.OnStateChanged += HandleStateChanged;
-            HandleStateChanged(GameManager.Instance.CurrentState);
+            TrySubscribeToGameManager();
+        }
+    }
+
+    private void Update()
+    {
+        if (!gameManagerSubscribed && GameManager.Instance != null)
+        {
+            TrySubscribeToGameManager();
         }
     }
 
@@ -37,11 +46,26 @@ public class ModeSelectUIManager : MonoBehaviour
             multiplayerButton.onClick.RemoveListener(OnMultiplayerClicked);
         if (backButton != null)
             backButton.onClick.RemoveListener(OnBackClicked);
+    }
 
-        if (GameManager.Instance != null)
+    private void OnDestroy()
+    {
+        if (GameManager.Instance != null && gameManagerSubscribed)
         {
             GameManager.Instance.OnStateChanged -= HandleStateChanged;
         }
+    }
+
+    private void TrySubscribeToGameManager()
+    {
+        if (gameManagerSubscribed || GameManager.Instance == null)
+        {
+            return;
+        }
+
+        GameManager.Instance.OnStateChanged += HandleStateChanged;
+        gameManagerSubscribed = true;
+        HandleStateChanged(GameManager.Instance.CurrentState);
     }
 
     private void OnSinglePlayerClicked()

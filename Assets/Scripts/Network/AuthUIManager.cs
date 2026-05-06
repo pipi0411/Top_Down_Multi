@@ -91,6 +91,8 @@ public class AuthUIManager : MonoBehaviour
         GameManager.Instance.OnStateChanged += HandleStateChanged;
         gameManagerSubscribed = true;
         Debug.Log("AuthUIManager: Successfully subscribed to GameManager");
+
+        HandleStateChanged(GameManager.Instance.CurrentState);
     }
 
     private void ShowLoginPanel()

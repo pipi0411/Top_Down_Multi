@@ -38,23 +38,33 @@ public class AuthClient : MonoBehaviour
         public string userId;
     }
 
+    public class TokenValidationResult
+    {
+        public bool isValid;
+        public string error;
+    }
+
     // Validate stored token by calling a protected profile endpoint.
     // Calls callback(true) if token is valid, false otherwise.
-    public void ValidateToken(Action<bool> callback)
+    public void ValidateToken(Action<TokenValidationResult> callback)
     {
         string token = GetStoredToken();
         if (string.IsNullOrEmpty(token))
         {
-            callback?.Invoke(false);
+            callback?.Invoke(new TokenValidationResult
+            {
+                isValid = false,
+                error = "No saved token found."
+            });
             return;
         }
 
         StartCoroutine(ValidateTokenCoroutine(token, callback));
     }
 
-    IEnumerator ValidateTokenCoroutine(string token, Action<bool> callback)
+    IEnumerator ValidateTokenCoroutine(string token, Action<TokenValidationResult> callback)
     {
-        using (var req = UnityWebRequest.Get(baseUrl + "/auth/profile"))
+        using (var req = UnityWebRequest.Get(baseUrl + "/auth/protected"))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Authorization", "Bearer " + token);
@@ -68,20 +78,49 @@ public class AuthClient : MonoBehaviour
                 {
                     // Optionally parse profile to refresh stored info
                     // For now, treat 200 as valid token
-                    callback?.Invoke(true);
+                    callback?.Invoke(new TokenValidationResult { isValid = true, error = string.Empty });
                     yield break;
                 }
                 catch (Exception)
                 {
-                    callback?.Invoke(false);
+                    callback?.Invoke(new TokenValidationResult
+                    {
+                        isValid = false,
+                        error = "Failed to validate token response from server."
+                    });
                     yield break;
                 }
             }
             else
             {
-                // Token invalid or expired
-                ClearAuth();
-                callback?.Invoke(false);
+                // Only clear when the server explicitly rejects the token.
+                // Keep the saved token for transient network/server startup failures.
+                if (req.responseCode == 401 || req.responseCode == 403)
+                {
+                    ClearAuth();
+                    callback?.Invoke(new TokenValidationResult
+                    {
+                        isValid = false,
+                        error = "Session expired. Please login again."
+                    });
+                    yield break;
+                }
+
+                if (req.result == UnityWebRequest.Result.ConnectionError)
+                {
+                    callback?.Invoke(new TokenValidationResult
+                    {
+                        isValid = false,
+                        error = "Cannot connect to server. Please start server before continuing."
+                    });
+                    yield break;
+                }
+
+                callback?.Invoke(new TokenValidationResult
+                {
+                    isValid = false,
+                    error = $"Token validation failed ({req.responseCode})."
+                });
                 yield break;
             }
         }

@@ -121,6 +121,8 @@ public class MainMenuUIManager : MonoBehaviour
         }
 
         Debug.Log("MainMenuUIManager: Successfully subscribed to GameManager");
+
+        HandleStateChanged(GameManager.Instance.CurrentState);
     }
 
     private void OnStartClicked()

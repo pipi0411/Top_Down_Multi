@@ -62,19 +62,24 @@ public class GameManager : MonoBehaviour
             CurrentUsername = storedUsername;
             ChangeState(GameState.TokenValidating);
             
-            AuthClient.Instance.ValidateToken(valid =>
+            AuthClient.Instance.ValidateToken(validation =>
             {
-                Debug.Log($"[Token Validation] Result: {(valid ? "VALID" : "INVALID")}");
-                if (valid)
+                Debug.Log($"[Token Validation] Result: {(validation != null && validation.isValid ? "VALID" : "INVALID")}");
+                if (validation != null && validation.isValid)
                 {
                     Debug.Log($"[Token Validation] ✓ Token is valid. Entering MainMenu for {CurrentUsername}");
                     ChangeState(GameState.MainMenu);
                 }
                 else
                 {
-                    Debug.Log("[Token Validation] ✗ Token is invalid or expired. Returning to Auth state.");
+                    string validationError = validation != null ? validation.error : "Token validation failed.";
+                    Debug.Log($"[Token Validation] ✗ {validationError} Returning to Auth state.");
                     CurrentUsername = null;
                     ChangeState(GameState.Auth);
+                    if (!string.IsNullOrEmpty(validationError))
+                    {
+                        OnError?.Invoke(validationError);
+                    }
                 }
             });
         }
@@ -145,6 +150,15 @@ public class GameManager : MonoBehaviour
         
         if (result.success)
         {
+            string storedToken = AuthClient.Instance.GetStoredToken();
+            if (string.IsNullOrEmpty(storedToken))
+            {
+                Debug.LogError("[Login Flow] ✗ Login response succeeded but token was not saved locally.");
+                OnError?.Invoke("Login failed to persist token. Please try again.");
+                ChangeState(GameState.Auth);
+                return;
+            }
+
             CurrentUsername = AuthClient.Instance.GetStoredUsername();
             Debug.Log($"[Login Flow] ✓ Login successful for user: {CurrentUsername}");
             Debug.Log($"[Login Flow] → Changing to MainMenu state");
