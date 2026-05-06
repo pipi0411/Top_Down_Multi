@@ -53,8 +53,19 @@ TemporaryDependencyNodeTargetIdentifier=netstandard2.1
 Assets/
  Actions/PlayerActions.cs
  Scripts/Network/
+  AuthClient.cs
+  AuthUIManager.cs
+  CharactersClient.cs
+  CharacterSelectUIManager.cs
+  GameManager.cs
+  InGameHUDUIManager.cs
   JoinCodeDisplay.cs
+  LoadingPanelUIManager.cs
+  MainMenuUIManager.cs
+  ModeSelectUIManager.cs
   NetworkButtons.cs
+  RoomClient.cs
+  RoomUIManager.cs
  Scripts/Player/
   PlayerConfig.cs
   PlayerEnergy.cs
@@ -473,7 +484,7 @@ Library/ScriptAssemblies/
  Unity.Properties.SourceGenerator.dll
  Unity.SourceGenerators.dll
  Unity.UIToolkit.SourceGenerator.dll
-C:/Users/Admin/.vscode/extensions/visualstudiotoolsforunity.vstuc-1.2.1/Analyzers/Microsoft.Unity.Analyzers.dll
+C:/Users/Admin/.vscode/extensions/visualstudiotoolsforunity.vstuc-1.2.2/Analyzers/Microsoft.Unity.Analyzers.dll
 
 [analyzerConfigFiles]
 Temp/obj/Assembly-CSharp/Assembly-CSharp.GeneratedMSBuildEditorConfig.editorconfig

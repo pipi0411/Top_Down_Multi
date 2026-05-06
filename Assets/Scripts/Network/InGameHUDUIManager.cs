@@ -1,0 +1,161 @@
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class InGameHUDUIManager : MonoBehaviour
+{
+    [SerializeField] private GameObject inGameHUD;
+
+    [Header("HP Bar")]
+    [SerializeField] private Image hpBarFill;
+    [SerializeField] private TextMeshProUGUI hpText;
+
+    [Header("Ammo")]
+    [SerializeField] private TextMeshProUGUI ammoText;
+
+    [Header("MiniMap")]
+    [SerializeField] private RawImage miniMap;
+
+    [Header("Pause")]
+    [SerializeField] private Button pauseButton;
+    [SerializeField] private GameObject pausePanel;
+
+    private float currentHP = 100f;
+    private float maxHP = 100f;
+    private int currentAmmo = 30;
+
+    private void OnEnable()
+    {
+        if (inGameHUD == null)
+        {
+            Debug.LogError("InGameHUDUIManager is missing inGameHUD reference in the Inspector.");
+            return;
+        }
+
+        if (pauseButton != null)
+            pauseButton.onClick.AddListener(OnPauseClicked);
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged += HandleStateChanged;
+            HandleStateChanged(GameManager.Instance.CurrentState);
+        }
+
+        // Initialize HUD
+        UpdateHPBar();
+        UpdateAmmo();
+    }
+
+    private void OnDisable()
+    {
+        if (pauseButton != null)
+            pauseButton.onClick.RemoveListener(OnPauseClicked);
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged -= HandleStateChanged;
+        }
+    }
+
+    private void Update()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.InGame)
+        {
+            // Update HUD elements in real-time if needed
+            // This is where you'd poll player stats from network/game state
+        }
+    }
+
+    private void HandleStateChanged(GameManager.GameState newState)
+    {
+        if (newState == GameManager.GameState.InGame)
+        {
+            inGameHUD.SetActive(true);
+            if (pausePanel != null)
+                pausePanel.SetActive(false);
+        }
+        else
+        {
+            inGameHUD.SetActive(false);
+        }
+    }
+
+    public void UpdateHPBar(float hp = -1f)
+    {
+        if (hp >= 0)
+            currentHP = Mathf.Clamp(hp, 0, maxHP);
+
+        if (hpBarFill != null)
+        {
+            hpBarFill.fillAmount = currentHP / maxHP;
+        }
+
+        if (hpText != null)
+        {
+            hpText.text = $"{currentHP:F0}/{maxHP:F0} HP";
+        }
+    }
+
+    public void TakeDamage(float damage)
+    {
+        currentHP -= damage;
+        currentHP = Mathf.Clamp(currentHP, 0, maxHP);
+        UpdateHPBar(currentHP);
+
+        if (currentHP <= 0)
+        {
+            OnPlayerDeath();
+        }
+    }
+
+    public void UpdateAmmo(int ammo = -1)
+    {
+        if (ammo >= 0)
+            currentAmmo = ammo;
+
+        if (ammoText != null)
+        {
+            ammoText.text = $"Ammo: {currentAmmo}";
+        }
+    }
+
+    public void FireWeapon()
+    {
+        if (currentAmmo > 0)
+        {
+            currentAmmo--;
+            UpdateAmmo();
+        }
+    }
+
+    private void OnPauseClicked()
+    {
+        Debug.Log("Pause button clicked");
+        
+        if (pausePanel != null)
+        {
+            bool isPaused = pausePanel.activeSelf;
+            pausePanel.SetActive(!isPaused);
+            Time.timeScale = isPaused ? 1f : 0f;
+        }
+    }
+
+    public void ResumeGame()
+    {
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+        Time.timeScale = 1f;
+    }
+
+    public void ReturnToMainMenu()
+    {
+        Time.timeScale = 1f;
+        GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
+    }
+
+    private void OnPlayerDeath()
+    {
+        Debug.Log("Player died!");
+        // TODO: Show death screen / respawn menu
+    }
+}
