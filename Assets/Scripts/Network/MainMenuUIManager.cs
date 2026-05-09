@@ -109,16 +109,8 @@ public class MainMenuUIManager : MonoBehaviour
 
         GameManager.Instance.OnStateChanged += HandleStateChanged;
         gameManagerSubscribed = true;
-        
-        // Display username
-        if (usernameText != null)
-        {
-            string username = string.IsNullOrEmpty(GameManager.Instance.CurrentUsername)
-                ? "Player"
-                : GameManager.Instance.CurrentUsername;
-            usernameText.text = $"{username}!";
-            Debug.Log($"MainMenuUIManager: Username text set to: {usernameText.text}");
-        }
+
+        RefreshUsernameText();
 
         Debug.Log("MainMenuUIManager: Successfully subscribed to GameManager");
 
@@ -178,5 +170,23 @@ public class MainMenuUIManager : MonoBehaviour
         {
             mainMenuPanel.SetActive(newState == GameManager.GameState.MainMenu);
         }
+
+        if (newState == GameManager.GameState.MainMenu)
+        {
+            RefreshUsernameText();
+        }
+    }
+
+    private void RefreshUsernameText()
+    {
+        if (usernameText == null || GameManager.Instance == null)
+            return;
+
+        string username = string.IsNullOrEmpty(GameManager.Instance.CurrentUsername)
+            ? "Player"
+            : GameManager.Instance.CurrentUsername;
+
+        usernameText.text = $"{username}!";
+        Debug.Log($"MainMenuUIManager: Username text set to: {usernameText.text}");
     }
 }

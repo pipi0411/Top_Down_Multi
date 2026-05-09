@@ -44,12 +44,26 @@ public class CharactersClient : MonoBehaviour
     [Serializable]
     public class CharacterResponse { public string character; }
 
+    [Serializable]
+    public class CharacterSetResponse { public bool success; public string character; }
+
+    [Serializable]
+    public class UserProfileResponse
+    {
+        public string userId;
+        public string username;
+        public string selectedCharacter;
+        public string createdAt;
+    }
+
     public class CharactersListResult { public bool success; public string error; public string[] characters; }
     public class CharacterResult { public bool success; public string error; public string character; }
+    public class UserProfileResult { public bool success; public string error; public string userId; public string username; public string selectedCharacter; }
 
     public event Action<CharactersListResult> OnGetCharactersComplete;
     public event Action<CharacterResult> OnGetUserCharacterComplete;
     public event Action<CharacterResult> OnSetUserCharacterComplete;
+    public event Action<UserProfileResult> OnGetUserProfileComplete;
 
     public void GetAvailableCharacters()
     {
@@ -160,15 +174,11 @@ public class CharactersClient : MonoBehaviour
 
     IEnumerator SetUserCharacterCoroutine(string userId, string character, string token)
     {
-        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character";
-        var body = new CharacterRequest { character = character };
-        string json = JsonUtility.ToJson(body);
+        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character/" + UnityWebRequest.EscapeURL(character);
 
         using (var req = new UnityWebRequest(url, "POST"))
         {
-            req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
-            req.SetRequestHeader("Content-Type", "application/json");
             req.SetRequestHeader("Authorization", "Bearer " + token);
             req.timeout = timeoutSeconds;
 
@@ -187,6 +197,59 @@ public class CharactersClient : MonoBehaviour
             }
 
             OnSetUserCharacterComplete?.Invoke(result);
+        }
+    }
+
+    public void GetUserProfile(string userId)
+    {
+        string token = AuthClient.Instance.GetStoredToken();
+        if (string.IsNullOrEmpty(token))
+        {
+            var r = new UserProfileResult { success = false, error = "Not authenticated." };
+            OnGetUserProfileComplete?.Invoke(r);
+            return;
+        }
+
+        StartCoroutine(GetUserProfileCoroutine(userId, token));
+    }
+
+    IEnumerator GetUserProfileCoroutine(string userId, string token)
+    {
+        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/profile";
+        using (var req = UnityWebRequest.Get(url))
+        {
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Authorization", "Bearer " + token);
+            req.timeout = timeoutSeconds;
+
+            yield return req.SendWebRequest();
+
+            var result = new UserProfileResult();
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                result.success = false;
+                result.error = req.downloadHandler != null ? req.downloadHandler.text : req.error;
+                Debug.LogError("GetUserProfile error: " + result.error);
+            }
+            else
+            {
+                try
+                {
+                    var profile = JsonUtility.FromJson<UserProfileResponse>(req.downloadHandler.text);
+                    result.success = true;
+                    result.userId = profile.userId;
+                    result.username = profile.username;
+                    result.selectedCharacter = profile.selectedCharacter;
+                }
+                catch (Exception e)
+                {
+                    result.success = false;
+                    result.error = "Failed to parse user profile: " + e.Message;
+                    Debug.LogError(result.error);
+                }
+            }
+
+            OnGetUserProfileComplete?.Invoke(result);
         }
     }
 }

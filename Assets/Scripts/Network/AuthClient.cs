@@ -8,6 +8,7 @@ public class AuthClient : MonoBehaviour
 {
     public string baseUrl = "http://localhost:3000";
     public int timeoutSeconds = 10;
+    [SerializeField] private float postLoginDelaySeconds = 0.5f;
 
     [System.Serializable]
     public class AuthRequest
@@ -21,6 +22,20 @@ public class AuthClient : MonoBehaviour
     {
         public string token;
         public string userId;
+    }
+
+    [System.Serializable]
+    public class ProtectedUserResponse
+    {
+        public string message;
+        public ProtectedUser user;
+    }
+
+    [System.Serializable]
+    public class ProtectedUser
+    {
+        public string id;
+        public string username;
     }
 
     [System.Serializable]
@@ -280,12 +295,25 @@ public class AuthClient : MonoBehaviour
                     {
                         result.success = true;
                         result.token = loginRes.token;
-                        result.userId = loginRes.userId;
                         PlayerPrefs.SetString("token", loginRes.token);
-                        PlayerPrefs.SetString("userId", loginRes.userId ?? username);
-                        PlayerPrefs.SetString("username", username);
-                        PlayerPrefs.Save();
-                        Debug.Log("Login successful. Token saved.");
+
+                        if (!string.IsNullOrEmpty(loginRes.userId))
+                        {
+                            result.userId = loginRes.userId;
+                            PlayerPrefs.SetString("userId", loginRes.userId);
+                            PlayerPrefs.SetString("username", username);
+                            PlayerPrefs.Save();
+                            Debug.Log("Login successful. Token and userId saved.");
+
+                            StartCoroutine(InvokeLoginCompleteAfterDelayCoroutine(result));
+                            yield break;
+                        }
+                        else
+                        {
+                            // API returns token only, so resolve user info from protected endpoint
+                            StartCoroutine(FetchAndStoreUserProfileCoroutine(loginRes.token, username, result));
+                            yield break;
+                        }
                     }
                 }
                 catch (Exception e)
@@ -295,10 +323,72 @@ public class AuthClient : MonoBehaviour
                 }
             }
 
-            if (result != null)
+        }
+    }
+
+    IEnumerator InvokeLoginCompleteAfterDelayCoroutine(AuthResult result)
+    {
+        if (postLoginDelaySeconds > 0f)
+        {
+            yield return new WaitForSeconds(postLoginDelaySeconds);
+        }
+
+        OnLoginComplete?.Invoke(result);
+    }
+
+    IEnumerator FetchAndStoreUserProfileCoroutine(string token, string fallbackUsername, AuthResult result)
+    {
+        using (var req = UnityWebRequest.Get(baseUrl + "/auth/protected"))
+        {
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Authorization", "Bearer " + token);
+            req.timeout = timeoutSeconds;
+
+            yield return req.SendWebRequest();
+
+            if (req.result == UnityWebRequest.Result.Success && req.responseCode == 200)
             {
-                OnLoginComplete?.Invoke(result);
+                try
+                {
+                    var profile = JsonUtility.FromJson<ProtectedUserResponse>(req.downloadHandler.text);
+                    if (profile != null && profile.user != null)
+                    {
+                        result.userId = profile.user.id;
+                        PlayerPrefs.SetString("userId", profile.user.id);
+                        PlayerPrefs.SetString("username", string.IsNullOrEmpty(profile.user.username) ? fallbackUsername : profile.user.username);
+                        PlayerPrefs.Save();
+                        Debug.Log("Login successful. Token, userId and username saved from /auth/protected.");
+                    }
+                    else
+                    {
+                        result.userId = string.Empty;
+                        PlayerPrefs.SetString("username", fallbackUsername);
+                        PlayerPrefs.Save();
+                        Debug.LogWarning("Login successful but protected profile was empty. Saved fallback username only.");
+                    }
+                }
+                catch (Exception e)
+                {
+                    result.userId = string.Empty;
+                    PlayerPrefs.SetString("username", fallbackUsername);
+                    PlayerPrefs.Save();
+                    Debug.LogWarning("Failed to parse /auth/protected response: " + e.Message);
+                }
             }
+            else
+            {
+                result.userId = string.Empty;
+                PlayerPrefs.SetString("username", fallbackUsername);
+                PlayerPrefs.Save();
+                Debug.LogWarning("Could not resolve user profile from /auth/protected after login.");
+            }
+
+            if (postLoginDelaySeconds > 0f)
+            {
+                yield return new WaitForSeconds(postLoginDelaySeconds);
+            }
+
+            OnLoginComplete?.Invoke(result);
         }
     }
 

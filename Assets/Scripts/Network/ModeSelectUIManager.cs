@@ -4,6 +4,8 @@ using UnityEngine.UI;
 public class ModeSelectUIManager : MonoBehaviour
 {
     [SerializeField] private GameObject modeSelectPanel;
+    [SerializeField] private GameObject createJoinPanel;
+    [SerializeField] private RoomUIManager roomUIManager;
     
     [Header("Buttons")]
     [SerializeField] private Button singlePlayerButton;
@@ -11,7 +13,7 @@ public class ModeSelectUIManager : MonoBehaviour
     [SerializeField] private Button backButton;
 
     private bool gameManagerSubscribed;
-
+ 
     private void OnEnable()
     {
         if (modeSelectPanel == null || singlePlayerButton == null || multiplayerButton == null || backButton == null)
@@ -72,6 +74,7 @@ public class ModeSelectUIManager : MonoBehaviour
     {
         Debug.Log("Single Player Mode Selected");
         GameManager.Instance.SetMultiplayerMode(false);
+        ShowCharacterSelectPanel();
         GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect);
     }
 
@@ -79,7 +82,113 @@ public class ModeSelectUIManager : MonoBehaviour
     {
         Debug.Log("Multiplayer Mode Selected");
         GameManager.Instance.SetMultiplayerMode(true);
-        GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect);
+        // Open the Create/Join selection panel first
+        ShowCreateJoinPanel();
+    }
+
+    private void ShowCreateJoinPanel()
+    {
+        Debug.Log("ModeSelectUIManager: ShowCreateJoinPanel called");
+        
+        // Find RoomUIManager if not assigned
+        if (roomUIManager == null)
+        {
+            roomUIManager = FindAnyObjectByType<RoomUIManager>();
+            if (roomUIManager == null)
+            {
+                Debug.LogWarning("ModeSelectUIManager: RoomUIManager not found in scene.");
+            }
+        }
+        
+        // Prefer inspector-assigned panel
+        GameObject panel = createJoinPanel;
+
+        // Try GameObject.Find (active only) if not assigned
+        if (panel == null)
+            panel = GameObject.Find("CreateJoinButton");
+
+        // If still not found, search all Transforms including inactive
+        if (panel == null)
+        {
+            var all = FindObjectsByType<Transform>(FindObjectsInactive.Include);
+            foreach (var t in all)
+            {
+                if (t == null) continue;
+                if (t.name == "CreateJoinButton")
+                {
+                    panel = t.gameObject;
+                    break;
+                }
+            }
+        }
+
+        if (panel == null)
+        {
+            Debug.LogWarning("ModeSelectUIManager: CreateJoinButton panel not found in scene.");
+            return;
+        }
+
+        // Activate the create/join panel and deactivate mode select
+        panel.SetActive(true);
+        modeSelectPanel.SetActive(false);
+
+        // Find create / join buttons inside the panel and wire them
+        var buttons = panel.GetComponentsInChildren<Button>(true);
+        Button createBtn = null;
+        Button joinBtn = null;
+        foreach (var b in buttons)
+        {
+            if (b == null) continue;
+            var n = b.name.ToLowerInvariant();
+            if (createBtn == null && n.Contains("create")) createBtn = b;
+            if (joinBtn == null && n.Contains("join")) joinBtn = b;
+        }
+
+        if (createBtn != null)
+        {
+            createBtn.onClick.RemoveAllListeners();
+            createBtn.onClick.AddListener(() =>
+            {
+                panel.SetActive(false);
+                
+                // Call RoomUIManager to properly show CreateRoom panel
+                if (roomUIManager != null)
+                {
+                    roomUIManager.ShowCreateRoomPanel();
+                    Debug.Log("ModeSelectUIManager: Called RoomUIManager.ShowCreateRoomPanel()");
+                }
+                else
+                {
+                    Debug.LogWarning("ModeSelectUIManager: RoomUIManager not available, falling back to GameObject.Find");
+                    var createRoom = GameObject.Find("CreateRoom");
+                    if (createRoom != null) createRoom.SetActive(true);
+                }
+                Debug.Log("ModeSelectUIManager: CreateRoom opened");
+            });
+        }
+
+        if (joinBtn != null)
+        {
+            joinBtn.onClick.RemoveAllListeners();
+            joinBtn.onClick.AddListener(() =>
+            {
+                panel.SetActive(false);
+                
+                // Call RoomUIManager to properly show JoinRoom panel
+                if (roomUIManager != null)
+                {
+                    roomUIManager.ShowJoinRoomPanel();
+                    Debug.Log("ModeSelectUIManager: Called RoomUIManager.ShowJoinRoomPanel()");
+                }
+                else
+                {
+                    Debug.LogWarning("ModeSelectUIManager: RoomUIManager not available, falling back to GameObject.Find");
+                    var joinRoom = GameObject.Find("JoinRoom");
+                    if (joinRoom != null) joinRoom.SetActive(true);
+                }
+                Debug.Log("ModeSelectUIManager: JoinRoom opened");
+            });
+        }
     }
 
     private void OnBackClicked()
@@ -90,6 +199,50 @@ public class ModeSelectUIManager : MonoBehaviour
 
     private void HandleStateChanged(GameManager.GameState newState)
     {
-        modeSelectPanel.SetActive(newState == GameManager.GameState.ModeSelect);
+        bool showModeSelect = newState == GameManager.GameState.ModeSelect;
+        modeSelectPanel.SetActive(showModeSelect);
+
+        if (!showModeSelect && createJoinPanel != null)
+        {
+            createJoinPanel.SetActive(false);
+        }
+    }
+
+    public void ShowModeSelectPanel()
+    {
+        if (modeSelectPanel != null)
+        {
+            modeSelectPanel.SetActive(true);
+        }
+
+        if (createJoinPanel != null)
+        {
+            createJoinPanel.SetActive(false);
+        }
+    }
+
+    private void ShowCharacterSelectPanel()
+    {
+        Debug.Log("ModeSelectUIManager: ShowCharacterSelectPanel called");
+        var characterSelectManagers = FindObjectsByType<CharacterSelectUIManager>(FindObjectsInactive.Include);
+        
+        Debug.Log($"ModeSelectUIManager: Found {(characterSelectManagers != null ? characterSelectManagers.Length : 0)} CharacterSelectUIManager instances");
+        
+        if (characterSelectManagers == null || characterSelectManagers.Length == 0)
+        {
+            Debug.LogWarning("ModeSelectUIManager: CharacterSelectUIManager not found.");
+            return;
+        }
+
+        foreach (var manager in characterSelectManagers)
+        {
+            if (manager != null && manager.gameObject != null)
+            {
+                Debug.Log($"ModeSelectUIManager: Activating CharacterSelectUIManager on GameObject: {manager.gameObject.name}");
+                manager.gameObject.SetActive(true);
+                Debug.Log("ModeSelectUIManager: Activated CharacterSelectUIManager gameObject.");
+                break;
+            }
+        }
     }
 }

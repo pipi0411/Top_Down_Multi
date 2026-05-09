@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using System.Linq;
 
 public class RoomUIManager : MonoBehaviour
 {
@@ -42,35 +43,72 @@ public class RoomUIManager : MonoBehaviour
 
     private void OnEnable()
     {
-        if (createRoomPanel == null || joinRoomPanel == null || roomPanel == null || 
-            createRoomButton == null || joinRoomButton == null || startGameButton == null || 
-            leaveRoomButton == null)
+        if (createRoomPanel == null || joinRoomPanel == null || roomPanel == null)
         {
-            Debug.LogError("RoomUIManager is missing required references in the Inspector.");
+            Debug.LogError("RoomUIManager is missing required panel references in the Inspector.");
             return;
         }
 
-        // Create Room panel listeners
-        createRoomButton.onClick.AddListener(OnCreateRoomClicked);
+        createRoomButton = createRoomButton != null ? createRoomButton : FindButton(createRoomPanel, "create");
+        joinRoomButton = joinRoomButton != null ? joinRoomButton : FindButton(joinRoomPanel, "join");
+        startGameButton = startGameButton != null ? startGameButton : FindButton(roomPanel, "start");
+        leaveRoomButton = leaveRoomButton != null ? leaveRoomButton : FindButton(roomPanel, "leave");
+        backFromCreateRoomButton = backFromCreateRoomButton != null ? backFromCreateRoomButton : FindButton(createRoomPanel, "back");
+        backFromJoinRoomButton = backFromJoinRoomButton != null ? backFromJoinRoomButton : FindButton(joinRoomPanel, "back");
+
+        // Remove before adding to avoid duplicate subscriptions if OnEnable runs more than once.
+        if (createRoomButton != null)
+        {
+            createRoomButton.onClick.RemoveListener(OnCreateRoomClicked);
+            createRoomButton.onClick.AddListener(OnCreateRoomClicked);
+        }
         if (switchToJoinButton != null)
-            switchToJoinButton.onClick.AddListener(ShowJoinRoomPanel);
+        {
+            switchToJoinButton.onClick.RemoveListener(OnBackToModeSelect);
+            switchToJoinButton.onClick.AddListener(OnBackToModeSelect);
+        }
         if (backFromCreateRoomButton != null)
+        {
+            backFromCreateRoomButton.onClick.RemoveListener(OnBackToModeSelect);
             backFromCreateRoomButton.onClick.AddListener(OnBackToModeSelect);
+        }
 
-        // Join Room panel listeners
-        joinRoomButton.onClick.AddListener(OnJoinRoomClicked);
+        if (joinRoomButton != null)
+        {
+            joinRoomButton.onClick.RemoveListener(OnJoinRoomClicked);
+            joinRoomButton.onClick.AddListener(OnJoinRoomClicked);
+        }
         if (switchToCreateButton != null)
-            switchToCreateButton.onClick.AddListener(ShowCreateRoomPanel);
+        {
+            switchToCreateButton.onClick.RemoveListener(OnBackToModeSelect);
+            switchToCreateButton.onClick.AddListener(OnBackToModeSelect);
+        }
         if (backFromJoinRoomButton != null)
+        {
+            backFromJoinRoomButton.onClick.RemoveListener(OnBackToModeSelect);
             backFromJoinRoomButton.onClick.AddListener(OnBackToModeSelect);
+        }
 
-        // Room Info panel listeners
         if (selectCharacterButton != null)
+        {
+            selectCharacterButton.onClick.RemoveListener(OnSelectCharacterClicked);
             selectCharacterButton.onClick.AddListener(OnSelectCharacterClicked);
+        }
         if (readyButton != null)
+        {
+            readyButton.onClick.RemoveListener(OnReadyClicked);
             readyButton.onClick.AddListener(OnReadyClicked);
-        startGameButton.onClick.AddListener(OnStartGameClicked);
-        leaveRoomButton.onClick.AddListener(OnLeaveRoomClicked);
+        }
+        if (startGameButton != null)
+        {
+            startGameButton.onClick.RemoveListener(OnStartGameClicked);
+            startGameButton.onClick.AddListener(OnStartGameClicked);
+        }
+        if (leaveRoomButton != null)
+        {
+            leaveRoomButton.onClick.RemoveListener(OnLeaveRoomClicked);
+            leaveRoomButton.onClick.AddListener(OnLeaveRoomClicked);
+        }
 
         // Subscribe to events
         if (RoomClient.Instance != null)
@@ -95,13 +133,13 @@ public class RoomUIManager : MonoBehaviour
         if (createRoomButton != null)
             createRoomButton.onClick.RemoveListener(OnCreateRoomClicked);
         if (switchToJoinButton != null)
-            switchToJoinButton.onClick.RemoveListener(ShowJoinRoomPanel);
+            switchToJoinButton.onClick.RemoveListener(OnBackToModeSelect);
         if (backFromCreateRoomButton != null)
             backFromCreateRoomButton.onClick.RemoveListener(OnBackToModeSelect);
         if (joinRoomButton != null)
             joinRoomButton.onClick.RemoveListener(OnJoinRoomClicked);
         if (switchToCreateButton != null)
-            switchToCreateButton.onClick.RemoveListener(ShowCreateRoomPanel);
+            switchToCreateButton.onClick.RemoveListener(OnBackToModeSelect);
         if (backFromJoinRoomButton != null)
             backFromJoinRoomButton.onClick.RemoveListener(OnBackToModeSelect);
         if (selectCharacterButton != null)
@@ -127,7 +165,7 @@ public class RoomUIManager : MonoBehaviour
         }
     }
 
-    private void ShowCreateRoomPanel()
+    public void ShowCreateRoomPanel()
     {
         createRoomPanel.SetActive(true);
         joinRoomPanel.SetActive(false);
@@ -135,7 +173,7 @@ public class RoomUIManager : MonoBehaviour
         ClearCreateRoomUI();
     }
 
-    private void ShowJoinRoomPanel()
+    public void ShowJoinRoomPanel()
     {
         createRoomPanel.SetActive(false);
         joinRoomPanel.SetActive(true);
@@ -285,7 +323,19 @@ public class RoomUIManager : MonoBehaviour
         if (GameManager.Instance != null)
         {
             GameManager.Instance.ClearCurrentRoom();
-            GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+            GameManager.Instance.SetMultiplayerMode(false);
+            if (GameManager.Instance.CurrentState != GameManager.GameState.ModeSelect)
+            {
+                GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+            }
+        }
+
+        HideAllRoomPanels();
+
+        ModeSelectUIManager modeSelectUIManager = FindAnyObjectByType<ModeSelectUIManager>(FindObjectsInactive.Include);
+        if (modeSelectUIManager != null)
+        {
+            modeSelectUIManager.ShowModeSelectPanel();
         }
     }
 
@@ -296,6 +346,11 @@ public class RoomUIManager : MonoBehaviour
 
         if (result.success)
         {
+            if (GameManager.Instance != null && result.room != null)
+            {
+                GameManager.Instance.SetCurrentRoom(result.room.roomCode, result.room.name, true);
+            }
+
             if (createRoomStatusText != null)
             {
                 createRoomStatusText.text = "Room created successfully!";
@@ -321,6 +376,11 @@ public class RoomUIManager : MonoBehaviour
 
         if (result.success)
         {
+            if (GameManager.Instance != null && result.room != null)
+            {
+                GameManager.Instance.SetCurrentRoom(result.room.roomCode, result.room.name, false);
+            }
+
             if (joinRoomStatusText != null)
             {
                 joinRoomStatusText.text = "Joined room successfully!";
@@ -385,7 +445,9 @@ public class RoomUIManager : MonoBehaviour
 
         // Update Room Info Display
         if (roomNameDisplay != null)
-            roomNameDisplay.text = "Room Name: TBD";
+            roomNameDisplay.text = string.IsNullOrEmpty(GameManager.Instance.CurrentRoomName)
+                ? "Room Name: None"
+                : "Room Name: " + GameManager.Instance.CurrentRoomName;
 
         if (roomCodeDisplay != null)
             roomCodeDisplay.text = string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode) 
@@ -428,11 +490,29 @@ public class RoomUIManager : MonoBehaviour
         playerListItems.Clear();
 
         // TODO: Get actual player list from room data
-        // For now, just add yourself
-        if (!string.IsNullOrEmpty(GameManager.Instance.CurrentUsername))
+        if (GameManager.Instance != null)
         {
             AddPlayerToList(GameManager.Instance.CurrentUsername, isPlayerReady, true);
         }
+    }
+
+    private void HideAllRoomPanels()
+    {
+        if (createRoomPanel != null)
+            createRoomPanel.SetActive(false);
+        if (joinRoomPanel != null)
+            joinRoomPanel.SetActive(false);
+        if (roomPanel != null)
+            roomPanel.SetActive(false);
+    }
+
+    private Button FindButton(GameObject panel, string namePart)
+    {
+        if (panel == null)
+            return null;
+
+        return panel.GetComponentsInChildren<Button>(true)
+            .FirstOrDefault(button => button != null && button.name.ToLowerInvariant().Contains(namePart));
     }
 
     private void AddPlayerToList(string playerName, bool isReady, bool isYou)

@@ -19,6 +19,7 @@ public class GameManager : MonoBehaviour
 
     public GameState CurrentState { get; private set; } = GameState.Auth;
     public string CurrentRoomCode { get; private set; }
+    public string CurrentRoomName { get; private set; }
     public string CurrentRelayJoinCode { get; private set; }
     public bool IsHost { get; private set; }
     public string CurrentUsername { get; private set; }
@@ -117,15 +118,17 @@ public class GameManager : MonoBehaviour
         // This is now handled by ActivateUIPanel
     }
 
-    public void SetCurrentRoom(string roomCode, bool isHost)
+    public void SetCurrentRoom(string roomCode, string roomName, bool isHost)
     {
         CurrentRoomCode = roomCode;
+        CurrentRoomName = roomName;
         IsHost = isHost;
     }
 
     public void ClearCurrentRoom()
     {
         CurrentRoomCode = null;
+        CurrentRoomName = null;
         IsHost = false;
     }
 
@@ -175,7 +178,7 @@ public class GameManager : MonoBehaviour
     {
         if (result.success)
         {
-            SetCurrentRoom(result.room.roomCode, isHost: true);
+            SetCurrentRoom(result.room.roomCode, result.room.name, isHost: true);
             ChangeState(GameState.RoomLobby);
             Debug.Log($"Room created: {result.room.roomCode}");
         }
@@ -189,7 +192,7 @@ public class GameManager : MonoBehaviour
     {
         if (result.success)
         {
-            SetCurrentRoom(result.room.roomCode, isHost: false);
+            SetCurrentRoom(result.room.roomCode, result.room.name, isHost: false);
             ChangeState(GameState.RoomLobby);
             Debug.Log($"Joined room: {result.room.roomCode}");
         }
