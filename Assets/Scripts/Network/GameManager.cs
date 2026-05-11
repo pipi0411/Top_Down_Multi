@@ -31,14 +31,18 @@ public class GameManager : MonoBehaviour
 
     private void Awake()
     {
+        // Kiểm tra xem đã có Instance nào tồn tại chưa
         if (Instance != null && Instance != this)
         {
-            Destroy(gameObject);
+            // [THAY ĐỔI Ở ĐÂY]: Xóa toàn bộ Main Manager mới tạo nếu quay về từ Scene Game
+            transform.root.gameObject.SetActive(false);
+            Destroy(transform.root.gameObject);
             return;
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // [THAY ĐỔI Ở ĐÂY]: Giữ lại toàn bộ Main Manager (gồm GameManager, Canvas, EventSystem...)
+        DontDestroyOnLoad(transform.root.gameObject);
         Debug.Log("=== GameManager Initialized ===");
 
         InitializeClients();
@@ -95,6 +99,14 @@ public class GameManager : MonoBehaviour
         if (RoomClient.Instance == null)
             Debug.LogWarning("RoomClient not initialized");
 
+        // Ensure CharacterPrefabManager exists for character→prefab mapping
+        if (CharacterPrefabManager.Instance == null)
+            Debug.LogWarning("CharacterPrefabManager not initialized");
+
+        // Ensure NetworkButtons exists for Netcode game startup
+        if (NetworkButtons.Instance == null)
+            Debug.LogWarning("NetworkButtons not initialized");
+
         // Subscribe to events
         AuthClient.Instance.OnLoginComplete += HandleLoginComplete;
         RoomClient.Instance.OnCreateRoomComplete += HandleCreateRoomComplete;
@@ -113,6 +125,7 @@ public class GameManager : MonoBehaviour
         CurrentState = newState;
         OnStateChanged?.Invoke(newState);
     }
+    
     private void EnsureUIManagersActive()
     {
         // This is now handled by ActivateUIPanel

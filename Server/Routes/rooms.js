@@ -159,12 +159,8 @@ router.post("/close", authMiddleware, async (req, res) => {
             return res.status(403).json({ message: "Only host can close room" });
         }
 
-        room.status = "closed";
-        room.closedAt = new Date();
-        room.closeReason = "host_closed";
-        await room.save();
-
         await RoomPlayer.deleteMany({ roomId: room._id });
+        await Room.deleteOne({ _id: room._id });
 
         return res.json({ message: "Room closed", roomCode: room.roomCode });
     } catch (error) {
@@ -275,7 +271,7 @@ router.post("/:roomCode/players/:userId/status", authMiddleware, async (req, res
         const roomPlayer = await RoomPlayer.findOneAndUpdate(
             { roomId: room._id, userId },
             { isReady },
-            { new: true }
+            { returnDocument: 'after' }
         ).populate("userId", "username");
 
         if (!roomPlayer) {
@@ -311,7 +307,7 @@ router.post("/:roomCode/players/:userId/character", authMiddleware, async (req, 
         const roomPlayer = await RoomPlayer.findOneAndUpdate(
             { roomId: room._id, userId },
             { character },
-            { new: true }
+            { returnDocument: 'after' }
         ).populate("userId", "username");
 
         if (!roomPlayer) {

@@ -189,4 +189,12 @@ public class MainMenuUIManager : MonoBehaviour
         usernameText.text = $"{username}!";
         Debug.Log($"MainMenuUIManager: Username text set to: {usernameText.text}");
     }
+    private void OnDestroy()
+    {
+        // Gỡ đăng ký với cả GameManager và RoomClient để an toàn tuyệt đối
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged -= HandleStateChanged;
+        }
+    }
 }

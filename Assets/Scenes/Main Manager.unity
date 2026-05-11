@@ -602,11 +602,7 @@ GameObject:
   m_Component:
   - component: {fileID: 110818722}
   - component: {fileID: 110818721}
-  - component: {fileID: 110818725}
-  - component: {fileID: 110818724}
-  - component: {fileID: 110818723}
-  - component: {fileID: 110818726}
-  - component: {fileID: 110818727}
+  - component: {fileID: 110818728}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -641,7 +637,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &110818723
+--- !u!114 &110818728
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -650,116 +646,25 @@ MonoBehaviour:
   m_GameObject: {fileID: 110818720}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 796dbe84664425242a01f5b079238faa, type: 3}
+  m_Script: {fileID: 11500000, guid: f59f4d4fd38365142831c675ba29095a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ModeSelectUIManager
-  modeSelectPanel: {fileID: 649273639}
-  createJoinPanel: {fileID: 1015897710}
-  roomUIManager: {fileID: 110818727}
-  singlePlayerButton: {fileID: 839656777}
-  multiplayerButton: {fileID: 224378105}
-  backButton: {fileID: 470452680}
---- !u!114 &110818724
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110818720}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3b538f0d8b132f44af8983a04aa4264, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MainMenuUIManager
-  mainMenuPanel: {fileID: 261676709}
-  startButton: {fileID: 1703257959}
-  settingsButton: {fileID: 1573469775}
-  logoutButton: {fileID: 340948901}
-  exitButton: {fileID: 1237575178}
-  usernameText: {fileID: 1848481139}
---- !u!114 &110818725
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110818720}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1800fce09974ddd4193b0e6364d78872, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::AuthUIManager
-  loginPanel: {fileID: 904562147}
-  registerPanel: {fileID: 743027034}
-  loginUsernameInput: {fileID: 352906034}
-  loginPasswordInput: {fileID: 615460615}
-  loginButton: {fileID: 433751811}
-  loginStatusText: {fileID: 1667277838}
-  switchToRegisterButton: {fileID: 1579461569}
-  registerUsernameInput: {fileID: 57747644}
-  registerPasswordInput: {fileID: 519996383}
-  registerConfirmPasswordInput: {fileID: 1141060899}
-  registerButton: {fileID: 645364184}
-  registerStatusText: {fileID: 768030193}
-  switchToLoginButton: {fileID: 1686331388}
---- !u!114 &110818726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110818720}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b78f7a30a7330745a2bfe896ead90a9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectUIManager
-  characterSelectPanel: {fileID: 371349891}
-  characterButtons:
-  - {fileID: 1993103736}
-  - {fileID: 2084385348}
-  - {fileID: 1023350487}
-  - {fileID: 1150724214}
-  - {fileID: 288843056}
-  selectButton: {fileID: 423854079}
-  backButton: {fileID: 468595335}
-  selectedCharacterImage: {fileID: 937986988}
-  characterNameText: {fileID: 1081885127}
---- !u!114 &110818727
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 110818720}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 603b88dee2ba5304f8181b5440d4d616, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::RoomUIManager
-  createRoomPanel: {fileID: 1372227386}
-  joinRoomPanel: {fileID: 229131817}
-  roomPanel: {fileID: 763489168}
-  roomNameInput: {fileID: 706241419}
-  createRoomButton: {fileID: 450847763}
-  createRoomStatusText: {fileID: 1152552984}
-  switchToJoinButton: {fileID: 1349854330}
-  joinRoomCodeInput: {fileID: 445227414}
-  joinRoomButton: {fileID: 385738020}
-  joinRoomStatusText: {fileID: 810545472}
-  switchToCreateButton: {fileID: 387530576}
-  backFromCreateRoomButton: {fileID: 0}
-  backFromJoinRoomButton: {fileID: 0}
-  roomNameDisplay: {fileID: 347651542}
-  roomCodeDisplay: {fileID: 1903478062}
-  playerListContainer: {fileID: 0}
-  playerListItemPrefab: {fileID: 0}
-  yourCharacterDisplay: {fileID: 0}
-  selectCharacterButton: {fileID: 204318245}
-  readyButton: {fileID: 2005888194}
-  startGameButton: {fileID: 504594654}
-  leaveRoomButton: {fileID: 2091816664}
-  gameplaySceneName: SampleScene
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterPrefabManager
+  characterMappings:
+  - characterName: Knight
+    prefabPath: 'Prefabs/Player_Shadowblade '
+    prefabReference: {fileID: 66633144740670258, guid: f21e6bcda43f6944896b4d31e3b6599a, type: 3}
+  - characterName: Archer
+    prefabPath: Prefabs/Player_Novak
+    prefabReference: {fileID: 2548779438140806897, guid: 831d15247d28ce641bd77280036c5078, type: 3}
+  - characterName: Mage
+    prefabPath: Prefabs/Player_Ganfald
+    prefabReference: {fileID: 3016924958820410742, guid: af3f40270663d1f40bca3fca6dce1980, type: 3}
+  - characterName: Rogue
+    prefabPath: Prefabs/Player_Ember
+    prefabReference: {fileID: 7447721889901860546, guid: e653767f3e0577c458bdcf6d57d554cd, type: 3}
+  - characterName: Paladin
+    prefabPath: Prefabs/Player_Iron
+    prefabReference: {fileID: 4943243203175889302, guid: cdec3f6cef03d554e876d68fc4b08d98, type: 3}
 --- !u!1 &111761469
 GameObject:
   m_ObjectHideFlags: 0
@@ -3168,7 +3073,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &371349892
 RectTransform:
   m_ObjectHideFlags: 0
@@ -7039,6 +6944,9 @@ RectTransform:
   - {fileID: 2005888191}
   - {fileID: 504594651}
   - {fileID: 2091816667}
+  - {fileID: 2040007786}
+  - {fileID: 2047636025}
+  - {fileID: 1966949006}
   m_Father: {fileID: 1167057894}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -10375,6 +10283,10 @@ GameObject:
   - component: {fileID: 1167057893}
   - component: {fileID: 1167057892}
   - component: {fileID: 1167057891}
+  - component: {fileID: 1167057899}
+  - component: {fileID: 1167057898}
+  - component: {fileID: 1167057897}
+  - component: {fileID: 1167057896}
   - component: {fileID: 1167057895}
   m_Layer: 5
   m_Name: Canvas
@@ -10482,16 +10394,133 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1167057890}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 65a4aa86f5d7c59488273fef2d41c16b, type: 3}
+  m_Script: {fileID: 11500000, guid: 603b88dee2ba5304f8181b5440d4d616, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkButtons
-  maxConnections: 3
-  joinCodeInput: {fileID: 0}
-  joinCodeText: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::RoomUIManager
+  createRoomPanel: {fileID: 1372227386}
+  joinRoomPanel: {fileID: 229131817}
+  roomPanel: {fileID: 763489168}
+  roomNameInput: {fileID: 706241419}
+  createRoomButton: {fileID: 450847763}
+  createRoomStatusText: {fileID: 1152552984}
+  switchToJoinButton: {fileID: 1349854330}
+  joinRoomCodeInput: {fileID: 445227414}
+  joinRoomButton: {fileID: 385738020}
+  joinRoomStatusText: {fileID: 810545472}
+  switchToCreateButton: {fileID: 387530576}
+  backFromCreateRoomButton: {fileID: 0}
+  backFromJoinRoomButton: {fileID: 0}
+  roomNameDisplay: {fileID: 347651542}
+  roomCodeDisplay: {fileID: 1903478062}
+  playerListContainer: {fileID: 1966949006}
+  playerListItemPrefab: {fileID: 7531206265702892329, guid: 541cf6cf9026458488edc8a239db7cd4, type: 3}
+  yourCharacterDisplay: {fileID: 2047636027}
+  yourCharacterImage: {fileID: 2040007788}
+  characterIcons:
+  - characterName: Knight
+    characterIcon: {fileID: -805381025, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  - characterName: Archer
+    characterIcon: {fileID: 1548320837, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  - characterName: Mage
+    characterIcon: {fileID: -1915686967, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  - characterName: Rogue
+    characterIcon: {fileID: 597178347, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  - characterName: Paladin
+    characterIcon: {fileID: -1727626826, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  selectCharacterButton: {fileID: 204318245}
+  readyButton: {fileID: 2005888194}
+  startGameButton: {fileID: 504594654}
+  leaveRoomButton: {fileID: 2091816664}
   gameplaySceneName: SampleScene
-  errorText: {fileID: 0}
+  roomPlayersRefreshInterval: 2
+  roomDetailsRefreshInterval: 2
+  roomHeartbeatInterval: 10
+--- !u!114 &1167057896
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167057890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b78f7a30a7330745a2bfe896ead90a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterSelectUIManager
+  characterSelectPanel: {fileID: 371349891}
+  characterButtons:
+  - {fileID: 1993103736}
+  - {fileID: 2084385348}
+  - {fileID: 1023350487}
+  - {fileID: 1150724214}
+  - {fileID: 288843056}
+  selectButton: {fileID: 423854079}
+  backButton: {fileID: 468595335}
+  selectedCharacterImage: {fileID: 937986988}
+  characterNameText: {fileID: 1081885127}
+--- !u!114 &1167057897
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167057890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 796dbe84664425242a01f5b079238faa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ModeSelectUIManager
+  modeSelectPanel: {fileID: 649273639}
+  createJoinPanel: {fileID: 1015897710}
+  roomUIManager: {fileID: 0}
+  singlePlayerButton: {fileID: 839656777}
+  multiplayerButton: {fileID: 224378105}
+  backButton: {fileID: 470452680}
+--- !u!114 &1167057898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167057890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c3b538f0d8b132f44af8983a04aa4264, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MainMenuUIManager
+  mainMenuPanel: {fileID: 261676709}
+  startButton: {fileID: 1703257959}
+  settingsButton: {fileID: 1573469775}
+  logoutButton: {fileID: 340948901}
+  exitButton: {fileID: 1237575178}
+  usernameText: {fileID: 1848481139}
+--- !u!114 &1167057899
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1167057890}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1800fce09974ddd4193b0e6364d78872, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AuthUIManager
+  loginPanel: {fileID: 904562147}
+  registerPanel: {fileID: 743027034}
+  loginUsernameInput: {fileID: 352906034}
+  loginPasswordInput: {fileID: 615460615}
+  loginButton: {fileID: 433751811}
+  loginStatusText: {fileID: 1667277838}
+  switchToRegisterButton: {fileID: 1579461569}
+  registerUsernameInput: {fileID: 57747644}
+  registerPasswordInput: {fileID: 519996383}
+  registerConfirmPasswordInput: {fileID: 1141060899}
+  registerButton: {fileID: 645364184}
+  registerStatusText: {fileID: 768030193}
+  switchToLoginButton: {fileID: 1686331388}
 --- !u!1 &1237575176
 GameObject:
   m_ObjectHideFlags: 0
@@ -11987,6 +12016,112 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1579461567}
   m_CullTransparentMesh: 1
+--- !u!1 &1600692343
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1600692345}
+  - component: {fileID: 1600692344}
+  - component: {fileID: 1600692346}
+  m_Layer: 0
+  m_Name: NetworkManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1600692344
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600692343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 593a2fe42fa9d37498c96f9a383b6521, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkManager
+  NetworkManagerExpanded: 0
+  NetworkConfig:
+    ProtocolVersion: 0
+    NetworkTransport: {fileID: 1600692346}
+    PlayerPrefab: {fileID: 66633144740670258, guid: f21e6bcda43f6944896b4d31e3b6599a, type: 3}
+    Prefabs:
+      NetworkPrefabsLists:
+      - {fileID: 11400000, guid: 25344c127eebe5b41908ff551af5bae4, type: 2}
+    TickRate: 30
+    ClientConnectionBufferTimeout: 10
+    ConnectionApproval: 0
+    ConnectionData: 
+    EnableTimeResync: 0
+    TimeResyncInterval: 30
+    EnsureNetworkVariableLengthSafety: 0
+    EnableSceneManagement: 1
+    ForceSamePrefabs: 1
+    RecycleNetworkIds: 1
+    NetworkIdRecycleDelay: 120
+    RpcHashSize: 0
+    LoadSceneTimeOut: 120
+    SpawnTimeout: 10
+    EnableNetworkLogs: 1
+    NetworkTopology: 0
+    UseCMBService: 0
+    AutoSpawnPlayerPrefabClientSide: 1
+    NetworkProfilingMetrics: 1
+    OldPrefabList: []
+  RunInBackground: 1
+  LogLevel: 1
+--- !u!4 &1600692345
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600692343}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 5.31209, y: 1.59014, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1600692346
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1600692343}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Transports.UTP.UnityTransport
+  m_ProtocolType: 0
+  m_UseWebSockets: 0
+  m_UseEncryption: 0
+  m_MaxPacketQueueSize: 128
+  m_MaxPayloadSize: 6144
+  m_HeartbeatTimeoutMS: 500
+  m_ConnectTimeoutMS: 1000
+  m_MaxConnectAttempts: 60
+  m_DisconnectTimeoutMS: 30000
+  ConnectionData:
+    Address: 127.0.0.1
+    Port: 7777
+    WebSocketPath: /
+    ServerListenAddress: 127.0.0.1
+    ClientBindPort: 0
+  DebugSimulator:
+    PacketDelayMS: 0
+    PacketJitterMS: 0
+    PacketDropRate: 0
 --- !u!1 &1646056156
 GameObject:
   m_ObjectHideFlags: 0
@@ -13630,6 +13765,68 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1931120308}
   m_CullTransparentMesh: 1
+--- !u!1 &1966949005
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1966949006}
+  - component: {fileID: 1966949007}
+  m_Layer: 5
+  m_Name: PlayerList_Content
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1966949006
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966949005}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 763489169}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -236, y: -18}
+  m_SizeDelta: {x: 400, y: 320}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1966949007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966949005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 0
+  m_Spacing: 10
+  m_ChildForceExpandWidth: 1
+  m_ChildForceExpandHeight: 1
+  m_ChildControlWidth: 1
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1 &1975049280
 GameObject:
   m_ObjectHideFlags: 0
@@ -14056,6 +14253,218 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &2040007785
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2040007786}
+  - component: {fileID: 2040007787}
+  - component: {fileID: 2040007788}
+  m_Layer: 5
+  m_Name: ImageCharacter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2040007786
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040007785}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 763489169}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 242, y: -53}
+  m_SizeDelta: {x: 150, y: 150}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2040007787
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040007785}
+  m_CullTransparentMesh: 1
+--- !u!114 &2040007788
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2040007785}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: -805381025, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!1 &2047636024
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2047636025}
+  - component: {fileID: 2047636026}
+  - component: {fileID: 2047636027}
+  m_Layer: 5
+  m_Name: YourCharacter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &2047636025
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047636024}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 763489169}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 243, y: 93}
+  m_SizeDelta: {x: 200, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &2047636026
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047636024}
+  m_CullTransparentMesh: 1
+--- !u!114 &2047636027
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2047636024}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: -1183493901
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 36
+  m_fontSizeBase: 36
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
 --- !u!1 &2055262051
 GameObject:
   m_ObjectHideFlags: 0
@@ -14366,112 +14775,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2084385346}
   m_CullTransparentMesh: 1
---- !u!1 &2088597427
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2088597430}
-  - component: {fileID: 2088597429}
-  - component: {fileID: 2088597428}
-  m_Layer: 0
-  m_Name: NetworkManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 0
---- !u!114 &2088597428
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2088597427}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6960e84d07fb87f47956e7a81d71c4e6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Transports.UTP.UnityTransport
-  m_ProtocolType: 0
-  m_UseWebSockets: 0
-  m_UseEncryption: 0
-  m_MaxPacketQueueSize: 128
-  m_MaxPayloadSize: 6144
-  m_HeartbeatTimeoutMS: 500
-  m_ConnectTimeoutMS: 1000
-  m_MaxConnectAttempts: 60
-  m_DisconnectTimeoutMS: 30000
-  ConnectionData:
-    Address: 127.0.0.1
-    Port: 7777
-    WebSocketPath: /
-    ServerListenAddress: 127.0.0.1
-    ClientBindPort: 0
-  DebugSimulator:
-    PacketDelayMS: 0
-    PacketJitterMS: 0
-    PacketDropRate: 0
---- !u!114 &2088597429
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2088597427}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 593a2fe42fa9d37498c96f9a383b6521, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkManager
-  NetworkManagerExpanded: 0
-  NetworkConfig:
-    ProtocolVersion: 0
-    NetworkTransport: {fileID: 2088597428}
-    PlayerPrefab: {fileID: 66633144740670258, guid: f21e6bcda43f6944896b4d31e3b6599a, type: 3}
-    Prefabs:
-      NetworkPrefabsLists:
-      - {fileID: 11400000, guid: 25344c127eebe5b41908ff551af5bae4, type: 2}
-    TickRate: 30
-    ClientConnectionBufferTimeout: 10
-    ConnectionApproval: 0
-    ConnectionData: 
-    EnableTimeResync: 0
-    TimeResyncInterval: 30
-    EnsureNetworkVariableLengthSafety: 0
-    EnableSceneManagement: 1
-    ForceSamePrefabs: 1
-    RecycleNetworkIds: 1
-    NetworkIdRecycleDelay: 120
-    RpcHashSize: 0
-    LoadSceneTimeOut: 120
-    SpawnTimeout: 10
-    EnableNetworkLogs: 1
-    NetworkTopology: 0
-    UseCMBService: 0
-    AutoSpawnPlayerPrefabClientSide: 1
-    NetworkProfilingMetrics: 1
-    OldPrefabList: []
-  RunInBackground: 1
-  LogLevel: 1
---- !u!4 &2088597430
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2088597427}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2091816663
 GameObject:
   m_ObjectHideFlags: 0
@@ -14593,6 +14896,51 @@ RectTransform:
   m_AnchoredPosition: {x: 235, y: -367}
   m_SizeDelta: {x: 410, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &2093806923
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2093806925}
+  - component: {fileID: 2093806924}
+  m_Layer: 0
+  m_Name: NetworkButtons
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &2093806924
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093806923}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 65a4aa86f5d7c59488273fef2d41c16b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkButtons
+  gameplaySceneName: SampleScene
+--- !u!4 &2093806925
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2093806923}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 3.7974, y: 1.49854, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &2115003869
 GameObject:
   m_ObjectHideFlags: 0
@@ -14950,7 +15298,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1167057895}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: NetworkButtons, Assembly-CSharp
         m_MethodName: ExitGame
         m_Mode: 1
@@ -15142,10 +15490,11 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 836839837}
-  - {fileID: 2088597430}
   - {fileID: 1167057894}
   - {fileID: 599883535}
   - {fileID: 110818722}
   - {fileID: 1996087342}
   - {fileID: 410983721}
   - {fileID: 499658442}
+  - {fileID: 2093806925}
+  - {fileID: 1600692345}

@@ -53,10 +53,14 @@ public class AuthUIManager : MonoBehaviour
 
     private void OnDisable()
     {
-        loginButton.onClick.RemoveListener(OnLoginClicked);
-        registerButton.onClick.RemoveListener(OnRegisterClicked);
-        switchToRegisterButton.onClick.RemoveListener(ShowRegisterPanel);
-        switchToLoginButton.onClick.RemoveListener(ShowLoginPanel);
+        if (loginButton != null)
+            loginButton.onClick.RemoveListener(OnLoginClicked);
+        if (registerButton != null)
+            registerButton.onClick.RemoveListener(OnRegisterClicked);
+        if (switchToRegisterButton != null)
+            switchToRegisterButton.onClick.RemoveListener(ShowRegisterPanel);
+        if (switchToLoginButton != null)
+            switchToLoginButton.onClick.RemoveListener(ShowLoginPanel);
 
         if (AuthClient.Instance != null)
         {
@@ -64,6 +68,17 @@ public class AuthUIManager : MonoBehaviour
             AuthClient.Instance.OnRegisterComplete -= HandleRegisterComplete;
         }
 
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnError -= HandleError;
+            GameManager.Instance.OnStateChanged -= HandleStateChanged;
+        }
+
+        gameManagerSubscribed = false;
+    }
+    private void OnDestroy()
+    {
+        // Gỡ đăng ký sự kiện khi Object bị hủy
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnError -= HandleError;
@@ -97,6 +112,11 @@ public class AuthUIManager : MonoBehaviour
 
     private void ShowLoginPanel()
     {
+        if (loginPanel == null || registerPanel == null)
+        {
+            return;
+        }
+
         loginPanel.SetActive(true);
         registerPanel.SetActive(false);
         ClearUI();
@@ -109,6 +129,11 @@ public class AuthUIManager : MonoBehaviour
 
     private void ShowRegisterPanel()
     {
+        if (loginPanel == null || registerPanel == null)
+        {
+            return;
+        }
+
         loginPanel.SetActive(false);
         registerPanel.SetActive(true);
         ClearUI();
@@ -130,6 +155,12 @@ public class AuthUIManager : MonoBehaviour
     private void HandleStateChanged(GameManager.GameState newState)
     {
         Debug.Log($"AuthUIManager: State changed to {newState}");
+        if (loginPanel == null || registerPanel == null)
+        {
+            Debug.LogWarning("AuthUIManager: UI panels were destroyed or are missing, skipping state update.");
+            return;
+        }
+
         if (newState == GameManager.GameState.Auth)
         {
             ShowLoginPanel();
@@ -267,7 +298,9 @@ public class AuthUIManager : MonoBehaviour
             registerStatusText.text = "";
         }
 
-        loginButton.interactable = true;
-        registerButton.interactable = true;
+        if (loginButton != null)
+            loginButton.interactable = true;
+        if (registerButton != null)
+            registerButton.interactable = true;
     }
 }

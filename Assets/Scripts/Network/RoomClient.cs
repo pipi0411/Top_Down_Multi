@@ -75,6 +75,13 @@ public class RoomClient : MonoBehaviour
         public string message;
     }
 
+    [System.Serializable]
+    public class RoomActionResponse
+    {
+        public string message;
+        public string roomCode;
+    }
+
     public class RoomResult
     {
         public bool success;
@@ -588,10 +595,38 @@ public class RoomClient : MonoBehaviour
         {
             try
             {
-                var roomRes = JsonUtility.FromJson<RoomResponse>(req.downloadHandler.text);
+                string responseText = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+
+                if (operation == "Create Room" || operation == "Join Room")
+                {
+                    var roomRes = JsonUtility.FromJson<RoomResponse>(responseText);
+                    result.success = true;
+                    result.room = roomRes != null ? roomRes.room : null;
+
+                    if (result.room != null)
+                    {
+                        Debug.Log($"{operation} successful. Room: {result.room.roomCode}");
+                    }
+                    else
+                    {
+                        Debug.Log($"{operation} successful.");
+                    }
+
+                    return result;
+                }
+
+                var actionRes = JsonUtility.FromJson<RoomActionResponse>(responseText);
                 result.success = true;
-                result.room = roomRes.room;
-                Debug.Log($"{operation} successful. Room: {roomRes.room.roomCode}");
+                result.room = null;
+
+                if (!string.IsNullOrEmpty(actionRes?.roomCode))
+                {
+                    Debug.Log($"{operation} successful. RoomCode: {actionRes.roomCode}");
+                }
+                else
+                {
+                    Debug.Log($"{operation} successful.");
+                }
             }
             catch (Exception e)
             {

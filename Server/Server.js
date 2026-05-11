@@ -72,19 +72,9 @@ function startRoomCleanupJob() {
 
             const roomIds = staleRooms.map((room) => room._id);
 
-            await Room.updateMany(
-                { _id: { $in: roomIds } },
-                {
-                    $set: {
-                        status: "closed",
-                        closedAt: new Date(),
-                        closeReason: "heartbeat_timeout"
-                    }
-                }
-            );
-
             await RoomPlayer.deleteMany({ roomId: { $in: roomIds } });
-            console.log(`Closed ${staleRooms.length} stale room(s) by heartbeat timeout`);
+            await Room.deleteMany({ _id: { $in: roomIds } });
+            console.log(`Deleted ${staleRooms.length} stale room(s) by heartbeat timeout`);
         } catch (error) {
             console.error("Room cleanup error:", error.message);
         }

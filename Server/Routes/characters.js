@@ -35,7 +35,7 @@ router.post("/users/:userId/character/:characterName", authMiddleware, async (re
         const user = await User.findByIdAndUpdate(
             userId,
             { selectedCharacter: characterName },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!user) {

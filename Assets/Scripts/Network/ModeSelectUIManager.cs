@@ -199,6 +199,11 @@ public class ModeSelectUIManager : MonoBehaviour
 
     private void HandleStateChanged(GameManager.GameState newState)
     {
+        if (modeSelectPanel == null)
+        {
+            return;
+        }
+
         bool showModeSelect = newState == GameManager.GameState.ModeSelect;
         modeSelectPanel.SetActive(showModeSelect);
 

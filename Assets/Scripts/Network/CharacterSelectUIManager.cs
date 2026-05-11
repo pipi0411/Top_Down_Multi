@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 
 public class CharacterSelectUIManager : MonoBehaviour
 {
@@ -178,7 +179,11 @@ public class CharacterSelectUIManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // Cleanup already done in OnDisable, nothing needed here
+        // Đảm bảo gỡ đăng ký với GameManager dù OnDisable có được gọi hay chưa
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.OnStateChanged -= HandleStateChanged;
+        }
     }
 
     private void BindButtons()
@@ -373,24 +378,67 @@ public class CharacterSelectUIManager : MonoBehaviour
         }
 
         Debug.Log($"Character confirmed: {selectedCharacter}");
-        GameManager.Instance.SetSelectedCharacter(selectedCharacter);
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetSelectedCharacter(selectedCharacter);
+        }
 
+        // Save character to backend if possible
         string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
         if (!string.IsNullOrEmpty(userId) && CharactersClient.Instance != null)
         {
             CharactersClient.Instance.SetUserCharacter(userId, selectedCharacter);
         }
 
-        // If multiplayer mode, go to room selection
-        if (GameManager.Instance.IsMultiplayer)
+        // Multiplayer: set selection and return to RoomLobby (do NOT require local prefab)
+        if (GameManager.Instance != null && GameManager.Instance.IsMultiplayer)
         {
-            GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+            Debug.Log("[CharacterSelectUIManager] Multiplayer selected → Returning to RoomLobby");
+
+            if (GameManager.Instance != null && RoomClient.Instance != null &&
+                !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode) &&
+                !string.IsNullOrEmpty(userId))
+            {
+                RoomClient.Instance.SetPlayerCharacterInRoom(GameManager.Instance.CurrentRoomCode, userId, selectedCharacter);
+            }
+
+            RoomUIManager roomUIManager = FindAnyObjectByType<RoomUIManager>(FindObjectsInactive.Include);
+            if (roomUIManager != null)
+            {
+                roomUIManager.ShowRoomPanel();
+            }
+
+            if (characterSelectPanel != null)
+                characterSelectPanel.SetActive(false);
+
+            if (GameManager.Instance != null)
+                GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+
+            return;
         }
-        else
+
+        // Single-player: require prefab and load game scene
+        CharacterPrefabManager prefabManager = CharacterPrefabManager.Instance;
+        if (prefabManager == null)
         {
-            // If single player, start game directly
+            Debug.LogError("[CharacterSelectUIManager] CharacterPrefabManager not found! Cannot start single-player game.");
+            return;
+        }
+
+        GameObject selectedPrefab = prefabManager.GetPrefabForCharacter(selectedCharacter);
+        if (selectedPrefab == null)
+        {
+            Debug.LogError($"[CharacterSelectUIManager] Prefab not found for character: {selectedCharacter}");
+            return;
+        }
+
+        Debug.Log($"[CharacterSelectUIManager] ✓ Character '{selectedCharacter}' → Prefab '{selectedPrefab.name}' verified");
+
+        Debug.Log("[CharacterSelectUIManager] Single player selected → Loading game scene with character: " + selectedCharacter);
+        if (GameManager.Instance != null)
             GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
-        }
+
+        SceneManager.LoadScene("SampleScene");
     }
 
     private void OnBackClicked()
@@ -424,7 +472,7 @@ public class CharacterSelectUIManager : MonoBehaviour
             }
         }
         
-        if (characterSelectPanel == null)
+        if (characterSelectPanel == null || !gameObject.activeInHierarchy)
         {
             Debug.LogError("[CharacterSelectUIManager.HandleStateChanged] characterSelectPanel is NULL! Cannot show/hide panel!");
             return;

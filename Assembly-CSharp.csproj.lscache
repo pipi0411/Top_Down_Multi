@@ -55,16 +55,18 @@ Assets/
  Scripts/Network/
   AuthClient.cs
   AuthUIManager.cs
+  CharacterPrefabManager.cs
   CharactersClient.cs
   CharacterSelectUIManager.cs
   GameManager.cs
   InGameHUDUIManager.cs
-  JoinCodeDisplay.cs
   LoadingPanelUIManager.cs
   MainMenuUIManager.cs
   ModeSelectUIManager.cs
   NetworkButtons.cs
+  NetworkDiagnostics.cs
   RoomClient.cs
+  RoomHardDeleteTestButton.cs
   RoomUIManager.cs
  Scripts/Player/
   PlayerConfig.cs

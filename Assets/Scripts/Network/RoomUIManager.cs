@@ -4,6 +4,14 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.Services.Lobbies.Models;
+
+[System.Serializable]
+public class CharacterDisplayData
+{
+    public string characterName;
+    public Sprite characterIcon;
+}
 
 public class RoomUIManager : MonoBehaviour
 {
@@ -31,15 +39,26 @@ public class RoomUIManager : MonoBehaviour
     [SerializeField] private GameObject playerListItemPrefab;
     
     [SerializeField] private TMP_Text yourCharacterDisplay;
+    [SerializeField] private Image yourCharacterImage;
+    [SerializeField] private List<CharacterDisplayData> characterIcons = new List<CharacterDisplayData>();
     [SerializeField] private Button selectCharacterButton;
     [SerializeField] private Button readyButton;
     [SerializeField] private Button startGameButton;
     [SerializeField] private Button leaveRoomButton;
 
     [SerializeField] private string gameplaySceneName = "SampleScene";
+    [SerializeField] private float roomPlayersRefreshInterval = 2f;
+    [SerializeField] private float roomDetailsRefreshInterval = 2f;
+    [SerializeField] private float roomHeartbeatInterval = 10f;
 
     private bool isPlayerReady = false;
     private List<GameObject> playerListItems = new List<GameObject>();
+    private RoomClient.PlayerInfo[] currentRoomPlayers = new RoomClient.PlayerInfo[0];
+    private bool roomPlayersRequestInFlight = false;
+    private float nextRoomPlayersRefreshTime = 0f;
+    private float nextRoomDetailsRefreshTime = 0f;
+    private float nextRoomHeartbeatTime = 0f;
+    private bool gameplayLoadRequested = false;
 
     private void OnEnable()
     {
@@ -116,6 +135,8 @@ public class RoomUIManager : MonoBehaviour
             RoomClient.Instance.OnCreateRoomComplete += HandleCreateRoomComplete;
             RoomClient.Instance.OnJoinRoomComplete += HandleJoinRoomComplete;
             RoomClient.Instance.OnLeaveRoomComplete += HandleLeaveRoomComplete;
+            RoomClient.Instance.OnCloseRoomComplete += HandleCloseRoomComplete;
+            RoomClient.Instance.OnStartRoomComplete += HandleStartRoomComplete;
         }
 
         if (GameManager.Instance != null)
@@ -123,6 +144,14 @@ public class RoomUIManager : MonoBehaviour
             GameManager.Instance.OnStateChanged += HandleStateChanged;
             GameManager.Instance.OnError += HandleError;
             HandleStateChanged(GameManager.Instance.CurrentState);
+        }
+
+        if (RoomClient.Instance != null)
+        {
+            RoomClient.Instance.OnGetPlayersComplete += HandleGetPlayersComplete;
+            RoomClient.Instance.OnGetRoomDetailsComplete += HandleGetRoomDetailsComplete;
+            RoomClient.Instance.OnSetPlayerStatusComplete += HandlePlayerStatusComplete;
+            RoomClient.Instance.OnSetPlayerCharacterComplete += HandlePlayerDataChanged;
         }
 
         UpdateUI();
@@ -156,12 +185,57 @@ public class RoomUIManager : MonoBehaviour
             RoomClient.Instance.OnCreateRoomComplete -= HandleCreateRoomComplete;
             RoomClient.Instance.OnJoinRoomComplete -= HandleJoinRoomComplete;
             RoomClient.Instance.OnLeaveRoomComplete -= HandleLeaveRoomComplete;
+            RoomClient.Instance.OnCloseRoomComplete -= HandleCloseRoomComplete;
+            RoomClient.Instance.OnStartRoomComplete -= HandleStartRoomComplete;
         }
 
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnStateChanged -= HandleStateChanged;
             GameManager.Instance.OnError -= HandleError;
+        }
+
+        if (RoomClient.Instance != null)
+        {
+            RoomClient.Instance.OnGetPlayersComplete -= HandleGetPlayersComplete;
+            RoomClient.Instance.OnGetRoomDetailsComplete -= HandleGetRoomDetailsComplete;
+            RoomClient.Instance.OnSetPlayerStatusComplete -= HandlePlayerStatusComplete;
+            RoomClient.Instance.OnSetPlayerCharacterComplete -= HandlePlayerDataChanged;
+        }
+    }
+
+    private void Update()
+    {
+        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.RoomLobby)
+        {
+            return;
+        }
+
+        if (string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+        {
+            return;
+        }
+
+        if (GameManager.Instance.IsHost && RoomClient.Instance != null && Time.unscaledTime >= nextRoomHeartbeatTime)
+        {
+            RoomClient.Instance.SendHeartbeat(GameManager.Instance.CurrentRoomCode);
+            nextRoomHeartbeatTime = Time.unscaledTime + roomHeartbeatInterval;
+        }
+
+        if (!GameManager.Instance.IsHost && RoomClient.Instance != null && Time.unscaledTime >= nextRoomDetailsRefreshTime)
+        {
+            RoomClient.Instance.GetRoomDetails(GameManager.Instance.CurrentRoomCode);
+            nextRoomDetailsRefreshTime = Time.unscaledTime + roomDetailsRefreshInterval;
+        }
+
+        if (roomPlayersRequestInFlight)
+        {
+            return;
+        }
+
+        if (Time.unscaledTime >= nextRoomPlayersRefreshTime)
+        {
+            RequestRoomPlayersRefresh();
         }
     }
 
@@ -181,13 +255,17 @@ public class RoomUIManager : MonoBehaviour
         ClearJoinRoomUI();
     }
 
-    private void ShowRoomPanel()
+    public void ShowRoomPanel()
     {
         createRoomPanel.SetActive(false);
         joinRoomPanel.SetActive(false);
         roomPanel.SetActive(true);
         isPlayerReady = false;
+        gameplayLoadRequested = false;
         UpdateUI();
+        RequestRoomPlayersRefresh();
+        nextRoomDetailsRefreshTime = Time.unscaledTime + roomDetailsRefreshInterval;
+        nextRoomHeartbeatTime = Time.unscaledTime + roomHeartbeatInterval;
     }
 
     private void ClearCreateRoomUI()
@@ -274,12 +352,18 @@ public class RoomUIManager : MonoBehaviour
 
     private void OnReadyClicked()
     {
+        if (GameManager.Instance == null || RoomClient.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+        {
+            return;
+        }
+
         isPlayerReady = !isPlayerReady;
         Debug.Log($"Player ready status: {isPlayerReady}");
-        
-        if (readyButton != null)
+
+        string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
+        if (!string.IsNullOrEmpty(userId))
         {
-            readyButton.GetComponentInChildren<Text>().text = isPlayerReady ? "Not Ready" : "Ready";
+            RoomClient.Instance.SetPlayerReady(GameManager.Instance.CurrentRoomCode, userId, isPlayerReady);
         }
     }
 
@@ -297,8 +381,16 @@ public class RoomUIManager : MonoBehaviour
             return;
         }
 
-        GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
-        SceneManager.LoadScene(gameplaySceneName);
+        if (RoomClient.Instance == null)
+        {
+            Debug.LogError("RoomClient.Instance is null");
+            return;
+        }
+
+        if (startGameButton != null)
+            startGameButton.interactable = false;
+
+        RoomClient.Instance.StartRoom(GameManager.Instance.CurrentRoomCode);
     }
 
     private void OnLeaveRoomClicked()
@@ -310,7 +402,18 @@ public class RoomUIManager : MonoBehaviour
 
         if (leaveRoomButton != null)
             leaveRoomButton.interactable = false;
-        RoomClient.Instance.LeaveRoom(GameManager.Instance.CurrentRoomCode);
+
+        if (RoomClient.Instance == null)
+            return;
+
+        if (GameManager.Instance.IsHost)
+        {
+            RoomClient.Instance.CloseRoom(GameManager.Instance.CurrentRoomCode);
+        }
+        else
+        {
+            RoomClient.Instance.LeaveRoom(GameManager.Instance.CurrentRoomCode);
+        }
     }
 
     private void OnBackToModeSelect()
@@ -318,7 +421,17 @@ public class RoomUIManager : MonoBehaviour
         // Leave room if currently in one
         if (GameManager.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
         {
-            RoomClient.Instance.LeaveRoom(GameManager.Instance.CurrentRoomCode);
+            if (RoomClient.Instance != null)
+            {
+                if (GameManager.Instance.IsHost)
+                {
+                    RoomClient.Instance.CloseRoom(GameManager.Instance.CurrentRoomCode);
+                }
+                else
+                {
+                    RoomClient.Instance.LeaveRoom(GameManager.Instance.CurrentRoomCode);
+                }
+            }
         }
         if (GameManager.Instance != null)
         {
@@ -406,9 +519,7 @@ public class RoomUIManager : MonoBehaviour
 
         if (result.success)
         {
-            if (GameManager.Instance != null)
-                GameManager.Instance.ClearCurrentRoom();
-            ShowCreateRoomPanel();
+            ReturnToModeSelectAfterLeave();
         }
         else
         {
@@ -416,11 +527,53 @@ public class RoomUIManager : MonoBehaviour
         }
     }
 
+    private void HandleCloseRoomComplete(RoomClient.RoomResult result)
+    {
+        if (leaveRoomButton != null)
+            leaveRoomButton.interactable = true;
+
+        if (result.success)
+        {
+            ReturnToModeSelectAfterLeave();
+        }
+        else
+        {
+            Debug.LogError("Failed to close room: " + result.error);
+        }
+    }
+
+    private void HandleStartRoomComplete(RoomClient.RoomResult result)
+    {
+        if (startGameButton != null)
+            startGameButton.interactable = true;
+
+        if (!result.success)
+        {
+            Debug.LogError("Failed to start room: " + result.error);
+            return;
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
+        }
+
+        SceneManager.LoadScene(gameplaySceneName);
+    }
+
     private void HandleStateChanged(GameManager.GameState newState)
     {
         if (newState == GameManager.GameState.RoomLobby)
         {
-            ShowCreateRoomPanel();
+            if (GameManager.Instance != null && (GameManager.Instance.IsMultiplayer || !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode)))
+            {
+                ShowRoomPanel();
+                RequestRoomPlayersRefresh();
+            }
+            else
+            {
+                ShowCreateRoomPanel();
+            }
         }
         else if (newState == GameManager.GameState.Auth || newState == GameManager.GameState.MainMenu || 
                  newState == GameManager.GameState.ModeSelect || newState == GameManager.GameState.CharacterSelect)
@@ -460,8 +613,10 @@ public class RoomUIManager : MonoBehaviour
                 ? "Character: Not Selected"
                 : "Character: " + GameManager.Instance.SelectedCharacter;
 
+        UpdateLocalPlayerUI();
+
         // Update Player List
-        UpdatePlayerList();
+        RefreshPlayerList();
 
         // Update buttons
         if (selectCharacterButton != null)
@@ -470,6 +625,8 @@ public class RoomUIManager : MonoBehaviour
         if (readyButton != null)
             readyButton.interactable = true;
 
+        UpdateReadyButtonLabel();
+
         if (startGameButton != null)
             startGameButton.interactable = GameManager.Instance.IsHost;
 
@@ -477,7 +634,7 @@ public class RoomUIManager : MonoBehaviour
             leaveRoomButton.interactable = true;
     }
 
-    private void UpdatePlayerList()
+    private void RefreshPlayerList()
     {
         if (playerListContainer == null)
             return;
@@ -489,10 +646,26 @@ public class RoomUIManager : MonoBehaviour
         }
         playerListItems.Clear();
 
-        // TODO: Get actual player list from room data
-        if (GameManager.Instance != null)
+        if (GameManager.Instance == null)
         {
-            AddPlayerToList(GameManager.Instance.CurrentUsername, isPlayerReady, true);
+            return;
+        }
+
+        if (currentRoomPlayers != null && currentRoomPlayers.Length > 0)
+        {
+            foreach (var player in currentRoomPlayers)
+            {
+                if (player == null)
+                    continue;
+
+                bool isYou = !string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
+                             string.Equals(player.username, GameManager.Instance.CurrentUsername, System.StringComparison.OrdinalIgnoreCase);
+                AddPlayerToList(player.username, player.character, player.isReady, isYou);
+            }
+        }
+        else
+        {
+            AddPlayerToList(GameManager.Instance.CurrentUsername, GameManager.Instance.SelectedCharacter, isPlayerReady, true);
         }
     }
 
@@ -515,7 +688,7 @@ public class RoomUIManager : MonoBehaviour
             .FirstOrDefault(button => button != null && button.name.ToLowerInvariant().Contains(namePart));
     }
 
-    private void AddPlayerToList(string playerName, bool isReady, bool isYou)
+    private void AddPlayerToList(string playerName, string characterName, bool isReady, bool isYou)
     {
         if (playerListItemPrefab == null || playerListContainer == null)
             return;
@@ -523,12 +696,258 @@ public class RoomUIManager : MonoBehaviour
         GameObject item = Instantiate(playerListItemPrefab, playerListContainer);
         playerListItems.Add(item);
 
-        Text itemText = item.GetComponentInChildren<Text>();
-        if (itemText != null)
+        TMP_Text[] texts = item.GetComponentsInChildren<TMP_Text>(true);
+        string displayName = string.IsNullOrEmpty(playerName) ? "Unknown" : playerName;
+        if (isYou)
         {
-            string status = isReady ? "[READY]" : "[NOT READY]";
-            string marker = isYou ? " (You)" : "";
-            itemText.text = $"- {playerName} {status}{marker}";
+            displayName += " (You)";
         }
+        else
+        {
+            displayName += " (Player)";
+        }
+
+        string displayCharacter = string.IsNullOrEmpty(characterName) ? "Character: None" : "Character: " + characterName;
+        string displayStatus = isReady ? "[READY]" : "[NOT READY]";
+
+        if (texts.Length >= 3)
+        {
+            texts[0].text = displayName;
+            texts[1].text = displayCharacter;
+            texts[2].text = displayStatus;
+        }
+        else if (texts.Length >= 2)
+        {
+            texts[0].text = displayName;
+            texts[1].text = $"{displayCharacter} {displayStatus}";
+        }
+        else if (texts.Length == 1)
+        {
+            texts[0].text = $"{displayName} | {displayCharacter} | {displayStatus}";
+        }
+    }
+
+    private void UpdateLocalPlayerUI()
+    {
+        if (GameManager.Instance == null)
+            return;
+
+        string characterName = GameManager.Instance.SelectedCharacter;
+
+        if (yourCharacterDisplay != null)
+        {
+            yourCharacterDisplay.text = string.IsNullOrEmpty(characterName) ? "Character: None" : "Character: " + characterName;
+        }
+
+        if (yourCharacterImage != null)
+        {
+            CharacterDisplayData data = characterIcons.FirstOrDefault(x => x != null && !string.IsNullOrEmpty(x.characterName) &&
+                string.Equals(x.characterName, characterName, System.StringComparison.OrdinalIgnoreCase));
+            if (data != null && data.characterIcon != null)
+            {
+                yourCharacterImage.sprite = data.characterIcon;
+                yourCharacterImage.gameObject.SetActive(true);
+            }
+            else
+            {
+                yourCharacterImage.sprite = null;
+                yourCharacterImage.gameObject.SetActive(false);
+                if (!string.IsNullOrEmpty(characterName))
+                {
+                    Debug.LogWarning($"[RoomUIManager] No character icon mapping found for '{characterName}'. Check characterIcons names in Inspector.");
+                }
+            }
+        }
+    }
+
+    private void RequestRoomPlayersRefresh()
+    {
+        if (GameManager.Instance == null || RoomClient.Instance == null)
+            return;
+
+        if (string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+            return;
+
+        roomPlayersRequestInFlight = true;
+        nextRoomPlayersRefreshTime = Time.unscaledTime + roomPlayersRefreshInterval;
+        RoomClient.Instance.GetRoomPlayers(GameManager.Instance.CurrentRoomCode);
+    }
+
+    private void HandleGetPlayersComplete(RoomClient.RoomDetailsResult result)
+    {
+        roomPlayersRequestInFlight = false;
+
+        if (!result.success)
+        {
+            Debug.LogWarning("Failed to refresh room players: " + result.error);
+            if (ShouldForceReturnToMainMenu(result.error))
+            {
+                ReturnToMainMenuAfterRoomClosed();
+                return;
+            }
+
+            nextRoomPlayersRefreshTime = Time.unscaledTime + roomPlayersRefreshInterval;
+            return;
+        }
+
+        if (result.room != null && GameManager.Instance != null)
+        {
+            string roomCode = string.IsNullOrEmpty(result.room.roomCode) ? GameManager.Instance.CurrentRoomCode : result.room.roomCode;
+            string roomName = string.IsNullOrEmpty(result.room.name) ? GameManager.Instance.CurrentRoomName : result.room.name;
+            GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
+        }
+
+        currentRoomPlayers = result.players ?? new RoomClient.PlayerInfo[0];
+        RefreshPlayerList();
+        UpdateLocalPlayerUI();
+        nextRoomPlayersRefreshTime = Time.unscaledTime + roomPlayersRefreshInterval;
+    }
+
+    private void HandleGetRoomDetailsComplete(RoomClient.RoomDetailsResult result)
+    {
+        if (!result.success)
+        {
+            if (ShouldForceReturnToMainMenu(result.error))
+            {
+                ReturnToMainMenuAfterRoomClosed();
+            }
+
+            return;
+        }
+
+        if (result.room != null && GameManager.Instance != null)
+        {
+            string roomCode = string.IsNullOrEmpty(result.room.roomCode) ? GameManager.Instance.CurrentRoomCode : result.room.roomCode;
+            string roomName = string.IsNullOrEmpty(result.room.name) ? GameManager.Instance.CurrentRoomName : result.room.name;
+            GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
+
+            if (GameManager.Instance.IsMultiplayer && !GameManager.Instance.IsHost &&
+                result.room.status == "playing" && !gameplayLoadRequested)
+            {
+                gameplayLoadRequested = true;
+                GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
+                SceneManager.LoadScene(gameplaySceneName);
+            }
+        }
+    }
+
+    private void HandlePlayerDataChanged(RoomClient.RoomResult result)
+    {
+        if (!result.success)
+        {
+            return;
+        }
+
+        RequestRoomPlayersRefresh();
+    }
+
+    private void HandlePlayerStatusComplete(RoomClient.RoomResult result)
+    {
+        if (readyButton != null)
+            readyButton.interactable = true;
+
+        if (!result.success)
+        {
+            isPlayerReady = !isPlayerReady;
+            Debug.LogWarning("Failed to update ready status: " + result.error);
+            return;
+        }
+
+        RequestRoomPlayersRefresh();
+    }
+
+    private void UpdateReadyButtonLabel()
+    {
+        if (readyButton == null)
+            return;
+
+        TMP_Text tmpLabel = readyButton.GetComponentInChildren<TMP_Text>(true);
+        if (tmpLabel != null)
+        {
+            tmpLabel.text = string.Empty;
+            return;
+        }
+
+        Text legacyLabel = readyButton.GetComponentInChildren<Text>(true);
+        if (legacyLabel != null)
+        {
+            legacyLabel.text = string.Empty;
+        }
+    }
+
+    private void ReturnToModeSelectAfterLeave()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ClearCurrentRoom();
+            GameManager.Instance.SetMultiplayerMode(false);
+            if (GameManager.Instance.CurrentState != GameManager.GameState.ModeSelect)
+            {
+                GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+            }
+        }
+
+        currentRoomPlayers = new RoomClient.PlayerInfo[0];
+        roomPlayersRequestInFlight = false;
+        nextRoomPlayersRefreshTime = 0f;
+        nextRoomDetailsRefreshTime = 0f;
+        nextRoomHeartbeatTime = 0f;
+        isPlayerReady = false;
+        gameplayLoadRequested = false;
+        UpdateReadyButtonLabel();
+
+        HideAllRoomPanels();
+
+        ModeSelectUIManager modeSelectUIManager = FindAnyObjectByType<ModeSelectUIManager>(FindObjectsInactive.Include);
+        if (modeSelectUIManager != null)
+        {
+            modeSelectUIManager.ShowModeSelectPanel();
+        }
+    }
+
+    private void ReturnToMainMenuAfterRoomClosed()
+    {
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ClearCurrentRoom();
+            GameManager.Instance.SetMultiplayerMode(false);
+            if (GameManager.Instance.CurrentState != GameManager.GameState.MainMenu)
+            {
+                GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
+            }
+        }
+
+        currentRoomPlayers = new RoomClient.PlayerInfo[0];
+        roomPlayersRequestInFlight = false;
+        nextRoomPlayersRefreshTime = 0f;
+        nextRoomDetailsRefreshTime = 0f;
+        nextRoomHeartbeatTime = 0f;
+        isPlayerReady = false;
+        gameplayLoadRequested = false;
+        UpdateReadyButtonLabel();
+
+        HideAllRoomPanels();
+
+        MainMenuUIManager mainMenuUIManager = FindAnyObjectByType<MainMenuUIManager>(FindObjectsInactive.Include);
+        if (mainMenuUIManager != null)
+        {
+            mainMenuUIManager.ShowMainMenuUI();
+        }
+    }
+
+    private bool ShouldForceReturnToMainMenu(string error)
+    {
+        if (GameManager.Instance == null || GameManager.Instance.IsHost || !GameManager.Instance.IsMultiplayer)
+        {
+            return false;
+        }
+
+        if (string.IsNullOrEmpty(error))
+        {
+            return false;
+        }
+
+        string normalized = error.ToLowerInvariant();
+        return normalized.Contains("room not found") || normalized.Contains("already closed");
     }
 }
