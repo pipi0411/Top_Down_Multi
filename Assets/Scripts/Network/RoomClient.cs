@@ -6,8 +6,10 @@ using UnityEngine.Networking;
 
 public class RoomClient : MonoBehaviour
 {
-    public string baseUrl = "http://localhost:3000";
+    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
     public int timeoutSeconds = 10;
+
+    private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);
 
     [System.Serializable]
     public class CreateRoomRequest
@@ -284,7 +286,7 @@ public class RoomClient : MonoBehaviour
     {
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/rooms/create", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/rooms/create", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -304,7 +306,7 @@ public class RoomClient : MonoBehaviour
     {
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/rooms/join", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/rooms/join", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -324,7 +326,7 @@ public class RoomClient : MonoBehaviour
     {
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/rooms/leave", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/rooms/leave", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -344,7 +346,7 @@ public class RoomClient : MonoBehaviour
     {
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/rooms/close", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/rooms/close", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -364,7 +366,7 @@ public class RoomClient : MonoBehaviour
     {
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/rooms/heartbeat", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/rooms/heartbeat", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -382,7 +384,7 @@ public class RoomClient : MonoBehaviour
 
     IEnumerator GetRoomDetailsCoroutine(string roomCode, string token)
     {
-        string url = baseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode);
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode);
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -421,7 +423,7 @@ public class RoomClient : MonoBehaviour
 
     IEnumerator GetRoomPlayersCoroutine(string roomCode, string token)
     {
-        string url = baseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players";
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players";
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -463,7 +465,7 @@ public class RoomClient : MonoBehaviour
 
     IEnumerator SetPlayerStatusCoroutine(string roomCode, string userId, bool isReady, string token)
     {
-        string url = baseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players/" + UnityWebRequest.EscapeURL(userId) + "/status";
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players/" + UnityWebRequest.EscapeURL(userId) + "/status";
         var body = new ReadyStatusRequest { isReady = isReady };
         string json = JsonUtility.ToJson(body);
 
@@ -498,7 +500,7 @@ public class RoomClient : MonoBehaviour
 
     IEnumerator SetPlayerCharacterCoroutine(string roomCode, string userId, string character, string token)
     {
-        string url = baseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players/" + UnityWebRequest.EscapeURL(userId) + "/character";
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/players/" + UnityWebRequest.EscapeURL(userId) + "/character";
         var body = new CharacterRequest { character = character };
         string json = JsonUtility.ToJson(body);
 
@@ -530,7 +532,7 @@ public class RoomClient : MonoBehaviour
 
     IEnumerator StartRoomCoroutine(string roomCode, string token)
     {
-        string url = baseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/start";
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/start";
 
         using (var req = new UnityWebRequest(url, "POST"))
         {

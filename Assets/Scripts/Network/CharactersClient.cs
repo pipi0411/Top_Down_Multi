@@ -6,8 +6,10 @@ using UnityEngine.Networking;
 
 public class CharactersClient : MonoBehaviour
 {
-    public string baseUrl = "http://localhost:3000";
+    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
     public int timeoutSeconds = 10;
+
+    private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);
 
     private static CharactersClient instance;
     public static CharactersClient Instance
@@ -72,7 +74,7 @@ public class CharactersClient : MonoBehaviour
 
     IEnumerator GetAvailableCharactersCoroutine()
     {
-        string url = baseUrl + "/characters";
+        string url = EffectiveBaseUrl + "/characters";
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -121,7 +123,7 @@ public class CharactersClient : MonoBehaviour
 
     IEnumerator GetUserCharacterCoroutine(string userId, string token)
     {
-        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character";
+        string url = EffectiveBaseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character";
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -174,7 +176,7 @@ public class CharactersClient : MonoBehaviour
 
     IEnumerator SetUserCharacterCoroutine(string userId, string character, string token)
     {
-        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character/" + UnityWebRequest.EscapeURL(character);
+        string url = EffectiveBaseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/character/" + UnityWebRequest.EscapeURL(character);
 
         using (var req = new UnityWebRequest(url, "POST"))
         {
@@ -215,7 +217,7 @@ public class CharactersClient : MonoBehaviour
 
     IEnumerator GetUserProfileCoroutine(string userId, string token)
     {
-        string url = baseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/profile";
+        string url = EffectiveBaseUrl + "/characters/users/" + UnityWebRequest.EscapeURL(userId) + "/profile";
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();

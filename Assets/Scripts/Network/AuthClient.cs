@@ -6,9 +6,11 @@ using UnityEngine.Networking;
 
 public class AuthClient : MonoBehaviour
 {
-    public string baseUrl = "http://localhost:3000";
+    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
     public int timeoutSeconds = 10;
     [SerializeField] private float postLoginDelaySeconds = 0.5f;
+
+    private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);
 
     [System.Serializable]
     public class AuthRequest
@@ -79,7 +81,7 @@ public class AuthClient : MonoBehaviour
 
     IEnumerator ValidateTokenCoroutine(string token, Action<TokenValidationResult> callback)
     {
-        using (var req = UnityWebRequest.Get(baseUrl + "/auth/protected"))
+        using (var req = UnityWebRequest.Get(EffectiveBaseUrl + "/auth/protected"))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Authorization", "Bearer " + token);
@@ -202,7 +204,7 @@ public class AuthClient : MonoBehaviour
         var body = new AuthRequest { username = username, password = password };
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/auth/register", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/auth/register", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -249,7 +251,7 @@ public class AuthClient : MonoBehaviour
         var body = new AuthRequest { username = username, password = password };
         string json = JsonUtility.ToJson(body);
 
-        using (var req = new UnityWebRequest(baseUrl + "/auth/login", "POST"))
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/auth/login", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             req.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -338,7 +340,7 @@ public class AuthClient : MonoBehaviour
 
     IEnumerator FetchAndStoreUserProfileCoroutine(string token, string fallbackUsername, AuthResult result)
     {
-        using (var req = UnityWebRequest.Get(baseUrl + "/auth/protected"))
+        using (var req = UnityWebRequest.Get(EffectiveBaseUrl + "/auth/protected"))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Authorization", "Bearer " + token);
