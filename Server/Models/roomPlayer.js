@@ -12,5 +12,12 @@ const roomPlayerSchema = new mongoose.Schema(
 );
 
 roomPlayerSchema.index({ roomId: 1, userId: 1 }, { unique: true });
+roomPlayerSchema.index(
+    { roomId: 1, character: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { character: { $type: "string" } }
+    }
+);
 
 module.exports = mongoose.model("RoomPlayer", roomPlayerSchema);

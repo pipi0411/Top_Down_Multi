@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -18,8 +19,12 @@ public class CharacterSelectUIManager : MonoBehaviour
     private string selectedCharacter;
     private int selectedCharacterIndex = -1;
     private bool gameManagerSubscribed = false;
+    private bool pendingRoomCharacterUpdate = false;
+    private string confirmedCharacterBeforeSelection;
+    private bool multiplayerSelectionContext = false;
 
     private string[] availableCharacters = { "Knight", "Archer", "Mage", "Rogue", "Paladin" };
+    private readonly HashSet<string> takenRoomCharacters = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
     private readonly List<Button> boundCharacterButtons = new List<Button>();
 
     private void OnEnable()
@@ -28,6 +33,12 @@ public class CharacterSelectUIManager : MonoBehaviour
         
         // Print hierarchy for debugging
         PrintHierarchy();
+
+        selectedCharacterIndex = -1;
+        selectedCharacter = null;
+        pendingRoomCharacterUpdate = false;
+        takenRoomCharacters.Clear();
+        multiplayerSelectionContext = GameManager.Instance != null && GameManager.Instance.IsMultiplayer;
         
         // IMPORTANT: Try to find panel but don't return if not found - we'll handle it
         if (characterSelectPanel == null)
@@ -101,9 +112,22 @@ public class CharacterSelectUIManager : MonoBehaviour
         else
             Debug.LogWarning("CharacterSelectUIManager: backButton is NULL!");
 
+        if (CharactersClient.Instance != null)
+        {
+            CharactersClient.Instance.OnGetCharactersComplete += HandleGetCharactersComplete;
+            CharactersClient.Instance.OnSetUserCharacterComplete += HandleSetUserCharacterComplete;
+        }
+
+        if (RoomClient.Instance != null)
+        {
+            RoomClient.Instance.OnGetPlayersComplete += HandleGetRoomPlayersComplete;
+            RoomClient.Instance.OnSetPlayerCharacterComplete += HandleSetPlayerCharacterComplete;
+        }
+
         if (GameManager.Instance != null)
         {
             Debug.Log("CharacterSelectUIManager.OnEnable: GameManager found. Subscribing to state changes.");
+            confirmedCharacterBeforeSelection = GameManager.Instance.IsMultiplayer ? null : GameManager.Instance.SelectedCharacter;
             GameManager.Instance.OnStateChanged += HandleStateChanged;
             gameManagerSubscribed = true;
             HandleStateChanged(GameManager.Instance.CurrentState);
@@ -113,15 +137,6 @@ public class CharacterSelectUIManager : MonoBehaviour
             Debug.LogWarning("CharacterSelectUIManager.OnEnable: GameManager.Instance is NULL. Will retry in Update.");
         }
 
-        if (CharactersClient.Instance != null)
-        {
-            CharactersClient.Instance.OnGetCharactersComplete += HandleGetCharactersComplete;
-            CharactersClient.Instance.OnSetUserCharacterComplete += HandleSetUserCharacterComplete;
-            CharactersClient.Instance.GetAvailableCharacters();
-        }
-
-        // Reset selection when panel appears
-        selectedCharacterIndex = -1;
         if (characterNameText != null)
         {
             characterNameText.text = "Select a Character";
@@ -159,6 +174,12 @@ public class CharacterSelectUIManager : MonoBehaviour
             CharactersClient.Instance.OnSetUserCharacterComplete -= HandleSetUserCharacterComplete;
         }
 
+        if (RoomClient.Instance != null)
+        {
+            RoomClient.Instance.OnGetPlayersComplete -= HandleGetRoomPlayersComplete;
+            RoomClient.Instance.OnSetPlayerCharacterComplete -= HandleSetPlayerCharacterComplete;
+        }
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.OnStateChanged -= HandleStateChanged;
@@ -171,6 +192,7 @@ public class CharacterSelectUIManager : MonoBehaviour
         if (!gameManagerSubscribed && GameManager.Instance != null)
         {
             Debug.Log("CharacterSelectUIManager.Update: GameManager found! Subscribing now.");
+            confirmedCharacterBeforeSelection = GameManager.Instance.IsMultiplayer ? null : GameManager.Instance.SelectedCharacter;
             GameManager.Instance.OnStateChanged += HandleStateChanged;
             gameManagerSubscribed = true;
             HandleStateChanged(GameManager.Instance.CurrentState);
@@ -325,44 +347,52 @@ public class CharacterSelectUIManager : MonoBehaviour
 
     private void OnCharacterSelected(int index)
     {
-        if (index >= 0 && index < availableCharacters.Length)
+        if (pendingRoomCharacterUpdate)
         {
-            selectedCharacterIndex = index;
-            selectedCharacter = availableCharacters[index];
-            
-            Debug.Log($"Character selected: {selectedCharacter}");
+            return;
+        }
 
-            // Update UI to highlight selected character
+        if (index < 0 || index >= availableCharacters.Length)
+        {
+            return;
+        }
+
+        if (!IsCharacterSelectable(index))
+        {
+            string blockedCharacter = availableCharacters[index];
+            Debug.LogWarning($"Character '{blockedCharacter}' is already taken in this room.");
             if (characterNameText != null)
             {
-                characterNameText.text = selectedCharacter;
+                characterNameText.text = "Character already taken";
             }
+            return;
+        }
 
-            if (selectedCharacterImage != null)
+        selectedCharacterIndex = index;
+        selectedCharacter = availableCharacters[index];
+
+        Debug.Log($"Character selected: {selectedCharacter}");
+
+        if (characterNameText != null)
+        {
+            characterNameText.text = selectedCharacter;
+        }
+
+        if (selectedCharacterImage != null)
+        {
+            Sprite previewSprite = GetButtonSprite(index);
+            if (previewSprite != null)
             {
-                Sprite previewSprite = GetButtonSprite(index);
-                if (previewSprite != null)
-                {
-                    selectedCharacterImage.sprite = previewSprite;
-                    selectedCharacterImage.enabled = true;
-                }
+                selectedCharacterImage.sprite = previewSprite;
+                selectedCharacterImage.enabled = true;
             }
+        }
 
-            // Highlight selected button
-            for (int i = 0; i < characterButtons.Length; i++)
-            {
-                Image buttonImage = characterButtons[i].GetComponent<Image>();
-                if (i == index && buttonImage != null)
-                {
-                    buttonImage.color = Color.green;
-                }
-                else if (buttonImage != null)
-                {
-                    buttonImage.color = Color.white;
-                }
-            }
+        RefreshCharacterButtonStates();
 
-            if (GameManager.Instance != null)
+        if (GameManager.Instance != null)
+        {
+            if (!multiplayerSelectionContext)
             {
                 GameManager.Instance.SetSelectedCharacter(selectedCharacter);
             }
@@ -377,44 +407,55 @@ public class CharacterSelectUIManager : MonoBehaviour
             return;
         }
 
+        if (!IsCharacterSelectable(selectedCharacterIndex))
+        {
+            Debug.LogWarning($"Character '{selectedCharacter}' is already taken.");
+            if (characterNameText != null)
+            {
+                characterNameText.text = "Character already taken";
+            }
+            return;
+        }
+
         Debug.Log($"Character confirmed: {selectedCharacter}");
+
+        string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
+
+        // Multiplayer: wait for server confirmation before returning to RoomLobby
+        if (multiplayerSelectionContext)
+        {
+            if (pendingRoomCharacterUpdate)
+            {
+                return;
+            }
+
+            if (RoomClient.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode) || string.IsNullOrEmpty(userId))
+            {
+                Debug.LogWarning("[CharacterSelectUIManager] Cannot save room character because room or user info is missing.");
+                return;
+            }
+
+            pendingRoomCharacterUpdate = true;
+            if (selectButton != null)
+            {
+                selectButton.interactable = false;
+            }
+
+            Debug.Log("[CharacterSelectUIManager] Multiplayer selected → Waiting for server confirmation");
+
+            RoomClient.Instance.SetPlayerCharacterInRoom(GameManager.Instance.CurrentRoomCode, userId, selectedCharacter);
+
+            return;
+        }
+
         if (GameManager.Instance != null)
         {
             GameManager.Instance.SetSelectedCharacter(selectedCharacter);
         }
 
-        // Save character to backend if possible
-        string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
         if (!string.IsNullOrEmpty(userId) && CharactersClient.Instance != null)
         {
             CharactersClient.Instance.SetUserCharacter(userId, selectedCharacter);
-        }
-
-        // Multiplayer: set selection and return to RoomLobby (do NOT require local prefab)
-        if (GameManager.Instance != null && GameManager.Instance.IsMultiplayer)
-        {
-            Debug.Log("[CharacterSelectUIManager] Multiplayer selected → Returning to RoomLobby");
-
-            if (GameManager.Instance != null && RoomClient.Instance != null &&
-                !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode) &&
-                !string.IsNullOrEmpty(userId))
-            {
-                RoomClient.Instance.SetPlayerCharacterInRoom(GameManager.Instance.CurrentRoomCode, userId, selectedCharacter);
-            }
-
-            RoomUIManager roomUIManager = FindAnyObjectByType<RoomUIManager>(FindObjectsInactive.Include);
-            if (roomUIManager != null)
-            {
-                roomUIManager.ShowRoomPanel();
-            }
-
-            if (characterSelectPanel != null)
-                characterSelectPanel.SetActive(false);
-
-            if (GameManager.Instance != null)
-                GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
-
-            return;
         }
 
         // Single-player: require prefab and load game scene
@@ -443,10 +484,46 @@ public class CharacterSelectUIManager : MonoBehaviour
 
     private void OnBackClicked()
     {
-        Debug.Log("Back to Mode Select");
+        if (pendingRoomCharacterUpdate)
+        {
+            Debug.LogWarning("Please wait for the character update to finish before going back.");
+            return;
+        }
+
+        Debug.Log(multiplayerSelectionContext ? "Back to Room Lobby" : "Back to Mode Select");
+        if (GameManager.Instance != null && !multiplayerSelectionContext)
+        {
+            GameManager.Instance.SetSelectedCharacter(confirmedCharacterBeforeSelection);
+        }
         selectedCharacterIndex = -1;
         selectedCharacter = null;
-        GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+        if (selectButton != null)
+        {
+            selectButton.interactable = true;
+        }
+        RefreshCharacterButtonStates();
+        if (GameManager.Instance != null)
+        {
+            if (multiplayerSelectionContext)
+            {
+                if (characterSelectPanel != null)
+                {
+                    characterSelectPanel.SetActive(false);
+                }
+
+                RoomUIManager roomUIManager = FindAnyObjectByType<RoomUIManager>(FindObjectsInactive.Include);
+                if (roomUIManager != null)
+                {
+                    roomUIManager.ShowRoomPanel();
+                }
+
+                GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+            }
+            else
+            {
+                GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+            }
+        }
     }
 
     private void HandleStateChanged(GameManager.GameState newState)
@@ -482,8 +559,47 @@ public class CharacterSelectUIManager : MonoBehaviour
         Debug.Log($"[CharacterSelectUIManager.HandleStateChanged] Setting characterSelectPanel.SetActive({shouldShow})");
         
         characterSelectPanel.SetActive(shouldShow);
-        
+
         Debug.Log($"[CharacterSelectUIManager.HandleStateChanged] After SetActive - panel.activeSelf = {characterSelectPanel.activeSelf}, panel.activeInHierarchy = {characterSelectPanel.activeInHierarchy}");
+
+        if (shouldShow)
+        {
+            selectedCharacterIndex = -1;
+            selectedCharacter = null;
+            pendingRoomCharacterUpdate = false;
+
+            if (selectButton != null)
+            {
+                selectButton.interactable = true;
+            }
+
+            if (characterNameText != null)
+            {
+                characterNameText.text = "Select a Character";
+            }
+
+            if (selectedCharacterImage != null)
+            {
+                selectedCharacterImage.sprite = null;
+                selectedCharacterImage.enabled = false;
+            }
+
+            if (GameManager.Instance != null)
+            {
+                multiplayerSelectionContext = GameManager.Instance.IsMultiplayer;
+                confirmedCharacterBeforeSelection = multiplayerSelectionContext ? null : GameManager.Instance.SelectedCharacter;
+            }
+
+            takenRoomCharacters.Clear();
+
+            RefreshAvailableCharacters();
+
+            if (RoomClient.Instance != null && GameManager.Instance != null && multiplayerSelectionContext &&
+                !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+            {
+                RoomClient.Instance.GetRoomPlayers(GameManager.Instance.CurrentRoomCode);
+            }
+        }
     }
 
     private void HandleGetCharactersComplete(CharactersClient.CharactersListResult result)
@@ -495,20 +611,143 @@ public class CharacterSelectUIManager : MonoBehaviour
         }
 
         availableCharacters = result.characters;
-
-        for (int i = 0; i < characterButtons.Length && i < availableCharacters.Length; i++)
+        if (multiplayerSelectionContext)
         {
-            if (characterButtons[i] == null)
+            ApplyTakenCharacters(result.takenCharacters);
+        }
+        else
+        {
+            takenRoomCharacters.Clear();
+        }
+        RefreshCharacterButtonStates();
+
+        Debug.Log("CharacterSelectUIManager: Characters loaded from backend.");
+    }
+
+    private void HandleGetRoomPlayersComplete(RoomClient.RoomDetailsResult result)
+    {
+        if (!result.success || result.players == null)
+        {
+            Debug.LogWarning($"Failed to load room players: {result.error}");
+            return;
+        }
+
+        if (GameManager.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(result.requestedRoomCode) &&
+            !string.Equals(result.requestedRoomCode, GameManager.Instance.CurrentRoomCode, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        takenRoomCharacters.Clear();
+
+        string currentUsername = GameManager.Instance != null ? GameManager.Instance.CurrentUsername : null;
+        foreach (var player in result.players)
+        {
+            if (player == null || string.IsNullOrEmpty(player.character))
                 continue;
 
-            TMP_Text buttonText = characterButtons[i].GetComponentInChildren<TMP_Text>(true);
-            if (buttonText != null)
+            bool isSelf = !string.IsNullOrEmpty(currentUsername) &&
+                          !string.IsNullOrEmpty(player.username) &&
+                          string.Equals(player.username, currentUsername, StringComparison.OrdinalIgnoreCase);
+            if (!isSelf)
             {
-                buttonText.text = "";
+                takenRoomCharacters.Add(player.character);
             }
         }
 
-        Debug.Log("CharacterSelectUIManager: Characters loaded from backend.");
+        if (multiplayerSelectionContext &&
+            !string.IsNullOrEmpty(selectedCharacter) &&
+            takenRoomCharacters.Contains(selectedCharacter) &&
+            (string.IsNullOrEmpty(confirmedCharacterBeforeSelection) ||
+             !string.Equals(selectedCharacter, confirmedCharacterBeforeSelection, StringComparison.OrdinalIgnoreCase)))
+        {
+            selectedCharacter = confirmedCharacterBeforeSelection;
+            selectedCharacterIndex = FindCharacterIndex(selectedCharacter);
+            RefreshSelectionPreview();
+        }
+
+        RefreshCharacterButtonStates();
+    }
+
+    private void HandleSetPlayerCharacterComplete(RoomClient.RoomResult result)
+    {
+        pendingRoomCharacterUpdate = false;
+
+        if (selectButton != null)
+        {
+            selectButton.interactable = true;
+        }
+
+        if (!result.success)
+        {
+            Debug.LogWarning($"Failed to save room character: {result.error}");
+            if (multiplayerSelectionContext)
+            {
+                selectedCharacter = null;
+                selectedCharacterIndex = -1;
+                RefreshSelectionPreview();
+                if (GameManager.Instance != null)
+                {
+                    GameManager.Instance.SetRoomSelectedCharacter(null);
+                }
+            }
+            else if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetSelectedCharacter(confirmedCharacterBeforeSelection);
+                selectedCharacter = confirmedCharacterBeforeSelection;
+                selectedCharacterIndex = FindCharacterIndex(selectedCharacter);
+                RefreshSelectionPreview();
+            }
+
+            if (characterNameText != null && !string.IsNullOrEmpty(result.error))
+            {
+                characterNameText.text = result.error;
+            }
+            return;
+        }
+
+        confirmedCharacterBeforeSelection = selectedCharacter;
+
+        if (multiplayerSelectionContext && GameManager.Instance != null)
+        {
+            GameManager.Instance.SetRoomSelectedCharacter(selectedCharacter);
+        }
+
+        if (!multiplayerSelectionContext)
+        {
+            string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
+            if (!string.IsNullOrEmpty(userId) && CharactersClient.Instance != null)
+            {
+                CharactersClient.Instance.SetUserCharacter(userId, selectedCharacter);
+            }
+        }
+
+        RefreshCharacterButtonStates();
+
+        RoomUIManager roomUIManager = FindAnyObjectByType<RoomUIManager>(FindObjectsInactive.Include);
+        if (roomUIManager != null)
+        {
+            roomUIManager.ShowRoomPanel();
+        }
+
+        if (characterSelectPanel != null)
+        {
+            characterSelectPanel.SetActive(false);
+        }
+
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+            if (multiplayerSelectionContext)
+            {
+                GameManager.Instance.SetRoomSelectedCharacter(selectedCharacter);
+            }
+        }
     }
 
     private Sprite GetButtonSprite(int index)
@@ -525,6 +764,150 @@ public class CharacterSelectUIManager : MonoBehaviour
             return childImage.sprite;
 
         return null;
+    }
+
+    private void RefreshAvailableCharacters()
+    {
+        if (CharactersClient.Instance == null)
+            return;
+
+        string roomCode = null;
+        if (multiplayerSelectionContext && GameManager.Instance != null)
+        {
+            roomCode = GameManager.Instance.CurrentRoomCode;
+        }
+
+        CharactersClient.Instance.GetAvailableCharacters(roomCode);
+    }
+
+    private void RefreshCharacterButtonStates()
+    {
+        if (characterButtons == null)
+            return;
+
+        for (int i = 0; i < characterButtons.Length; i++)
+        {
+            if (characterButtons[i] == null)
+                continue;
+
+            bool selectable = IsCharacterSelectable(i);
+            bool isSelected = i == selectedCharacterIndex && !string.IsNullOrEmpty(selectedCharacter);
+            characterButtons[i].interactable = !pendingRoomCharacterUpdate && (selectable || isSelected);
+
+            Image buttonImage = characterButtons[i].GetComponent<Image>();
+            if (buttonImage != null)
+            {
+                if (isSelected)
+                {
+                    buttonImage.color = Color.green;
+                }
+                else if (!selectable)
+                {
+                    buttonImage.color = Color.gray;
+                }
+                else
+                {
+                    buttonImage.color = Color.white;
+                }
+            }
+        }
+    }
+
+    private void RefreshSelectionPreview()
+    {
+        if (selectedCharacterIndex < 0 || selectedCharacterIndex >= availableCharacters.Length)
+        {
+            if (selectedCharacterImage != null)
+            {
+                selectedCharacterImage.sprite = null;
+                selectedCharacterImage.enabled = false;
+            }
+
+            if (characterNameText != null)
+            {
+                characterNameText.text = "Select a Character";
+            }
+
+            RefreshCharacterButtonStates();
+            return;
+        }
+
+        if (characterNameText != null)
+        {
+            characterNameText.text = selectedCharacter;
+        }
+
+        if (selectedCharacterImage != null)
+        {
+            Sprite previewSprite = GetButtonSprite(selectedCharacterIndex);
+            if (previewSprite != null)
+            {
+                selectedCharacterImage.sprite = previewSprite;
+                selectedCharacterImage.enabled = true;
+            }
+        }
+
+        RefreshCharacterButtonStates();
+    }
+
+    private void ApplyTakenCharacters(string[] takenCharacters)
+    {
+        takenRoomCharacters.Clear();
+        if (takenCharacters == null)
+        {
+            return;
+        }
+
+        string ownCharacter = GameManager.Instance != null ? GameManager.Instance.RoomSelectedCharacter : null;
+        foreach (var character in takenCharacters)
+        {
+            if (string.IsNullOrEmpty(character))
+                continue;
+
+            if (!string.IsNullOrEmpty(ownCharacter) &&
+                string.Equals(character, ownCharacter, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            takenRoomCharacters.Add(character);
+        }
+    }
+
+    private bool IsCharacterSelectable(int index)
+    {
+        if (availableCharacters == null || index < 0 || index >= availableCharacters.Length)
+            return false;
+
+        return IsCharacterSelectable(availableCharacters[index]);
+    }
+
+    private bool IsCharacterSelectable(string character)
+    {
+        if (string.IsNullOrEmpty(character))
+            return false;
+
+        if (!takenRoomCharacters.Contains(character))
+            return true;
+
+        return !string.IsNullOrEmpty(selectedCharacter) &&
+               string.Equals(selectedCharacter, character, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private int FindCharacterIndex(string character)
+    {
+        if (string.IsNullOrEmpty(character) || availableCharacters == null)
+            return -1;
+
+        for (int i = 0; i < availableCharacters.Length; i++)
+        {
+            if (string.Equals(availableCharacters[i], character, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
     }
 
     private void HandleSetUserCharacterComplete(CharactersClient.CharacterResult result)

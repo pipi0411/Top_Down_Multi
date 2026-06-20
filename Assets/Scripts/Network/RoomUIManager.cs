@@ -262,6 +262,7 @@ public class RoomUIManager : MonoBehaviour
         roomPanel.SetActive(true);
         isPlayerReady = false;
         gameplayLoadRequested = false;
+        currentRoomPlayers = new RoomClient.PlayerInfo[0];
         UpdateUI();
         RequestRoomPlayersRefresh();
         nextRoomDetailsRefreshTime = Time.unscaledTime + roomDetailsRefreshInterval;
@@ -608,10 +609,11 @@ public class RoomUIManager : MonoBehaviour
                 : "Room Code: " + GameManager.Instance.CurrentRoomCode;
 
         // Update Your Character Display
+        string localCharacterName = GetLocalCharacterName();
         if (yourCharacterDisplay != null)
-            yourCharacterDisplay.text = string.IsNullOrEmpty(GameManager.Instance.SelectedCharacter)
+            yourCharacterDisplay.text = string.IsNullOrEmpty(localCharacterName)
                 ? "Character: Not Selected"
-                : "Character: " + GameManager.Instance.SelectedCharacter;
+                : "Character: " + localCharacterName;
 
         UpdateLocalPlayerUI();
 
@@ -628,7 +630,10 @@ public class RoomUIManager : MonoBehaviour
         UpdateReadyButtonLabel();
 
         if (startGameButton != null)
-            startGameButton.interactable = GameManager.Instance.IsHost;
+        {
+            bool hasLocalCharacter = !string.IsNullOrEmpty(GetLocalCharacterName());
+            startGameButton.interactable = GameManager.Instance.IsHost && hasLocalCharacter;
+        }
 
         if (leaveRoomButton != null)
             leaveRoomButton.interactable = true;
@@ -665,7 +670,7 @@ public class RoomUIManager : MonoBehaviour
         }
         else
         {
-            AddPlayerToList(GameManager.Instance.CurrentUsername, GameManager.Instance.SelectedCharacter, isPlayerReady, true);
+            AddPlayerToList(GameManager.Instance.CurrentUsername, GetLocalCharacterName(), isPlayerReady, true);
         }
     }
 
@@ -732,7 +737,7 @@ public class RoomUIManager : MonoBehaviour
         if (GameManager.Instance == null)
             return;
 
-        string characterName = GameManager.Instance.SelectedCharacter;
+        string characterName = GetLocalCharacterName();
 
         if (yourCharacterDisplay != null)
         {
@@ -760,6 +765,37 @@ public class RoomUIManager : MonoBehaviour
         }
     }
 
+    private string GetLocalCharacterName()
+    {
+        if (GameManager.Instance == null)
+            return null;
+
+        if (!GameManager.Instance.IsMultiplayer)
+            return GameManager.Instance.SelectedCharacter;
+
+        if (currentRoomPlayers != null && currentRoomPlayers.Length > 0)
+        {
+            foreach (var player in currentRoomPlayers)
+            {
+                if (player == null || string.IsNullOrEmpty(player.username))
+                    continue;
+
+                if (!string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
+                    string.Equals(player.username, GameManager.Instance.CurrentUsername, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return player.character;
+                }
+            }
+        }
+
+        if (GameManager.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.RoomSelectedCharacter))
+        {
+            return GameManager.Instance.RoomSelectedCharacter;
+        }
+
+        return null;
+    }
+
     private void RequestRoomPlayersRefresh()
     {
         if (GameManager.Instance == null || RoomClient.Instance == null)
@@ -776,6 +812,18 @@ public class RoomUIManager : MonoBehaviour
     private void HandleGetPlayersComplete(RoomClient.RoomDetailsResult result)
     {
         roomPlayersRequestInFlight = false;
+
+        if (GameManager.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+        {
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(result.requestedRoomCode) &&
+            !string.Equals(result.requestedRoomCode, GameManager.Instance.CurrentRoomCode, System.StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogWarning($"Ignoring stale room players response for '{result.requestedRoomCode}'. Current room is '{GameManager.Instance.CurrentRoomCode}'.");
+            return;
+        }
 
         if (!result.success)
         {

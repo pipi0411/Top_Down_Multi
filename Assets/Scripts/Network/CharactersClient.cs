@@ -41,7 +41,11 @@ public class CharactersClient : MonoBehaviour
     }
 
     [Serializable]
-    public class CharactersListResponse { public string[] characters; }
+    public class CharactersListResponse
+    {
+        public string[] characters;
+        public string[] takenCharacters;
+    }
 
     [Serializable]
     public class CharacterResponse { public string character; }
@@ -58,7 +62,13 @@ public class CharactersClient : MonoBehaviour
         public string createdAt;
     }
 
-    public class CharactersListResult { public bool success; public string error; public string[] characters; }
+    public class CharactersListResult
+    {
+        public bool success;
+        public string error;
+        public string[] characters;
+        public string[] takenCharacters;
+    }
     public class CharacterResult { public bool success; public string error; public string character; }
     public class UserProfileResult { public bool success; public string error; public string userId; public string username; public string selectedCharacter; }
 
@@ -67,14 +77,19 @@ public class CharactersClient : MonoBehaviour
     public event Action<CharacterResult> OnSetUserCharacterComplete;
     public event Action<UserProfileResult> OnGetUserProfileComplete;
 
-    public void GetAvailableCharacters()
+    public void GetAvailableCharacters(string roomCode = null)
     {
-        StartCoroutine(GetAvailableCharactersCoroutine());
+        StartCoroutine(GetAvailableCharactersCoroutine(roomCode));
     }
 
-    IEnumerator GetAvailableCharactersCoroutine()
+    IEnumerator GetAvailableCharactersCoroutine(string roomCode)
     {
         string url = EffectiveBaseUrl + "/characters";
+        if (!string.IsNullOrEmpty(roomCode))
+        {
+            url += "?roomCode=" + UnityWebRequest.EscapeURL(roomCode);
+        }
+
         using (var req = UnityWebRequest.Get(url))
         {
             req.downloadHandler = new DownloadHandlerBuffer();
@@ -95,6 +110,7 @@ public class CharactersClient : MonoBehaviour
                     var res = JsonUtility.FromJson<CharactersListResponse>(req.downloadHandler.text);
                     result.success = true;
                     result.characters = res.characters;
+                    result.takenCharacters = res.takenCharacters;
                 }
                 catch (Exception e)
                 {

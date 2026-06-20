@@ -127,6 +127,17 @@ public class NetworkButtons : MonoBehaviour
     /// <summary>
     /// Setup ConnectionApproval callback để xử lý spawn prefab dựa trên nhân vật
     /// </summary>
+    private string GetCharacterForNetworkStartup()
+    {
+        if (GameManager.Instance == null)
+            return null;
+
+        if (GameManager.Instance.IsMultiplayer)
+            return GameManager.Instance.RoomSelectedCharacter;
+
+        return GameManager.Instance.SelectedCharacter;
+    }
+
     private void SetupConnectionApproval()
     {
         if (NetworkManager.Singleton == null)
@@ -163,8 +174,8 @@ public class NetworkButtons : MonoBehaviour
         
         if (string.IsNullOrEmpty(clientCharacter))
         {
-            // Nếu client không gửi, sử dụng character từ GameManager
-            clientCharacter = GameManager.Instance.SelectedCharacter;
+            // Nếu client không gửi, sử dụng character đã lưu cho room hiện tại
+            clientCharacter = GetCharacterForNetworkStartup();
         }
 
         Debug.Log($"[NetworkButtons.ApprovalCheck] Client character: {clientCharacter}");
@@ -208,7 +219,7 @@ public class NetworkButtons : MonoBehaviour
 
         Debug.Log("[NetworkButtons] Starting as Client...");
 
-        string selectedCharacter = GameManager.Instance.SelectedCharacter;
+        string selectedCharacter = GetCharacterForNetworkStartup();
         Debug.Log($"[NetworkButtons] Client starting with character: {selectedCharacter}");
 
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
@@ -256,12 +267,12 @@ public class NetworkButtons : MonoBehaviour
 
         Debug.Log("[NetworkButtons] Starting as Host...");
 
-        string selectedCharacter = GameManager.Instance.SelectedCharacter;
+        string selectedCharacter = GetCharacterForNetworkStartup();
         Debug.Log($"[NetworkButtons] Host starting with character: {selectedCharacter}");
 
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
 
-        // Host sử dụng GameManager.SelectedCharacter
+        // Host uses SelectedCharacter (single-player) or RoomSelectedCharacter (multiplayer).
         isNetworkStarted = true;
 
         if (!NetworkManager.Singleton.StartHost())

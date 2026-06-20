@@ -1,7 +1,6 @@
 const express = require("express");
 const Room = require("../Models/room");
 const RoomPlayer = require("../Models/roomPlayer");
-const User = require("../Models/user");
 const authMiddleware = require("../Middleware/authMiddleware");
 
 const router = express.Router();
@@ -40,12 +39,10 @@ router.post("/create", authMiddleware, async (req, res) => {
             status: "waiting"
         });
 
-        const hostUser = await User.findById(req.user.id).select("selectedCharacter");
-
         await RoomPlayer.create({
             roomId: room._id,
             userId: req.user.id,
-            character: hostUser?.selectedCharacter || null,
+            character: null,
             role: "owner"
         });
 
@@ -304,6 +301,21 @@ router.post("/:roomCode/players/:userId/character", authMiddleware, async (req, 
             return res.status(404).json({ message: "Room not found or already closed" });
         }
 
+        const conflictingPlayer = await RoomPlayer.findOne({
+            roomId: room._id,
+            character,
+            userId: { $ne: userId }
+        }).populate("userId", "username");
+
+        if (conflictingPlayer) {
+            return res.status(409).json({
+                message: "Character already taken",
+                character,
+                takenBy: conflictingPlayer.userId?._id,
+                username: conflictingPlayer.userId?.username
+            });
+        }
+
         const roomPlayer = await RoomPlayer.findOneAndUpdate(
             { roomId: room._id, userId },
             { character },
@@ -321,6 +333,9 @@ router.post("/:roomCode/players/:userId/character", authMiddleware, async (req, 
             username: roomPlayer.userId?.username
         });
     } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ message: "Character already taken" });
+        }
         return res.status(500).json({ message: error.message });
     }
 });

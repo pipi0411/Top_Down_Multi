@@ -25,6 +25,7 @@ public class GameManager : MonoBehaviour
     public string CurrentUsername { get; private set; }
     public bool IsMultiplayer { get; private set; } = false;
     public string SelectedCharacter { get; private set; }
+    public string RoomSelectedCharacter { get; private set; }
 
     public event Action<GameState> OnStateChanged;
     public event Action<string> OnError;
@@ -133,6 +134,11 @@ public class GameManager : MonoBehaviour
 
     public void SetCurrentRoom(string roomCode, string roomName, bool isHost)
     {
+        if (!string.Equals(CurrentRoomCode, roomCode, StringComparison.OrdinalIgnoreCase))
+        {
+            RoomSelectedCharacter = null;
+        }
+
         CurrentRoomCode = roomCode;
         CurrentRoomName = roomName;
         IsHost = isHost;
@@ -143,6 +149,7 @@ public class GameManager : MonoBehaviour
         CurrentRoomCode = null;
         CurrentRoomName = null;
         IsHost = false;
+        RoomSelectedCharacter = null;
     }
 
     public void SetRelayJoinCode(string joinCode)
@@ -158,6 +165,11 @@ public class GameManager : MonoBehaviour
     public void SetSelectedCharacter(string character)
     {
         SelectedCharacter = character;
+    }
+
+    public void SetRoomSelectedCharacter(string character)
+    {
+        RoomSelectedCharacter = character;
     }
 
     private void HandleLoginComplete(AuthClient.AuthResult result)
@@ -223,6 +235,7 @@ public class GameManager : MonoBehaviour
         CurrentUsername = null;
         IsMultiplayer = false;
         SelectedCharacter = null;
+        RoomSelectedCharacter = null;
         Debug.Log("[Logout Flow] ✓ Cleared all data, returning to Auth state (Login screen)");
         ChangeState(GameState.Auth);
     }

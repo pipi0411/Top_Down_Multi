@@ -84,6 +84,15 @@ public class RoomClient : MonoBehaviour
         public string roomCode;
     }
 
+    [System.Serializable]
+    private class ErrorResponse
+    {
+        public string message;
+        public string character;
+        public string takenBy;
+        public string username;
+    }
+
     public class RoomResult
     {
         public bool success;
@@ -95,6 +104,7 @@ public class RoomClient : MonoBehaviour
     {
         public bool success;
         public string error;
+        public string requestedRoomCode;
         public Room room;
         public PlayerInfo[] players;
     }
@@ -393,7 +403,7 @@ public class RoomClient : MonoBehaviour
 
             yield return req.SendWebRequest();
 
-            var result = new RoomDetailsResult();
+            var result = new RoomDetailsResult { requestedRoomCode = roomCode };
             if (req.result != UnityWebRequest.Result.Success)
             {
                 result.success = false;
@@ -432,7 +442,7 @@ public class RoomClient : MonoBehaviour
 
             yield return req.SendWebRequest();
 
-            var result = new RoomDetailsResult();
+            var result = new RoomDetailsResult { requestedRoomCode = roomCode };
             if (req.result != UnityWebRequest.Result.Success)
             {
                 result.success = false;
@@ -518,7 +528,7 @@ public class RoomClient : MonoBehaviour
             if (req.result != UnityWebRequest.Result.Success)
             {
                 result.success = false;
-                result.error = req.downloadHandler != null ? req.downloadHandler.text : req.error;
+                result.error = GetErrorMessage(req, "Set Player Character");
                 Debug.LogError("SetPlayerCharacter error: " + result.error);
             }
             else
@@ -570,6 +580,10 @@ public class RoomClient : MonoBehaviour
             if (req.responseCode == 401)
             {
                 result.error = "Authentication failed. Please login again.";
+            }
+            else if (req.responseCode == 409)
+            {
+                result.error = "Character already taken.";
             }
             else if (req.responseCode == 403)
             {
@@ -639,5 +653,37 @@ public class RoomClient : MonoBehaviour
         }
 
         return result;
+    }
+
+    private string GetErrorMessage(UnityWebRequest req, string operation)
+    {
+        string responseText = req.downloadHandler != null ? req.downloadHandler.text : string.Empty;
+        if (!string.IsNullOrEmpty(responseText))
+        {
+            try
+            {
+                ErrorResponse errorResponse = JsonUtility.FromJson<ErrorResponse>(responseText);
+                if (errorResponse != null && !string.IsNullOrEmpty(errorResponse.message))
+                {
+                    return errorResponse.message;
+                }
+            }
+            catch (Exception)
+            {
+                // Fall back to the raw response below.
+            }
+        }
+
+        if (!string.IsNullOrEmpty(responseText))
+        {
+            return responseText;
+        }
+
+        if (!string.IsNullOrEmpty(req.error))
+        {
+            return req.error;
+        }
+
+        return operation + " failed.";
     }
 }

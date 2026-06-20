@@ -1,15 +1,39 @@
 const express = require("express");
 const User = require("../Models/user");
+const Room = require("../Models/room");
+const RoomPlayer = require("../Models/roomPlayer");
 const authMiddleware = require("../Middleware/authMiddleware");
 
 const router = express.Router();
 
 const AVAILABLE_CHARACTERS = ["Knight", "Archer", "Mage", "Rogue", "Paladin"];
 
-router.get("/", (req, res) => {
+router.get("/", async (req, res) => {
     try {
+        const roomCode = (req.query?.roomCode || "").trim().toUpperCase();
+
+        if (!roomCode) {
+            return res.json({
+                characters: AVAILABLE_CHARACTERS
+            });
+        }
+
+        const room = await Room.findOne({ roomCode, status: { $ne: "closed" } });
+        if (!room) {
+            return res.json({
+                characters: AVAILABLE_CHARACTERS,
+                takenCharacters: []
+            });
+        }
+
+        const roomPlayers = await RoomPlayer.find({ roomId: room._id }).select("character");
+        const takenCharacters = roomPlayers
+            .map((player) => (player.character || "").trim())
+            .filter((character) => character.length > 0);
+
         return res.json({
-            characters: AVAILABLE_CHARACTERS
+            characters: AVAILABLE_CHARACTERS,
+            takenCharacters
         });
     } catch (error) {
         return res.status(500).json({ message: error.message });
