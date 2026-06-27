@@ -57,6 +57,9 @@ router.post("/create", authMiddleware, async (req, res) => {
             }
         });
     } catch (error) {
+        if (error?.code === 11000) {
+            return res.status(409).json({ message: "Character already taken" });
+        }
         return res.status(500).json({ message: error.message });
     }
 });
@@ -333,9 +336,6 @@ router.post("/:roomCode/players/:userId/character", authMiddleware, async (req, 
             username: roomPlayer.userId?.username
         });
     } catch (error) {
-        if (error?.code === 11000) {
-            return res.status(409).json({ message: "Character already taken" });
-        }
         return res.status(500).json({ message: error.message });
     }
 });

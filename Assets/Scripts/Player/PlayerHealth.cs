@@ -5,6 +5,49 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Player")]
     [SerializeField] private PlayerConfig playerConfig;
+
+    public PlayerConfig PlayerConfig => playerConfig;
+
+    private void Awake()
+    {
+        if (playerConfig != null)
+        {
+            playerConfig = Instantiate(playerConfig);
+        }
+    }
+
+    private void Start()
+    {
+        if (playerConfig != null)
+        {
+            if (GameManager.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.CurrentUsername))
+            {
+                playerConfig.Name = GameManager.Instance.CurrentUsername;
+            }
+
+            playerConfig.CurrentHealth = playerConfig.MaxHealth;
+            playerConfig.Armor = playerConfig.MaxArmor;
+
+            if (IsLocalPlayer())
+            {
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.SetPlayerConfig(playerConfig);
+                }
+            }
+        }
+    }
+
+    private bool IsLocalPlayer()
+    {
+        var netObj = GetComponent<Unity.Netcode.NetworkObject>();
+        if (netObj != null)
+        {
+            return netObj.IsOwner;
+        }
+        return true;
+    }
+
     private void Update()
     {
         if (Keyboard.current == null)

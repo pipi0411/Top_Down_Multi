@@ -196,7 +196,9 @@ public class CharactersClient : MonoBehaviour
 
         using (var req = new UnityWebRequest(url, "POST"))
         {
+            req.uploadHandler = new UploadHandlerRaw(new byte[0]); // Send empty body for POST request
             req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
             req.SetRequestHeader("Authorization", "Bearer " + token);
             req.timeout = timeoutSeconds;
 

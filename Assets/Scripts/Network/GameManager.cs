@@ -73,7 +73,8 @@ public class GameManager : MonoBehaviour
                 Debug.Log($"[Token Validation] Result: {(validation != null && validation.isValid ? "VALID" : "INVALID")}");
                 if (validation != null && validation.isValid)
                 {
-                    Debug.Log($"[Token Validation] ✓ Token is valid. Entering MainMenu for {CurrentUsername}");
+                    Debug.Log($"[Token Validation] ✓ Token is valid. Syncing profile and entering MainMenu for {CurrentUsername}");
+                    FetchAndSyncProfile();
                     ChangeState(GameState.MainMenu);
                 }
                 else
@@ -189,7 +190,8 @@ public class GameManager : MonoBehaviour
 
             CurrentUsername = AuthClient.Instance.GetStoredUsername();
             Debug.Log($"[Login Flow] ✓ Login successful for user: {CurrentUsername}");
-            Debug.Log($"[Login Flow] → Changing to MainMenu state");
+            Debug.Log($"[Login Flow] → Syncing profile and changing to MainMenu state");
+            FetchAndSyncProfile();
             ChangeState(GameState.MainMenu);
         }
         else
@@ -238,6 +240,35 @@ public class GameManager : MonoBehaviour
         RoomSelectedCharacter = null;
         Debug.Log("[Logout Flow] ✓ Cleared all data, returning to Auth state (Login screen)");
         ChangeState(GameState.Auth);
+    }
+
+    public void FetchAndSyncProfile()
+    {
+        string userId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
+        if (string.IsNullOrEmpty(userId) || CharactersClient.Instance == null)
+            return;
+
+        Debug.Log($"[Profile Sync] Requesting profile for user ID: {userId}");
+        CharactersClient.Instance.OnGetUserProfileComplete += HandleUserProfileComplete;
+        CharactersClient.Instance.GetUserProfile(userId);
+    }
+
+    private void HandleUserProfileComplete(CharactersClient.UserProfileResult result)
+    {
+        if (CharactersClient.Instance != null)
+        {
+            CharactersClient.Instance.OnGetUserProfileComplete -= HandleUserProfileComplete;
+        }
+
+        if (result.success)
+        {
+            Debug.Log($"[Profile Sync] ✓ Profile synchronized. Selected character from Database: {result.selectedCharacter}");
+            SelectedCharacter = result.selectedCharacter;
+        }
+        else
+        {
+            Debug.LogError($"[Profile Sync] ✗ Failed to sync profile: {result.error}");
+        }
     }
 
     private void OnDestroy()

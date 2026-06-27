@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.PlayerLoop;
 using System.Collections;
+using Cinemachine;
 
 public class PlayerMovement : NetworkBehaviour
 {
@@ -37,6 +38,7 @@ public class PlayerMovement : NetworkBehaviour
         if (IsOwner)
         {
             actions.Enable();
+            SetupCameraFollow();
         }
     }
 
@@ -56,6 +58,7 @@ public class PlayerMovement : NetworkBehaviour
         if (allowOfflineTest && !IsSpawned && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
         {
             EnableOfflineControl();
+            SetupCameraFollow();
         }
     }
 
@@ -155,5 +158,20 @@ public class PlayerMovement : NetworkBehaviour
         useOfflineControl = true;
         rb.simulated = true;
         actions.Enable();
+    }
+
+    private void SetupCameraFollow()
+    {
+        CinemachineVirtualCamera vcam = FindAnyObjectByType<CinemachineVirtualCamera>();
+        if (vcam != null)
+        {
+            vcam.Follow = this.transform;
+            vcam.LookAt = this.transform;
+            Debug.Log($"[PlayerMovement] Cinemachine Camera is now following: {gameObject.name}");
+        }
+        else
+        {
+            Debug.LogWarning("[PlayerMovement] No CinemachineVirtualCamera found in the scene!");
+        }
     }
 }

@@ -1,7 +1,7 @@
 const express = require("express");
-const User = require("../Models/user");
 const Room = require("../Models/room");
 const RoomPlayer = require("../Models/roomPlayer");
+const User = require("../Models/user");
 const authMiddleware = require("../Middleware/authMiddleware");
 
 const router = express.Router();
@@ -20,19 +20,20 @@ router.get("/", async (req, res) => {
 
         const room = await Room.findOne({ roomCode, status: { $ne: "closed" } });
         if (!room) {
-            return res.json({
-                characters: AVAILABLE_CHARACTERS,
-                takenCharacters: []
-            });
+            return res.status(404).json({ message: "Room not found or already closed" });
         }
 
         const roomPlayers = await RoomPlayer.find({ roomId: room._id }).select("character");
         const takenCharacters = roomPlayers
-            .map((player) => (player.character || "").trim())
-            .filter((character) => character.length > 0);
+            .map((player) => player.character)
+            .filter(Boolean);
+
+        const availableCharacters = AVAILABLE_CHARACTERS.filter(
+            (character) => !takenCharacters.includes(character)
+        );
 
         return res.json({
-            characters: AVAILABLE_CHARACTERS,
+            characters: availableCharacters,
             takenCharacters
         });
     } catch (error) {

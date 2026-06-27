@@ -71,7 +71,7 @@
 - **Path:** `/characters`
 - **Auth Required:** ❌ No
 - **Query Params:**
-  - `roomCode` (optional): nếu truyền vào, API trả thêm `takenCharacters` đang được dùng trong phòng đó
+  - `roomCode` (optional): nếu truyền vào, API chỉ trả về các nhân vật còn trống trong phòng đó
 - **Response (200):**
   ```json
   {
@@ -88,13 +88,7 @@
 - **Response (200) khi có `roomCode`:**
   ```json
   {
-    "characters": [
-      "Knight",
-      "Archer",
-      "Mage",
-      "Rogue",
-      "Paladin"
-    ],
+    "characters": ["Knight", "Archer"],
     "takenCharacters": ["Mage", "Rogue", "Paladin"]
   }
   ```
@@ -170,6 +164,7 @@
   }
   ```
 - **Notes:** Host (creator) automatically added as owner
+- **Notes:** Host (creator) automatically added as owner with `character = null`; room character selection is separate from the global `/characters/users/{userId}/character/{characterName}` selection
 
 ### 3.2 Join Room
 - **Method:** `POST`
@@ -295,7 +290,6 @@
     "character": "Mage"
   }
   ```
-- **Error (409):** Character already taken
 
 ### 3.7 Start Game (Validate & Begin)
 - **Method:** `POST`
@@ -660,3 +654,4 @@ using (UnityWebRequest www = new UnityWebRequest($"{baseUrl}/rooms/create", "POS
 - `404` - Not found (resource doesn't exist)
 - `409` - Conflict (user already exists)
 - `500` - Server error
+
