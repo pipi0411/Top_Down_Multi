@@ -3266,7 +3266,7 @@ TilemapCollider2D:
     m_Bits: 4294967295
   m_IsTrigger: 0
   m_UsedByEffector: 0
-  m_CompositeOperation: 0
+  m_CompositeOperation: 1
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
   m_MaximumTileChangeCount: 1000
@@ -3280,7 +3280,7 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3646604336672817298}
-  m_BodyType: 0
+  m_BodyType: 2
   m_Simulated: 1
   m_UseFullKinematicContacts: 0
   m_UseAutoMass: 0
@@ -3334,12 +3334,62 @@ CompositeCollider2D:
   m_CompositeOperation: 0
   m_CompositeOrder: 0
   m_Offset: {x: 0, y: 0}
-  m_GeometryType: 0
+  m_GeometryType: 1
   m_GenerationType: 0
   m_EdgeRadius: 0
-  m_ColliderPaths: []
+  m_ColliderPaths:
+  - m_Collider: {fileID: 6900076108155309240}
+    m_ColliderPaths:
+    - - X: 70000000
+        Y: 90000000
+      - X: 10000000
+        Y: 90000000
+      - X: 10000000
+        Y: 70000000
+      - X: 60000000
+        Y: 70000000
+      - X: 60000000
+        Y: -60000000
+      - X: -80000000
+        Y: -60000000
+      - X: -80000000
+        Y: -10000000
+      - X: -90000000
+        Y: -10000000
+      - X: -90000000
+        Y: -70000000
+      - X: 70000000
+        Y: -70000000
+    - - X: -80000000
+        Y: 70000000
+      - X: -30000000
+        Y: 70000000
+      - X: -30000000
+        Y: 90000000
+      - X: -90000000
+        Y: 90000000
+      - X: -90000000
+        Y: 30000000
+      - X: -80000000
+        Y: 30000000
   m_CompositePaths:
-    m_Paths: []
+    m_Paths:
+    - - {x: 6.9999704, y: -7}
+      - {x: 6.9999704, y: 9}
+      - {x: 1, y: 8.99997}
+      - {x: 1.0000293, y: 7}
+      - {x: 6, y: 6.9999704}
+      - {x: 5.9999704, y: -6}
+      - {x: -8, y: -5.9999704}
+      - {x: -8.00003, y: -1}
+      - {x: -9, y: -1.0000293}
+      - {x: -8.99997, y: -7}
+    - - {x: -8.00003, y: 3}
+      - {x: -7.9999704, y: 7}
+      - {x: -3, y: 7.0000296}
+      - {x: -3.0000293, y: 9}
+      - {x: -9, y: 8.99997}
+      - {x: -8.99997, y: 3}
   m_VertexDistance: 0.0005
   m_OffsetDistance: 0.00005
   m_UseDelaunayMesh: 0
