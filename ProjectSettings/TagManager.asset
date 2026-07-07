@@ -47,8 +47,14 @@ TagManager:
   - name: Walls
     uniqueID: 2393433307
     locked: 0
+  - name: Prop
+    uniqueID: 583822715
+    locked: 0
   - name: Player
     uniqueID: 1034213121
+    locked: 0
+  - name: Weapon
+    uniqueID: 2790527871
     locked: 0
   - name: UI
     uniqueID: 730877147
