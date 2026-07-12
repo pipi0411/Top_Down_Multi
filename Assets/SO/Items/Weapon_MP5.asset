@@ -18,6 +18,6 @@ MonoBehaviour:
   Rarity: 2
   Damage: 4
   RequiredEnergy: 3
-  TimeBetweenShots: 0
+  TimeBetweenShots: 0.25
   MinSpread: -3
   MaxSpread: 3

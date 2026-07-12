@@ -44,6 +44,15 @@ public class PlayerEnergy : MonoBehaviour
             playerConfig.Energy = 0;
         }
     }
+    public bool TryUseEnergy(float amount)
+    {
+        if (playerConfig == null || playerConfig.Energy < amount)
+        {
+            return false;
+        }
+        UseEnergy(amount);
+        return true;
+    }
     public void RecoverEnergy(float amount)
     {
         playerConfig.Energy += amount;
