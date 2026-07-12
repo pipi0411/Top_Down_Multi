@@ -35,6 +35,7 @@ router.post("/create", authMiddleware, async (req, res) => {
             roomCode,
             name: roomName,
             ownerId: req.user.id,
+            maxPlayers: Math.min(8, Math.max(1, Number(req.body?.maxPlayers || 2))),
             hostLastHeartbeatAt: new Date(),
             status: "waiting"
         });
@@ -53,7 +54,9 @@ router.post("/create", authMiddleware, async (req, res) => {
                 roomCode: room.roomCode,
                 name: room.name,
                 status: room.status,
-                ownerId: room.ownerId
+                ownerId: room.ownerId,
+                maxPlayers: room.maxPlayers,
+                relayJoinCode: room.relayJoinCode
             }
         });
     } catch (error) {
@@ -212,7 +215,9 @@ router.get("/:roomCode", authMiddleware, async (req, res) => {
                 status: room.status,
                 ownerId: room.ownerId,
                 hostLastHeartbeatAt: room.hostLastHeartbeatAt,
-                closeReason: room.closeReason || null
+                closeReason: room.closeReason || null,
+                maxPlayers: room.maxPlayers,
+                relayJoinCode: room.relayJoinCode
             },
             players: players.map((p) => ({
                 userId: p.userId?._id || p.userId,
@@ -377,6 +382,23 @@ router.post("/:roomCode/start", authMiddleware, async (req, res) => {
             roomCode: room.roomCode,
             status: room.status
         });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
+});
+
+router.post('/:roomCode/relay', authMiddleware, async (req, res) => {
+    try {
+        const roomCode = (req.params.roomCode || '').trim().toUpperCase();
+        const relayJoinCode = (req.body?.relayJoinCode || '').trim().toUpperCase();
+        if (!relayJoinCode) return res.status(400).json({ message: 'relayJoinCode is required' });
+        const room = await Room.findOne({ roomCode, status: { $ne: 'closed' } });
+        if (!room) return res.status(404).json({ message: 'Room not found' });
+        if (String(room.ownerId) !== String(req.user.id))
+            return res.status(403).json({ message: 'Only host can publish Relay join code' });
+        room.relayJoinCode = relayJoinCode;
+        await room.save();
+        return res.json({ success: true, roomCode: room.roomCode, relayJoinCode: room.relayJoinCode });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }

@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class AuthClient : MonoBehaviour
 {
-    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
+    public string baseUrl = "https://servergame-production-7067.up.railway.app";
     public int timeoutSeconds = 10;
     [SerializeField] private float postLoginDelaySeconds = 0.5f;
 

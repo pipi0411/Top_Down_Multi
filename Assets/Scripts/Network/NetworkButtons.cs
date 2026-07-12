@@ -1,5 +1,12 @@
 using System.Collections.Generic;
+using System;
+using System.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Netcode.Transports.UTP;
+using Unity.Services.Authentication;
+using Unity.Services.Core;
+using Unity.Services.Relay;
+using Unity.Services.Relay.Models;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -11,6 +18,7 @@ public class NetworkButtons : MonoBehaviour
 {
     [SerializeField] private string gameplaySceneName = "SampleScene";
     private bool isNetworkStarted = false;
+    private float nextGameplayHeartbeat;
 
     private static NetworkButtons instance;
     public static NetworkButtons Instance
@@ -203,7 +211,7 @@ public class NetworkButtons : MonoBehaviour
     /// <summary>
     /// Client-side: Gửi thông tin nhân vật trong ConnectionData
     /// </summary>
-    public void StartClient()
+    public async void StartClient()
     {
         if (isNetworkStarted)
         {
@@ -216,6 +224,9 @@ public class NetworkButtons : MonoBehaviour
             Debug.LogError("[NetworkButtons] NetworkManager.Singleton is null!");
             return;
         }
+
+        if (GameManager.Instance.IsMultiplayer && !await ConfigureRelayClient())
+            return;
 
         Debug.Log("[NetworkButtons] Starting as Client...");
 
@@ -251,7 +262,7 @@ public class NetworkButtons : MonoBehaviour
     /// <summary>
     /// Host-side: Khởi động host với character của host player
     /// </summary>
-    public void StartHost()
+    public async void StartHost()
     {
         if (isNetworkStarted)
         {
@@ -264,6 +275,9 @@ public class NetworkButtons : MonoBehaviour
             Debug.LogError("[NetworkButtons] NetworkManager.Singleton is null!");
             return;
         }
+
+        if (GameManager.Instance.IsMultiplayer && !await ConfigureRelayHost())
+            return;
 
         Debug.Log("[NetworkButtons] Starting as Host...");
 
@@ -290,6 +304,107 @@ public class NetworkButtons : MonoBehaviour
     /// <summary>
     /// Lấy vị trí spawn từ spawn point nếu có, nếu không dùng (0,0,0)
     /// </summary>
+    private async Task<bool> ConfigureRelayHost()
+    {
+        try
+        {
+            await EnsureUnityServicesReady();
+            Allocation allocation = await RelayService.Instance.CreateAllocationAsync(7);
+            string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+            UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+            if (transport == null) throw new InvalidOperationException("UnityTransport is missing from NetworkManager.");
+            transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+            GameManager.Instance.SetRelayJoinCode(joinCode);
+            bool published = await PublishRelayCode(joinCode);
+            if (!published) throw new InvalidOperationException("Could not publish Relay join code to room.");
+            Debug.Log($"[Relay] Host allocation ready. Join code: {joinCode}");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[Relay] Host setup failed: {exception.Message}");
+            isNetworkStarted = false;
+            return false;
+        }
+    }
+
+    private void Update()
+    {
+        if (!isNetworkStarted || GameManager.Instance == null || !GameManager.Instance.IsMultiplayer ||
+            !GameManager.Instance.IsHost || Time.unscaledTime < nextGameplayHeartbeat) return;
+        if (RoomClient.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+            RoomClient.Instance.SendHeartbeat(GameManager.Instance.CurrentRoomCode);
+        nextGameplayHeartbeat = Time.unscaledTime + 10f;
+    }
+
+    private async Task<bool> ConfigureRelayClient()
+    {
+        try
+        {
+            await EnsureUnityServicesReady();
+            string joinCode = await WaitForRelayCode();
+            if (string.IsNullOrEmpty(joinCode)) throw new InvalidOperationException("Relay join code was not published by host.");
+            JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
+            UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+            if (transport == null) throw new InvalidOperationException("UnityTransport is missing from NetworkManager.");
+            transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
+            Debug.Log($"[Relay] Client joined allocation: {joinCode}");
+            return true;
+        }
+        catch (Exception exception)
+        {
+            Debug.LogError($"[Relay] Client setup failed: {exception.Message}");
+            isNetworkStarted = false;
+            return false;
+        }
+    }
+
+    private async Task EnsureUnityServicesReady()
+    {
+        if (UnityServices.State != ServicesInitializationState.Initialized)
+            await UnityServices.InitializeAsync();
+        if (!AuthenticationService.Instance.IsSignedIn)
+            await AuthenticationService.Instance.SignInAnonymouslyAsync();
+    }
+
+    private async Task<bool> PublishRelayCode(string joinCode)
+    {
+        if (RoomClient.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode)) return false;
+        var completion = new TaskCompletionSource<bool>();
+        void Handler(RoomClient.RoomResult result) => completion.TrySetResult(result.success);
+        RoomClient.Instance.OnSetRelayCodeComplete += Handler;
+        RoomClient.Instance.SetRelayJoinCode(GameManager.Instance.CurrentRoomCode, joinCode);
+        Task finished = await Task.WhenAny(completion.Task, Task.Delay(10000));
+        RoomClient.Instance.OnSetRelayCodeComplete -= Handler;
+        return finished == completion.Task && completion.Task.Result;
+    }
+
+    private async Task<string> WaitForRelayCode()
+    {
+        if (!string.IsNullOrEmpty(GameManager.Instance.CurrentRelayJoinCode))
+            return GameManager.Instance.CurrentRelayJoinCode;
+        for (int attempt = 0; attempt < 20; attempt++)
+        {
+            var completion = new TaskCompletionSource<RoomClient.RoomDetailsResult>();
+            void Handler(RoomClient.RoomDetailsResult result) => completion.TrySetResult(result);
+            RoomClient.Instance.OnGetRoomDetailsComplete += Handler;
+            RoomClient.Instance.GetRoomDetails(GameManager.Instance.CurrentRoomCode);
+            await Task.WhenAny(completion.Task, Task.Delay(1000));
+            RoomClient.Instance.OnGetRoomDetailsComplete -= Handler;
+            if (completion.Task.IsCompleted && completion.Task.Result.success && completion.Task.Result.room != null)
+            {
+                string code = completion.Task.Result.room.relayJoinCode;
+                if (!string.IsNullOrEmpty(code))
+                {
+                    GameManager.Instance.SetRelayJoinCode(code);
+                    return code;
+                }
+            }
+            await Task.Delay(500);
+        }
+        return null;
+    }
+
     private Vector3 GetSpawnPosition()
     {
         Transform spawnPoint = GameObject.Find("SpawnPoint")?.transform;

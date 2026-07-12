@@ -3,12 +3,18 @@ using UnityEngine;
 
 public static class ServerEndpointConfig
 {
-    private const string DefaultBaseUrl = "https://servergame-production-eee3.up.railway.app";
+    private const string DefaultBaseUrl = "https://servergame-production-7067.up.railway.app";
+    private const string LegacyBaseUrl = "https://servergame-production-eee3.up.railway.app";
     private const string PlayerPrefsKey = "serverBaseUrl";
 
     public static string Resolve(string inspectorBaseUrl)
     {
         string savedUrl = Normalize(PlayerPrefs.GetString(PlayerPrefsKey, string.Empty));
+        if (string.Equals(savedUrl, LegacyBaseUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            PlayerPrefs.DeleteKey(PlayerPrefsKey);
+            savedUrl = string.Empty;
+        }
         if (IsUsable(savedUrl))
         {
             return savedUrl;

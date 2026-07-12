@@ -23,6 +23,10 @@ public class InGameHUDUIManager : MonoBehaviour
     private float currentHP = 100f;
     private float maxHP = 100f;
     private int currentAmmo = 30;
+    private int maxAmmo = 30;
+    private int reserveAmmo;
+    private bool isReloading;
+    private PlayerHealth localPlayerStats;
 
     private void OnEnable()
     {
@@ -61,8 +65,29 @@ public class InGameHUDUIManager : MonoBehaviour
     {
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.InGame)
         {
-            // Update HUD elements in real-time if needed
-            // This is where you'd poll player stats from network/game state
+            if (localPlayerStats == null)
+            {
+                PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+                foreach (PlayerHealth player in players)
+                {
+                    if (!player.IsSpawned || player.IsOwner)
+                    {
+                        localPlayerStats = player;
+                        break;
+                    }
+                }
+            }
+            if (localPlayerStats != null)
+            {
+                currentHP = localPlayerStats.CurrentHealth;
+                maxHP = localPlayerStats.PlayerConfig.MaxHealth;
+                currentAmmo = localPlayerStats.CurrentAmmo;
+                maxAmmo = localPlayerStats.MaxAmmo;
+                reserveAmmo = localPlayerStats.CurrentReserveAmmo;
+                isReloading = localPlayerStats.IsReloading;
+                UpdateHPBar();
+                UpdateAmmo();
+            }
         }
     }
 
@@ -115,7 +140,9 @@ public class InGameHUDUIManager : MonoBehaviour
 
         if (ammoText != null)
         {
-            ammoText.text = $"Ammo: {currentAmmo}";
+            ammoText.text = isReloading
+                ? $"Ammo: {currentAmmo}/{maxAmmo} | {reserveAmmo} (Reloading...)"
+                : $"Ammo: {currentAmmo}/{maxAmmo} | {reserveAmmo}";
         }
     }
 

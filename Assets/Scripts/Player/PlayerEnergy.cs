@@ -38,6 +38,7 @@ public class PlayerEnergy : MonoBehaviour
     }
     public void UseEnergy(float amount)
     {
+        if (playerConfig == null) return;
         playerConfig.Energy -= amount;
         if (playerConfig.Energy < 0)
         {
@@ -55,6 +56,7 @@ public class PlayerEnergy : MonoBehaviour
     }
     public void RecoverEnergy(float amount)
     {
+        if (playerConfig == null) return;
         playerConfig.Energy += amount;
         if (playerConfig.Energy > playerConfig.MaxEnergy)
         {

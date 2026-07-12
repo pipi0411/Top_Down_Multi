@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class RoomClient : MonoBehaviour
 {
-    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
+    public string baseUrl = "https://servergame-production-7067.up.railway.app";
     public int timeoutSeconds = 10;
 
     private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);
@@ -31,6 +31,12 @@ public class RoomClient : MonoBehaviour
     }
 
     [System.Serializable]
+    public class RelayCodeRequest
+    {
+        public string relayJoinCode;
+    }
+
+    [System.Serializable]
     public class CloseRoomRequest
     {
         public string roomCode;
@@ -51,6 +57,7 @@ public class RoomClient : MonoBehaviour
         public int maxPlayers;
         public int currentPlayers;
         public string status;
+        public string relayJoinCode;
     }
 
     [System.Serializable]
@@ -120,6 +127,7 @@ public class RoomClient : MonoBehaviour
     public event Action<RoomResult> OnSetPlayerStatusComplete;
     public event Action<RoomResult> OnSetPlayerCharacterComplete;
     public event Action<RoomResult> OnStartRoomComplete;
+    public event Action<RoomResult> OnSetRelayCodeComplete;
 
     private static RoomClient instance;
     public static RoomClient Instance
@@ -290,6 +298,38 @@ public class RoomClient : MonoBehaviour
         }
 
         StartCoroutine(StartRoomCoroutine(roomCode, token));
+    }
+
+    public void SetRelayJoinCode(string roomCode, string relayJoinCode)
+    {
+        string token = AuthClient.Instance.GetStoredToken();
+        if (string.IsNullOrEmpty(token))
+        {
+            OnSetRelayCodeComplete?.Invoke(new RoomResult { success = false, error = "Not authenticated." });
+            return;
+        }
+        StartCoroutine(SetRelayJoinCodeCoroutine(roomCode, relayJoinCode, token));
+    }
+
+    IEnumerator SetRelayJoinCodeCoroutine(string roomCode, string relayJoinCode, string token)
+    {
+        string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/relay";
+        string json = JsonUtility.ToJson(new RelayCodeRequest { relayJoinCode = relayJoinCode });
+        using (var req = new UnityWebRequest(url, "POST"))
+        {
+            req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Content-Type", "application/json");
+            req.SetRequestHeader("Authorization", "Bearer " + token);
+            req.timeout = timeoutSeconds;
+            yield return req.SendWebRequest();
+            var result = new RoomResult
+            {
+                success = req.result == UnityWebRequest.Result.Success,
+                error = req.result == UnityWebRequest.Result.Success ? null : GetErrorMessage(req, "Set Relay Code")
+            };
+            OnSetRelayCodeComplete?.Invoke(result);
+        }
     }
 
     IEnumerator CreateRoomCoroutine(CreateRoomRequest body, string token)

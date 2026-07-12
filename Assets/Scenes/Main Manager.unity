@@ -3717,7 +3717,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 097ca38dc2127d247b568eaa268975f8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RoomClient
-  baseUrl: https://servergame-production-eee3.up.railway.app
+  baseUrl: https://servergame-production-7067.up.railway.app
   timeoutSeconds: 10
 --- !u!4 &410983721
 Transform:
@@ -5174,7 +5174,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 156dfe6a7353f4e4dacc03f8319728a1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharactersClient
-  baseUrl: https://servergame-production-eee3.up.railway.app
+  baseUrl: https://servergame-production-7067.up.railway.app
   timeoutSeconds: 10
 --- !u!4 &499658442
 Transform:
@@ -14114,7 +14114,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d19d84c0ac0a661438708c934d7c31c6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AuthClient
-  baseUrl: https://servergame-production-eee3.up.railway.app
+  baseUrl: https://servergame-production-7067.up.railway.app
   timeoutSeconds: 10
   postLoginDelaySeconds: 0.5
 --- !u!4 &1996087342

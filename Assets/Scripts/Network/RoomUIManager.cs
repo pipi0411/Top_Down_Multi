@@ -843,6 +843,8 @@ public class RoomUIManager : MonoBehaviour
             string roomCode = string.IsNullOrEmpty(result.room.roomCode) ? GameManager.Instance.CurrentRoomCode : result.room.roomCode;
             string roomName = string.IsNullOrEmpty(result.room.name) ? GameManager.Instance.CurrentRoomName : result.room.name;
             GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
+            if (!string.IsNullOrEmpty(result.room.relayJoinCode))
+                GameManager.Instance.SetRelayJoinCode(result.room.relayJoinCode);
         }
 
         currentRoomPlayers = result.players ?? new RoomClient.PlayerInfo[0];

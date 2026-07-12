@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: -4095954277201378720}
   - component: {fileID: 130571978178896331}
   - component: {fileID: 2539587692217744414}
+  - component: {fileID: 910000000000000005}
   m_Layer: 0
   m_Name: Player_Shadowblade
   m_TagString: Untagged
@@ -450,3 +451,18 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &910000000000000005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 66633144740670258}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c7f912ad684321ba07d155a5b349c8, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
+  startingWeaponPrefab: {fileID: 2195211012945807876, guid: 244b3b91ac1d35b45829785daa9d7f8c, type: 3}
+  socketLocalPosition: {x: 0.2, y: -0.08, z: -0.1}
+  socketLocalEulerAngles: {x: 0, y: 0, z: 0}

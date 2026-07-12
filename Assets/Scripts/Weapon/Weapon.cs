@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 
 public class Weapon : MonoBehaviour
 {
+    public ItemWeapon WeaponData => weaponData;
     [SerializeField] Transform weaponSprite;
     [SerializeField] SpriteRenderer spriteRenderer;
     [SerializeField] bool aimAtMouse = true;
@@ -30,7 +31,8 @@ public class Weapon : MonoBehaviour
     float currentAimAngle;
     float recoilTimer;
     float nextShotTime;
-    PlayerEnergy playerEnergy;
+    PlayerHealth playerHealth;
+    PlayerEnergy fallbackPlayerEnergy;
     void Awake()
     {
         if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -40,7 +42,8 @@ public class Weapon : MonoBehaviour
         ownerNetworkObject = GetComponentInParent<NetworkObject>();
         currentAimAngle = transform.eulerAngles.z;
         mainCamera = Camera.main;
-        playerEnergy = GetComponentInParent<PlayerEnergy>();
+        playerHealth = GetComponentInParent<PlayerHealth>();
+        fallbackPlayerEnergy = GetComponentInParent<PlayerEnergy>();
     }
 
     void Update()
@@ -86,8 +89,17 @@ public class Weapon : MonoBehaviour
     public bool TryFire()
     {
         if (Time.time < nextShotTime || shootPosition == null) return false;
+        if (playerHealth == null) playerHealth = FindLocalPlayerStats();
         float energyCost = weaponData != null ? weaponData.RequiredEnergy : 0f;
-        if (energyCost > 0 && playerEnergy != null && !playerEnergy.TryUseEnergy(energyCost)) return false;
+        if (playerHealth != null)
+        {
+            if (!playerHealth.TryConsumeShot(energyCost)) return false;
+        }
+        else
+        {
+            if (fallbackPlayerEnergy == null) fallbackPlayerEnergy = FindAnyObjectByType<PlayerEnergy>();
+            if (fallbackPlayerEnergy == null || !fallbackPlayerEnergy.TryUseEnergy(energyCost)) return false;
+        }
 
         float interval = weaponData != null
             ? weaponData.TimeBetweenShots : fallbackShotInterval;
@@ -100,7 +112,7 @@ public class Weapon : MonoBehaviour
         GameObject projectileObject = new GameObject();
         projectileObject.transform.position = shootPosition.position;
         Projectile projectile = projectileObject.AddComponent<Projectile>();
-        Transform owner = ownerNetworkObject != null ? ownerNetworkObject.transform : transform.root;
+        Transform owner = playerHealth != null ? playerHealth.transform : ownerNetworkObject != null ? ownerNetworkObject.transform : transform.root;
         projectile.Initialize(direction, projectileSpeed, damage, projectileLifetime, owner, projectileSprite);
 
         nextShotTime = Time.time + Mathf.Max(0.02f, interval);
@@ -118,6 +130,16 @@ public class Weapon : MonoBehaviour
 
     bool CanAnimateLocally()
     {
-        return ownerNetworkObject == null || !ownerNetworkObject.IsSpawned || ownerNetworkObject.IsOwner;
+        if (ownerNetworkObject != null)
+            return !ownerNetworkObject.IsSpawned || ownerNetworkObject.IsOwner;
+        return GetComponentInParent<PlayerWeaponController>() != null || FindAnyObjectByType<PlayerWeaponController>() == null;
+    }
+
+    PlayerHealth FindLocalPlayerStats()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        foreach (PlayerHealth player in players)
+            if (!player.IsSpawned || player.IsOwner) return player;
+        return null;
     }
 }

@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class CharactersClient : MonoBehaviour
 {
-    public string baseUrl = "https://servergame-production-eee3.up.railway.app";
+    public string baseUrl = "https://servergame-production-7067.up.railway.app";
     public int timeoutSeconds = 10;
 
     private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);

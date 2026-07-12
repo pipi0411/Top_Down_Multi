@@ -21,3 +21,6 @@ MonoBehaviour:
   TimeBetweenShots: 0.38
   MinSpread: -4
   MaxSpread: 4
+  MagazineSize: 47
+  StartingReserveAmmo: 188
+  ReloadDuration: 2.4

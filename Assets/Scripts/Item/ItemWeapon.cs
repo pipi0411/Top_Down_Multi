@@ -28,4 +28,9 @@ public class ItemWeapon : ItemData
     public float TimeBetweenShots;
     public float MinSpread;
     public float MaxSpread;
+
+    [Header("Ammo")]
+    public int MagazineSize = 30;
+    public int StartingReserveAmmo = 120;
+    public float ReloadDuration = 1.2f;
 }
