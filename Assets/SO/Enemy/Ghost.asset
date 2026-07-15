@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98e1513f380924a4a8ba54384ea1c0d0, type: 3}
+  m_Name: Ghost
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  EnemyName: Ghost
+  Icon: {fileID: 1586821737, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
+  MaxHealth: 5
+  MoveSpeed: 2.85
+  DetectionRange: 8
+  AttackRange: 1.2
+  IdleWanderRadius: 1.5
+  IdleWanderInterval: 1.1
+  AttackDamage: 2
+  AttackCooldown: 1.25
+  DestroyDelay: 0.6

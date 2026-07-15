@@ -65,18 +65,18 @@ public class PlayerWeaponController : NetworkBehaviour
         }
     }
 
-    public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float speed, float lifetime)
+    public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius, float speed, float lifetime)
     {
         if (!IsSpawned || !IsOwner) return;
-        FireServerRpc(origin, direction.normalized, damage, range, speed, lifetime);
+        FireServerRpc(origin, direction.normalized, damage, range, hitRadius, speed, lifetime);
     }
 
     [Rpc(SendTo.Server)]
-    void FireServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float speed, float lifetime)
+    void FireServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius, float speed, float lifetime)
     {
         PlayerHealth playerStats = GetComponent<PlayerHealth>();
         if (playerStats != null)
-            playerStats.ResolveServerShot(origin, direction, damage, range);
+            playerStats.ResolveServerShot(origin, direction, damage, range, hitRadius);
 
         FireVisualClientRpc(origin, direction, damage, speed, lifetime);
     }

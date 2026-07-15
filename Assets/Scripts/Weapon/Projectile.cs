@@ -10,6 +10,7 @@ public class Projectile : MonoBehaviour
     Transform ownerRoot;
     float speed;
     float damage;
+    float hitRadius;
     float remainingLife;
     Sprite bulletSprite;
     float visualTime;
@@ -17,11 +18,12 @@ public class Projectile : MonoBehaviour
     Transform tracerTransform;
     bool applyLocalDamage;
 
-    public void Initialize(Vector2 moveDirection, float moveSpeed, float hitDamage, float lifetime, Transform owner, Sprite visualSprite, bool canApplyLocalDamage)
+    public void Initialize(Vector2 moveDirection, float moveSpeed, float hitDamage, float projectileHitRadius, float lifetime, Transform owner, Sprite visualSprite, bool canApplyLocalDamage)
     {
         direction = moveDirection.normalized;
         speed = moveSpeed;
         damage = hitDamage;
+        hitRadius = Mathf.Max(0.01f, projectileHitRadius);
         remainingLife = lifetime;
         ownerRoot = owner;
         bulletSprite = visualSprite;
@@ -50,10 +52,21 @@ public class Projectile : MonoBehaviour
         }
 
         float distance = speed * Time.deltaTime;
-        RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, direction, distance);
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(transform.position, hitRadius, direction, distance);
+        System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         foreach (RaycastHit2D hit in hits)
         {
+            if (hit.collider == null || hit.collider.isTrigger) continue;
             if (ownerRoot != null && hit.transform.IsChildOf(ownerRoot)) continue;
+            EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
+            if (enemy != null)
+            {
+                if (applyLocalDamage)
+                    enemy.TakeDamage(damage);
+                Destroy(gameObject);
+                return;
+            }
+
             PlayerHealth health = hit.collider.GetComponentInParent<PlayerHealth>();
             if (health != null)
             {

@@ -479,7 +479,7 @@ public class CharacterSelectUIManager : MonoBehaviour
         if (GameManager.Instance != null)
             GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
 
-        SceneManager.LoadScene("SampleScene");
+        GameSceneLoader.LoadGameplayScene("SampleScene");
     }
 
     private void OnBackClicked()

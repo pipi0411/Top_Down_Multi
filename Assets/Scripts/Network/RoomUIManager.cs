@@ -559,7 +559,7 @@ public class RoomUIManager : MonoBehaviour
             GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
         }
 
-        SceneManager.LoadScene(gameplaySceneName);
+        GameSceneLoader.LoadGameplayScene(gameplaySceneName);
     }
 
     private void HandleStateChanged(GameManager.GameState newState)
@@ -891,7 +891,7 @@ public class RoomUIManager : MonoBehaviour
             {
                 gameplayLoadRequested = true;
                 GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
-                SceneManager.LoadScene(gameplaySceneName);
+                GameSceneLoader.LoadGameplayScene(gameplaySceneName);
             }
         }
     }

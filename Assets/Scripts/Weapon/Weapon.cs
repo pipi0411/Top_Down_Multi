@@ -21,6 +21,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] Transform shootPosition;
     [SerializeField] bool automatic;
     [SerializeField] float projectileSpeed = 18f;
+    [SerializeField] float projectileHitRadius = 0.12f;
     [SerializeField] float projectileLifetime = 2f;
     [SerializeField] float fallbackDamage = 1f;
     [SerializeField] float fallbackShotInterval = 0.2f;
@@ -122,9 +123,9 @@ public class Weapon : MonoBehaviour
         {
             if (weaponController == null) weaponController = GetComponentInParent<PlayerWeaponController>();
             if (weaponController != null && weaponController.IsSpawned)
-                weaponController.SubmitNetworkFire(origin, direction, damage, range, projectileSpeed, projectileLifetime);
+                weaponController.SubmitNetworkFire(origin, direction, damage, range, projectileHitRadius, projectileSpeed, projectileLifetime);
             else
-                playerHealth.SubmitShot(origin, direction, damage, range);
+                playerHealth.SubmitShot(origin, direction, damage, range, projectileHitRadius);
         }
 
         SpawnProjectileVisual(origin, direction, damage, projectileSpeed, projectileLifetime, !networkShot);
@@ -140,7 +141,7 @@ public class Weapon : MonoBehaviour
         projectileObject.transform.position = origin;
         Projectile projectile = projectileObject.AddComponent<Projectile>();
         Transform owner = playerHealth != null ? playerHealth.transform : ownerNetworkObject != null ? ownerNetworkObject.transform : transform.root;
-        projectile.Initialize(direction, speed, damage, lifetime, owner, projectileSprite, canApplyLocalDamage);
+        projectile.Initialize(direction, speed, damage, projectileHitRadius, lifetime, owner, projectileSprite, canApplyLocalDamage);
     }
 
     void ApplyAimPose(float aimAngle)

@@ -160,28 +160,35 @@ public class PlayerHealth : NetworkBehaviour
         else ApplyDamage(amount);
     }
 
-    public void SubmitShot(Vector2 origin, Vector2 direction, float damage, float range)
+    public void SubmitShot(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius = 0.12f)
     {
         if (!IsSpawned || !IsOwner) return;
-        ShotServerRpc(origin, direction.normalized, damage, range);
+        ShotServerRpc(origin, direction.normalized, damage, range, hitRadius);
     }
 
     [Rpc(SendTo.Server)]
-    void ShotServerRpc(Vector2 origin, Vector2 direction, float damage, float range)
+    void ShotServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
     {
-        ResolveServerShot(origin, direction, damage, range);
+        ResolveServerShot(origin, direction, damage, range, hitRadius);
     }
 
-    public void ResolveServerShot(Vector2 origin, Vector2 direction, float damage, float range)
+    public void ResolveServerShot(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius = 0.12f)
     {
         if (!IsServer) return;
         direction = direction.normalized;
-        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, range);
+        RaycastHit2D[] hits = Physics2D.CircleCastAll(origin, Mathf.Max(0.01f, hitRadius), direction, range);
         Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
         foreach (RaycastHit2D hit in hits)
         {
-            if (hit.collider == null) continue;
+            if (hit.collider == null || hit.collider.isTrigger) continue;
             if (hit.transform.IsChildOf(transform)) continue;
+            EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(Mathf.Max(0, damage));
+                return;
+            }
+
             PlayerHealth target = hit.collider.GetComponentInParent<PlayerHealth>();
             if (target != null && target != this)
             {
@@ -221,21 +228,38 @@ public class PlayerHealth : NetworkBehaviour
     {
         float armor = IsSpawned ? networkArmor.Value : playerConfig.Armor;
         float health = IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
+        float previousTotal = armor + health;
         float remaining = Mathf.Max(0, amount - armor);
         armor = Mathf.Max(0, armor - amount);
         health = Mathf.Max(0, health - remaining);
+        float appliedDamage = Mathf.Max(0f, previousTotal - armor - health);
         if (IsSpawned)
         {
             networkArmor.Value = armor;
             networkHealth.Value = health;
+            if (appliedDamage > 0f && IsServer)
+                ShowDamagePopupClientRpc(appliedDamage);
             if (health <= 0 && IsServer) NetworkObject.Despawn();
         }
         else
         {
             playerConfig.Armor = armor;
             playerConfig.CurrentHealth = health;
+            ShowDamagePopup(appliedDamage);
             if (health <= 0) Destroy(gameObject);
         }
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    void ShowDamagePopupClientRpc(float amount)
+    {
+        ShowDamagePopup(amount);
+    }
+
+    void ShowDamagePopup(float amount)
+    {
+        if (amount <= 0f) return;
+        EnemyDamagePopup.Show(transform.position, amount);
     }
 
     void ApplyRecovery(float amount)

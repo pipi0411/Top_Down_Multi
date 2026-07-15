@@ -12,7 +12,7 @@ TagManager:
   - Water
   - UI
   - Room
-  - 
+  - Walls
   - 
   - 
   - 
@@ -49,6 +49,12 @@ TagManager:
     locked: 0
   - name: Prop
     uniqueID: 583822715
+    locked: 0
+  - name: Item
+    uniqueID: 3920791187
+    locked: 0
+  - name: Enemy
+    uniqueID: 3589910289
     locked: 0
   - name: Player
     uniqueID: 1034213121
