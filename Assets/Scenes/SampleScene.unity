@@ -2853,7 +2853,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 447644818}
         m_TargetAssemblyTypeName: RoomHardDeleteTestButton, Assembly-CSharp
-        m_MethodName: DeleteRoomHard
+        m_MethodName: BackToRoomLobby
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}

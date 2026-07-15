@@ -1,7 +1,11 @@
+using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class RoomHardDeleteTestButton : MonoBehaviour
 {
+    [SerializeField] private string lobbySceneName = "Main Manager";
+
     private void OnEnable()
     {
         if (RoomClient.Instance != null)
@@ -43,6 +47,36 @@ public class RoomHardDeleteTestButton : MonoBehaviour
         RoomClient.Instance.CloseRoom(GameManager.Instance.CurrentRoomCode);
     }
 
+    public void BackToRoomLobby()
+    {
+        if (GameManager.Instance == null)
+        {
+            Debug.LogWarning("GameManager is null");
+            return;
+        }
+
+        if (string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
+        {
+            Debug.LogWarning("Cannot return to room lobby because current room code is empty");
+            ReturnToMainMenu();
+            return;
+        }
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+
+        GameManager.Instance.SetMultiplayerMode(true);
+        GameManager.Instance.SetSuppressRoomGameplayAutoLoad(true);
+        GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+
+        if (!string.IsNullOrEmpty(lobbySceneName) && SceneManager.GetActiveScene().name != lobbySceneName)
+        {
+            SceneManager.LoadScene(lobbySceneName);
+        }
+    }
+
     private void HandleCloseRoomComplete(RoomClient.RoomResult result)
     {
         if (result.success)
@@ -53,6 +87,7 @@ public class RoomHardDeleteTestButton : MonoBehaviour
             {
                 GameManager.Instance.ClearCurrentRoom();
                 GameManager.Instance.SetMultiplayerMode(false);
+                GameManager.Instance.SetSuppressRoomGameplayAutoLoad(false);
                 GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
             }
         }
@@ -79,6 +114,7 @@ public class RoomHardDeleteTestButton : MonoBehaviour
         {
             GameManager.Instance.ClearCurrentRoom();
             GameManager.Instance.SetMultiplayerMode(false);
+            GameManager.Instance.SetSuppressRoomGameplayAutoLoad(false);
             GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
         }
     }

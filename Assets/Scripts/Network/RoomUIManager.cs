@@ -663,14 +663,12 @@ public class RoomUIManager : MonoBehaviour
                 if (player == null)
                     continue;
 
-                bool isYou = !string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
-                             string.Equals(player.username, GameManager.Instance.CurrentUsername, System.StringComparison.OrdinalIgnoreCase);
-                AddPlayerToList(player.username, player.character, player.isReady, isYou);
+                AddPlayerToList(player.username, player.character, player.isReady, IsLocalPlayer(player), player.role);
             }
         }
         else
         {
-            AddPlayerToList(GameManager.Instance.CurrentUsername, GetLocalCharacterName(), isPlayerReady, true);
+            AddPlayerToList(GameManager.Instance.CurrentUsername, GetLocalCharacterName(), isPlayerReady, true, GameManager.Instance.IsHost ? "owner" : "player");
         }
     }
 
@@ -693,7 +691,26 @@ public class RoomUIManager : MonoBehaviour
             .FirstOrDefault(button => button != null && button.name.ToLowerInvariant().Contains(namePart));
     }
 
-    private void AddPlayerToList(string playerName, string characterName, bool isReady, bool isYou)
+    private bool IsLocalPlayer(RoomClient.PlayerInfo player)
+    {
+        if (player == null)
+            return false;
+
+        string localUserId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
+        if (!string.IsNullOrEmpty(localUserId) && !string.IsNullOrEmpty(player.userId))
+            return string.Equals(player.userId, localUserId, System.StringComparison.OrdinalIgnoreCase);
+
+        return !string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
+               !string.IsNullOrEmpty(player.username) &&
+               string.Equals(player.username, GameManager.Instance.CurrentUsername, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetRoleLabel(string role)
+    {
+        return string.Equals(role, "owner", System.StringComparison.OrdinalIgnoreCase) ? "Host" : "Player";
+    }
+
+    private void AddPlayerToList(string playerName, string characterName, bool isReady, bool isYou, string role)
     {
         if (playerListItemPrefab == null || playerListContainer == null)
             return;
@@ -707,28 +724,25 @@ public class RoomUIManager : MonoBehaviour
         {
             displayName += " (You)";
         }
-        else
-        {
-            displayName += " (Player)";
-        }
 
-        string displayCharacter = string.IsNullOrEmpty(characterName) ? "Character: None" : "Character: " + characterName;
+        string displayRole = GetRoleLabel(role);
+        string displayCharacter = string.IsNullOrEmpty(characterName) ? "None" : characterName;
         string displayStatus = isReady ? "[READY]" : "[NOT READY]";
 
         if (texts.Length >= 3)
         {
             texts[0].text = displayName;
-            texts[1].text = displayCharacter;
+            texts[1].text = $"{displayRole} | {displayCharacter}";
             texts[2].text = displayStatus;
         }
         else if (texts.Length >= 2)
         {
             texts[0].text = displayName;
-            texts[1].text = $"{displayCharacter} {displayStatus}";
+            texts[1].text = $"{displayRole} | {displayCharacter} {displayStatus}";
         }
         else if (texts.Length == 1)
         {
-            texts[0].text = $"{displayName} | {displayCharacter} | {displayStatus}";
+            texts[0].text = $"{displayName}\n{displayRole} | {displayCharacter}\n{displayStatus}";
         }
     }
 
@@ -872,6 +886,7 @@ public class RoomUIManager : MonoBehaviour
             GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
 
             if (GameManager.Instance.IsMultiplayer && !GameManager.Instance.IsHost &&
+                !GameManager.Instance.SuppressRoomGameplayAutoLoad &&
                 result.room.status == "playing" && !gameplayLoadRequested)
             {
                 gameplayLoadRequested = true;
