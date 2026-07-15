@@ -55,6 +55,12 @@ public class RoomHardDeleteTestButton : MonoBehaviour
             return;
         }
 
+        if (!GameManager.Instance.IsMultiplayer)
+        {
+            BackToMainMenuFromSinglePlayer();
+            return;
+        }
+
         if (string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
         {
             Debug.LogWarning("Cannot return to room lobby because current room code is empty");
@@ -70,6 +76,29 @@ public class RoomHardDeleteTestButton : MonoBehaviour
         GameManager.Instance.SetMultiplayerMode(true);
         GameManager.Instance.SetSuppressRoomGameplayAutoLoad(true);
         GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+
+        if (!string.IsNullOrEmpty(lobbySceneName) && SceneManager.GetActiveScene().name != lobbySceneName)
+        {
+            SceneManager.LoadScene(lobbySceneName);
+        }
+    }
+
+    public void BackToGameplayPreviousScreen()
+    {
+        BackToRoomLobby();
+    }
+
+    private void BackToMainMenuFromSinglePlayer()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+
+        GameManager.Instance.ClearCurrentRoom();
+        GameManager.Instance.SetMultiplayerMode(false);
+        GameManager.Instance.SetSuppressRoomGameplayAutoLoad(false);
+        GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
 
         if (!string.IsNullOrEmpty(lobbySceneName) && SceneManager.GetActiveScene().name != lobbySceneName)
         {
