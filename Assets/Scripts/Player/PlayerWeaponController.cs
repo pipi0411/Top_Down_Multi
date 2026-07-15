@@ -67,6 +67,8 @@ public class PlayerWeaponController : NetworkBehaviour
 
     public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius, float speed, float lifetime)
     {
+        PlayerHealth playerStats = GetComponent<PlayerHealth>();
+        if (playerStats != null && playerStats.IsDead) return;
         if (!IsSpawned || !IsOwner) return;
         FireServerRpc(origin, direction.normalized, damage, range, hitRadius, speed, lifetime);
     }

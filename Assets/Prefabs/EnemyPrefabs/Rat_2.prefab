@@ -215,7 +215,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 5260642445620706653}
   health: {fileID: 910000000000000106}
   detectionRange: 6
-  attackRange: 0.95
+  attackRange: 1.3
   lineOfSightMask:
     serializedVersion: 2
     m_Bits: 128

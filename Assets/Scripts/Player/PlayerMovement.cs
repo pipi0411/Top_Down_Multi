@@ -21,12 +21,14 @@ public class PlayerMovement : NetworkBehaviour
     private float currentSpeed;
     private bool isDashing;
     private bool useOfflineControl;
+    private PlayerHealth playerHealth;
 
     private void Awake()
     {
         actions = new PlayerActions();
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        playerHealth = GetComponent<PlayerHealth>();
     }
 
     public override void OnNetworkSpawn()
@@ -69,6 +71,12 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
+        if (playerHealth != null && playerHealth.IsDead)
+        {
+            moveDirection = Vector2.zero;
+            return;
+        }
+
         CaptureInput();
         RotatePlayer();
     }
@@ -100,10 +108,16 @@ public class PlayerMovement : NetworkBehaviour
     }
     private void MovePlayer()
     {
+        if (playerHealth != null && playerHealth.IsDead)
+        {
+            rb.linearVelocity = Vector2.zero;
+            return;
+        }
         rb.MovePosition(rb.position + serverMoveDirection * (currentSpeed * Time.fixedDeltaTime));
     }
     private void Dash()
     {
+        if (playerHealth != null && playerHealth.IsDead) return;
         if (isDashing)
         {
             return;

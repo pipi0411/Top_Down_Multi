@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,17 +14,29 @@ public class PlayerHealth : NetworkBehaviour
     [SerializeField] float energyRegenerationPerSecond = 10f;
     [SerializeField] float reloadDuration = 1.2f;
     [SerializeField] bool allowWeaponDamageFromPlayers;
+    [Header("Respawn")]
+    [SerializeField] float respawnDelay = 2f;
+    [SerializeField] float respawnInvulnerableTime = 1.5f;
+    [SerializeField] string checkpointObjectName = "Checkpoint";
+    [SerializeField] string spawnPointObjectName = "SpawnPoint";
 
     readonly NetworkVariable<float> networkHealth = new(0);
     readonly NetworkVariable<float> networkArmor = new(0);
     readonly NetworkVariable<float> networkEnergy = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<int> networkAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<int> networkReserveAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    readonly NetworkVariable<bool> networkIsDead = new(false);
     float lastShotTime = float.NegativeInfinity;
     float reloadCompleteTime;
     int offlineAmmo;
     int offlineReserveAmmo;
     bool isReloading;
+    bool offlineIsDead;
+    bool isInvulnerable;
+    Coroutine respawnRoutine;
+    Collider2D[] colliders;
+    SpriteRenderer[] spriteRenderers;
+    Rigidbody2D rb;
 
     public PlayerConfig PlayerConfig => playerConfig;
     public float CurrentHealth => IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
@@ -33,20 +46,26 @@ public class PlayerHealth : NetworkBehaviour
     public int CurrentReserveAmmo => IsSpawned ? networkReserveAmmo.Value : offlineReserveAmmo;
     public bool IsReloading => isReloading;
     public bool AllowWeaponDamageFromPlayers => allowWeaponDamageFromPlayers;
+    public bool IsDead => IsSpawned ? networkIsDead.Value : offlineIsDead;
 
     void Awake()
     {
         if (playerConfig != null) playerConfig = Instantiate(playerConfig);
         offlineAmmo = startingAmmo;
         offlineReserveAmmo = startingReserveAmmo;
+        colliders = GetComponentsInChildren<Collider2D>(true);
+        spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
+        rb = GetComponent<Rigidbody2D>();
     }
 
     public override void OnNetworkSpawn()
     {
+        networkIsDead.OnValueChanged += HandleDeadStateChanged;
         if (IsServer)
         {
             networkHealth.Value = playerConfig.MaxHealth;
             networkArmor.Value = playerConfig.MaxArmor;
+            networkIsDead.Value = false;
         }
         if (IsOwner)
         {
@@ -56,6 +75,12 @@ public class PlayerHealth : NetworkBehaviour
             BindLocalUI();
         }
         SyncConfig();
+        SetDeadState(networkIsDead.Value);
+    }
+
+    public override void OnNetworkDespawn()
+    {
+        networkIsDead.OnValueChanged -= HandleDeadStateChanged;
     }
 
     void Start()
@@ -85,7 +110,7 @@ public class PlayerHealth : NetworkBehaviour
 
     public bool TryConsumeShot(float energyCost)
     {
-        if (IsSpawned && !IsOwner || isReloading) return false;
+        if (IsDead || IsSpawned && !IsOwner || isReloading) return false;
         float energy = IsSpawned ? networkEnergy.Value : playerConfig.Energy;
         int ammo = IsSpawned ? networkAmmo.Value : offlineAmmo;
         if (energy < energyCost || ammo <= 0) return false;
@@ -120,7 +145,7 @@ public class PlayerHealth : NetworkBehaviour
 
     public bool TryStartReload()
     {
-        if (IsSpawned && !IsOwner || isReloading || CurrentAmmo >= MaxAmmo || CurrentReserveAmmo <= 0) return false;
+        if (IsDead || IsSpawned && !IsOwner || isReloading || CurrentAmmo >= MaxAmmo || CurrentReserveAmmo <= 0) return false;
         isReloading = true;
         reloadCompleteTime = Time.time + reloadDuration;
         return true;
@@ -156,6 +181,7 @@ public class PlayerHealth : NetworkBehaviour
 
     public void TakeDamage(float amount)
     {
+        if (IsDead || isInvulnerable) return;
         if (IsSpawned && !IsServer) DamageServerRpc(amount);
         else ApplyDamage(amount);
     }
@@ -226,6 +252,7 @@ public class PlayerHealth : NetworkBehaviour
 
     void ApplyDamage(float amount)
     {
+        if (IsDead || isInvulnerable) return;
         float armor = IsSpawned ? networkArmor.Value : playerConfig.Armor;
         float health = IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
         float previousTotal = armor + health;
@@ -239,14 +266,156 @@ public class PlayerHealth : NetworkBehaviour
             networkHealth.Value = health;
             if (appliedDamage > 0f && IsServer)
                 ShowDamagePopupClientRpc(appliedDamage);
-            if (health <= 0 && IsServer) NetworkObject.Despawn();
+            if (health <= 0 && IsServer) StartRespawn();
         }
         else
         {
             playerConfig.Armor = armor;
             playerConfig.CurrentHealth = health;
             ShowDamagePopup(appliedDamage);
-            if (health <= 0) Destroy(gameObject);
+            if (health <= 0) StartRespawn();
+        }
+    }
+
+    void StartRespawn()
+    {
+        if (respawnRoutine != null) return;
+
+        if (IsSpawned)
+        {
+            if (!IsServer) return;
+            networkIsDead.Value = true;
+        }
+        else
+        {
+            offlineIsDead = true;
+            SetDeadState(true);
+        }
+
+        respawnRoutine = StartCoroutine(RespawnRoutine());
+    }
+
+    IEnumerator RespawnRoutine()
+    {
+        isReloading = false;
+        StopMotion();
+
+        yield return new WaitForSeconds(respawnDelay);
+
+        Vector3 respawnPosition = GetRespawnPosition();
+        TeleportTo(respawnPosition);
+
+        ResetResources();
+
+        if (IsSpawned)
+        {
+            networkIsDead.Value = false;
+            TeleportClientRpc(respawnPosition);
+        }
+        else
+        {
+            offlineIsDead = false;
+            SetDeadState(false);
+        }
+
+        isInvulnerable = true;
+        yield return new WaitForSeconds(respawnInvulnerableTime);
+        isInvulnerable = false;
+        respawnRoutine = null;
+    }
+
+    void ResetResources()
+    {
+        if (playerConfig == null) return;
+
+        if (IsSpawned)
+        {
+            networkHealth.Value = playerConfig.MaxHealth;
+            networkArmor.Value = playerConfig.MaxArmor;
+            networkEnergy.Value = playerConfig.MaxEnergy;
+            networkAmmo.Value = startingAmmo;
+            networkReserveAmmo.Value = startingReserveAmmo;
+        }
+        else
+        {
+            playerConfig.CurrentHealth = playerConfig.MaxHealth;
+            playerConfig.Armor = playerConfig.MaxArmor;
+            playerConfig.Energy = playerConfig.MaxEnergy;
+            offlineAmmo = startingAmmo;
+            offlineReserveAmmo = startingReserveAmmo;
+        }
+    }
+
+    Vector3 GetRespawnPosition()
+    {
+        Transform checkpoint = FindRespawnTransform(checkpointObjectName) ?? FindRespawnTransform("CheckPoint");
+        Transform spawnPoint = checkpoint != null ? checkpoint : FindRespawnTransform(spawnPointObjectName);
+        Vector3 position = spawnPoint != null ? spawnPoint.position : Vector3.zero;
+
+        if (IsSpawned)
+            position += Vector3.right * ((OwnerClientId % 4) * 1.5f);
+
+        return position;
+    }
+
+    Transform FindRespawnTransform(string objectName)
+    {
+        if (string.IsNullOrWhiteSpace(objectName)) return null;
+        GameObject found = GameObject.Find(objectName);
+        return found != null ? found.transform : null;
+    }
+
+    void TeleportTo(Vector3 position)
+    {
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.position = position;
+        }
+        transform.position = position;
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    void TeleportClientRpc(Vector3 position)
+    {
+        TeleportTo(position);
+    }
+
+    void StopMotion()
+    {
+        if (rb == null) return;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+    }
+
+    void HandleDeadStateChanged(bool previousValue, bool newValue)
+    {
+        SetDeadState(newValue);
+    }
+
+    void SetDeadState(bool dead)
+    {
+        StopMotion();
+
+        if (colliders != null)
+        {
+            foreach (Collider2D playerCollider in colliders)
+            {
+                if (playerCollider != null)
+                    playerCollider.enabled = !dead;
+            }
+        }
+
+        if (spriteRenderers != null)
+        {
+            foreach (SpriteRenderer renderer in spriteRenderers)
+            {
+                if (renderer == null) continue;
+                Color color = renderer.color;
+                color.a = dead ? 0.35f : 1f;
+                renderer.color = color;
+            }
         }
     }
 

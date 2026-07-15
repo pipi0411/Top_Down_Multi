@@ -463,6 +463,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a4c7f912ad684321ba07d155a5b349c8, type: 3}
   m_Name:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
-  startingWeaponPrefab: {fileID: 2195211012945807876, guid: 244b3b91ac1d35b45829785daa9d7f8c, type: 3}
+  startingWeaponPrefab: {fileID: 5190589855246738795, guid: 74b05e7c11021364d8d09d9da93efd4a, type: 3}
   socketLocalPosition: {x: 0.2, y: -0.08, z: -0.1}
   socketLocalEulerAngles: {x: 0, y: 0, z: 0}

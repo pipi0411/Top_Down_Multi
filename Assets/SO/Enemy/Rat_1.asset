@@ -17,7 +17,7 @@ MonoBehaviour:
   MaxHealth: 2
   MoveSpeed: 3.2
   DetectionRange: 5.5
-  AttackRange: 0.9
+  AttackRange: 1.25
   IdleWanderRadius: 1.4
   IdleWanderInterval: 0.85
   AttackDamage: 1

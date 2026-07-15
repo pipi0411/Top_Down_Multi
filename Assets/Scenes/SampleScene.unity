@@ -265,7 +265,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 158551801}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -982,7 +982,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Cinemachine::Cinemachine.CinemachineBrain
   m_ShowDebugText: 0
-  m_ShowCameraFrustum: 1
+  m_ShowCameraFrustum: 0
   m_IgnoreTimeScale: 0
   m_WorldUpOverride: {fileID: 0}
   m_UpdateMethod: 2
@@ -1497,11 +1497,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.8636284
+      value: 4.875
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.65864027
+      value: -0.6875
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1509,11 +1509,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.99999464
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.0032755262
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalRotation.y
@@ -1525,7 +1525,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
-      value: -0.375
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7299853232916360071, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
@@ -2103,7 +2103,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1030370397}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
