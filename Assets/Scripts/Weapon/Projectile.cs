@@ -15,8 +15,9 @@ public class Projectile : MonoBehaviour
     float visualTime;
     SpriteRenderer glowRenderer;
     Transform tracerTransform;
+    bool applyLocalDamage;
 
-    public void Initialize(Vector2 moveDirection, float moveSpeed, float hitDamage, float lifetime, Transform owner, Sprite visualSprite)
+    public void Initialize(Vector2 moveDirection, float moveSpeed, float hitDamage, float lifetime, Transform owner, Sprite visualSprite, bool canApplyLocalDamage)
     {
         direction = moveDirection.normalized;
         speed = moveSpeed;
@@ -24,6 +25,7 @@ public class Projectile : MonoBehaviour
         remainingLife = lifetime;
         ownerRoot = owner;
         bulletSprite = visualSprite;
+        applyLocalDamage = canApplyLocalDamage;
         Vector3 visiblePosition = transform.position;
         visiblePosition.z = -2f;
         transform.position = visiblePosition;
@@ -55,7 +57,7 @@ public class Projectile : MonoBehaviour
             PlayerHealth health = hit.collider.GetComponentInParent<PlayerHealth>();
             if (health != null)
             {
-                health.TakeDamage(damage);
+                if (applyLocalDamage && health.AllowWeaponDamageFromPlayers) health.TakeDamage(damage);
                 Destroy(gameObject);
                 return;
             }

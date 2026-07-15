@@ -33,7 +33,8 @@ router.get("/", async (req, res) => {
         );
 
         return res.json({
-            characters: availableCharacters,
+            characters: AVAILABLE_CHARACTERS,
+            availableCharacters,
             takenCharacters
         });
     } catch (error) {

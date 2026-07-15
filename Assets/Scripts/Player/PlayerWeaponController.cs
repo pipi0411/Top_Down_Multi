@@ -1,16 +1,40 @@
+using Unity.Netcode;
 using UnityEngine;
 
-public class PlayerWeaponController : MonoBehaviour
+public class PlayerWeaponController : NetworkBehaviour
 {
     [SerializeField] GameObject startingWeaponPrefab;
     [SerializeField] Vector3 socketLocalPosition = new(0.2f, -0.08f, -0.1f);
     [SerializeField] Vector3 socketLocalEulerAngles;
+    [SerializeField] float aimSyncThreshold = 0.5f;
+
+    readonly NetworkVariable<float> networkAimAngle = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    float lastSentAimAngle;
 
     public Weapon EquippedWeapon { get; private set; }
 
     void Awake()
     {
         EquipStartingWeapon();
+    }
+
+    void LateUpdate()
+    {
+        if (!IsSpawned || EquippedWeapon == null) return;
+
+        if (IsOwner)
+        {
+            float aimAngle = EquippedWeapon.CurrentAimAngle;
+            if (Mathf.Abs(Mathf.DeltaAngle(lastSentAimAngle, aimAngle)) >= aimSyncThreshold)
+            {
+                networkAimAngle.Value = aimAngle;
+                lastSentAimAngle = aimAngle;
+            }
+        }
+        else
+        {
+            EquippedWeapon.ApplyRemoteAim(networkAimAngle.Value);
+        }
     }
 
     public void EquipStartingWeapon()
@@ -39,5 +63,32 @@ public class PlayerWeaponController : MonoBehaviour
             renderer.sortingLayerID = weaponSortingLayer;
             renderer.sortingOrder = 10;
         }
+    }
+
+    public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float speed, float lifetime)
+    {
+        if (!IsSpawned || !IsOwner) return;
+        FireServerRpc(origin, direction.normalized, damage, range, speed, lifetime);
+    }
+
+    [Rpc(SendTo.Server)]
+    void FireServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float speed, float lifetime)
+    {
+        PlayerHealth playerStats = GetComponent<PlayerHealth>();
+        if (playerStats != null)
+            playerStats.ResolveServerShot(origin, direction, damage, range);
+
+        FireVisualClientRpc(origin, direction, damage, speed, lifetime);
+    }
+
+    [ClientRpc]
+    void FireVisualClientRpc(Vector2 origin, Vector2 direction, float damage, float speed, float lifetime)
+    {
+        if (IsOwner) return;
+        if (EquippedWeapon == null) EquipStartingWeapon();
+        if (EquippedWeapon == null) return;
+
+        EquippedWeapon.SpawnProjectileVisual(origin, direction, damage, speed, lifetime, false);
+        EquippedWeapon.PlayFireAnimation();
     }
 }

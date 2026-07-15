@@ -33,6 +33,7 @@ public class Weapon : MonoBehaviour
     float nextShotTime;
     PlayerHealth playerHealth;
     PlayerEnergy fallbackPlayerEnergy;
+    PlayerWeaponController weaponController;
     void Awake()
     {
         if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -44,17 +45,18 @@ public class Weapon : MonoBehaviour
         mainCamera = Camera.main;
         playerHealth = GetComponentInParent<PlayerHealth>();
         fallbackPlayerEnergy = GetComponentInParent<PlayerEnergy>();
+        weaponController = GetComponentInParent<PlayerWeaponController>();
     }
 
     void Update()
     {
+        recoilTimer = Mathf.Max(0f, recoilTimer - Time.deltaTime);
         if (!CanAnimateLocally()) return;
         if (previewFireWithLeftClick && Mouse.current != null)
         {
             bool wantsToFire = automatic ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
             if (wantsToFire) TryFire();
         }
-        recoilTimer = Mathf.Max(0f, recoilTimer - Time.deltaTime);
     }
 
     void LateUpdate()
@@ -73,12 +75,17 @@ public class Weapon : MonoBehaviour
             }
         }
         currentAimAngle = Mathf.LerpAngle(currentAimAngle, targetAngle, aimSmoothSpeed * Time.deltaTime);
-        float sway = Mathf.Sin(Time.time * idleSwaySpeed) * idleSwayAmount;
-        transform.rotation = Quaternion.Euler(0, 0, currentAimAngle + sway + RecoilAmount() * recoilAngle);
-        if (spriteRenderer != null)
-            spriteRenderer.flipY = Mathf.Abs(Mathf.DeltaAngle(0, currentAimAngle)) > 90f;
-        Vector3 targetPosition = spriteStartPosition + Vector3.left * (recoilDistance * RecoilAmount());
-        weaponSprite.localPosition = Vector3.Lerp(weaponSprite.localPosition, targetPosition, 30f * Time.deltaTime);
+        ApplyAimPose(currentAimAngle);
+    }
+
+    public float CurrentAimAngle => currentAimAngle;
+    public float ProjectileSpeed => projectileSpeed;
+    public float ProjectileLifetime => projectileLifetime;
+
+    public void ApplyRemoteAim(float aimAngle)
+    {
+        currentAimAngle = aimAngle;
+        ApplyAimPose(currentAimAngle);
     }
 
     public void PlayFireAnimation()
@@ -108,16 +115,43 @@ public class Weapon : MonoBehaviour
         float maxSpread = weaponData != null ? weaponData.MaxSpread : 0f;
         float spread = Random.Range(minSpread, maxSpread);
         Vector2 direction = Quaternion.Euler(0, 0, spread) * transform.right;
+        bool networkShot = playerHealth != null && playerHealth.IsSpawned;
+        Vector2 origin = shootPosition.position;
+        float range = projectileSpeed * projectileLifetime;
+        if (networkShot)
+        {
+            if (weaponController == null) weaponController = GetComponentInParent<PlayerWeaponController>();
+            if (weaponController != null && weaponController.IsSpawned)
+                weaponController.SubmitNetworkFire(origin, direction, damage, range, projectileSpeed, projectileLifetime);
+            else
+                playerHealth.SubmitShot(origin, direction, damage, range);
+        }
 
-        GameObject projectileObject = new GameObject();
-        projectileObject.transform.position = shootPosition.position;
-        Projectile projectile = projectileObject.AddComponent<Projectile>();
-        Transform owner = playerHealth != null ? playerHealth.transform : ownerNetworkObject != null ? ownerNetworkObject.transform : transform.root;
-        projectile.Initialize(direction, projectileSpeed, damage, projectileLifetime, owner, projectileSprite);
+        SpawnProjectileVisual(origin, direction, damage, projectileSpeed, projectileLifetime, !networkShot);
 
         nextShotTime = Time.time + Mathf.Max(0.02f, interval);
         PlayFireAnimation();
         return true;
+    }
+
+    public void SpawnProjectileVisual(Vector2 origin, Vector2 direction, float damage, float speed, float lifetime, bool canApplyLocalDamage)
+    {
+        GameObject projectileObject = new GameObject();
+        projectileObject.transform.position = origin;
+        Projectile projectile = projectileObject.AddComponent<Projectile>();
+        Transform owner = playerHealth != null ? playerHealth.transform : ownerNetworkObject != null ? ownerNetworkObject.transform : transform.root;
+        projectile.Initialize(direction, speed, damage, lifetime, owner, projectileSprite, canApplyLocalDamage);
+    }
+
+    void ApplyAimPose(float aimAngle)
+    {
+        float sway = Mathf.Sin(Time.time * idleSwaySpeed) * idleSwayAmount;
+        float recoil = RecoilAmount();
+        transform.rotation = Quaternion.Euler(0, 0, aimAngle + sway + recoil * recoilAngle);
+        if (spriteRenderer != null)
+            spriteRenderer.flipY = Mathf.Abs(Mathf.DeltaAngle(0, aimAngle)) > 90f;
+        Vector3 targetPosition = spriteStartPosition + Vector3.left * (recoilDistance * recoil);
+        weaponSprite.localPosition = Vector3.Lerp(weaponSprite.localPosition, targetPosition, 30f * Time.deltaTime);
     }
 
     float RecoilAmount()

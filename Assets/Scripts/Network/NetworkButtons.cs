@@ -202,7 +202,7 @@ public class NetworkButtons : MonoBehaviour
         
         response.CreatePlayerObject = true;
         response.PlayerPrefabHash = prefabHash;
-        response.Position = GetSpawnPosition();
+        response.Position = GetSpawnPosition(request.ClientNetworkId);
         response.Rotation = Quaternion.identity;
 
         Debug.Log($"[NetworkButtons.ApprovalCheck] Approved with prefab hash {prefabHash} for '{clientCharacter}'");
@@ -405,16 +405,16 @@ public class NetworkButtons : MonoBehaviour
         return null;
     }
 
-    private Vector3 GetSpawnPosition()
+    private Vector3 GetSpawnPosition(ulong clientId = 0)
     {
         Transform spawnPoint = GameObject.Find("SpawnPoint")?.transform;
         if (spawnPoint != null)
         {
-            return spawnPoint.position;
+            return spawnPoint.position + Vector3.right * ((clientId % 4) * 1.5f);
         }
 
         // Default spawn position
-        return Vector3.zero;
+        return Vector3.right * ((clientId % 4) * 1.5f);
     }
 
     /// <summary>

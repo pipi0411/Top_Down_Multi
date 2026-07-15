@@ -1,15 +1,18 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerHealth : NetworkBehaviour
 {
+    const int WallsSortingLayerId = unchecked((int)2393433307u);
     [SerializeField] PlayerConfig playerConfig;
     [SerializeField] int startingAmmo = 30;
     [SerializeField] int startingReserveAmmo = 120;
     [SerializeField] float energyRegenerationDelay = 1.5f;
     [SerializeField] float energyRegenerationPerSecond = 10f;
     [SerializeField] float reloadDuration = 1.2f;
+    [SerializeField] bool allowWeaponDamageFromPlayers;
 
     readonly NetworkVariable<float> networkHealth = new(0);
     readonly NetworkVariable<float> networkArmor = new(0);
@@ -29,6 +32,7 @@ public class PlayerHealth : NetworkBehaviour
     public int MaxAmmo => startingAmmo;
     public int CurrentReserveAmmo => IsSpawned ? networkReserveAmmo.Value : offlineReserveAmmo;
     public bool IsReloading => isReloading;
+    public bool AllowWeaponDamageFromPlayers => allowWeaponDamageFromPlayers;
 
     void Awake()
     {
@@ -154,6 +158,51 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (IsSpawned && !IsServer) DamageServerRpc(amount);
         else ApplyDamage(amount);
+    }
+
+    public void SubmitShot(Vector2 origin, Vector2 direction, float damage, float range)
+    {
+        if (!IsSpawned || !IsOwner) return;
+        ShotServerRpc(origin, direction.normalized, damage, range);
+    }
+
+    [Rpc(SendTo.Server)]
+    void ShotServerRpc(Vector2 origin, Vector2 direction, float damage, float range)
+    {
+        ResolveServerShot(origin, direction, damage, range);
+    }
+
+    public void ResolveServerShot(Vector2 origin, Vector2 direction, float damage, float range)
+    {
+        if (!IsServer) return;
+        direction = direction.normalized;
+        RaycastHit2D[] hits = Physics2D.RaycastAll(origin, direction, range);
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
+            PlayerHealth target = hit.collider.GetComponentInParent<PlayerHealth>();
+            if (target != null && target != this)
+            {
+                if (target.AllowWeaponDamageFromPlayers)
+                    target.ApplyDamage(Mathf.Max(0, damage));
+                return;
+            }
+            if (IsWallCollider(hit.collider)) return;
+        }
+    }
+
+    bool IsWallCollider(Collider2D collider)
+    {
+        Renderer[] renderers = collider.GetComponentsInChildren<Renderer>();
+        foreach (Renderer hitRenderer in renderers)
+            if (hitRenderer.sortingLayerID == WallsSortingLayerId) return true;
+
+        Renderer ownRenderer = collider.GetComponent<Renderer>();
+        if (ownRenderer != null) return ownRenderer.sortingLayerID == WallsSortingLayerId;
+        Renderer parentRenderer = collider.GetComponentInParent<Renderer>();
+        return parentRenderer != null && parentRenderer.sortingLayerID == WallsSortingLayerId;
     }
 
     public void RecoverHealth(float amount)

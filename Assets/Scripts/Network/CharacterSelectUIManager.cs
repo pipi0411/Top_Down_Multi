@@ -610,7 +610,8 @@ public class CharacterSelectUIManager : MonoBehaviour
             return;
         }
 
-        availableCharacters = result.characters;
+        if (result.characters.Length == characterButtons.Length)
+            availableCharacters = result.characters;
         if (multiplayerSelectionContext)
         {
             ApplyTakenCharacters(result.takenCharacters);
