@@ -208,6 +208,10 @@ public class PlayerHealth : NetworkBehaviour
         {
             if (hit.collider == null || hit.collider.isTrigger) continue;
             if (hit.transform.IsChildOf(transform)) continue;
+
+            Door door = hit.collider.GetComponentInParent<Door>();
+            if (door != null && door.BlocksProjectiles) return;
+
             EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
             if (enemy != null)
             {

@@ -58,6 +58,14 @@ public class Projectile : MonoBehaviour
         {
             if (hit.collider == null || hit.collider.isTrigger) continue;
             if (ownerRoot != null && hit.transform.IsChildOf(ownerRoot)) continue;
+
+            Door door = hit.collider.GetComponentInParent<Door>();
+            if (door != null && door.BlocksProjectiles)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             EnemyHealth enemy = hit.collider.GetComponentInParent<EnemyHealth>();
             if (enemy != null)
             {

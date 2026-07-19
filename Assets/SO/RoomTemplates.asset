@@ -37,13 +37,13 @@ MonoBehaviour:
     ProPrefab: {fileID: 736011073690439653, guid: f219ad390a6029641a916e402d74501c, type: 3}
   - Name: 'Box 2 '
     PropColor: {r: 0.15294118, g: 0.31764707, b: 0.6627451, a: 1}
-    ProPrefab: {fileID: 7584944776471413339, guid: 481e4fa6f2b6ed14e93f95f7c057f890, type: 3}
+    ProPrefab: {fileID: 7584944776471413339, guid: 9901bc1dc24a61f43bdf5b5240aa987c, type: 3}
   - Name: Box 3
     PropColor: {r: 0.91764706, g: 0.42352942, b: 0.42352942, a: 1}
-    ProPrefab: {fileID: 4166439687037503426, guid: 2a1d364fac760b541bb1c2977cd63885, type: 3}
+    ProPrefab: {fileID: 4166439687037503426, guid: 481e4fa6f2b6ed14e93f95f7c057f890, type: 3}
   - Name: Box 4
     PropColor: {r: 0.8235294, g: 0.8392157, b: 0.8745098, a: 1}
-    ProPrefab: {fileID: 8913881614188887950, guid: 9901bc1dc24a61f43bdf5b5240aa987c, type: 3}
+    ProPrefab: {fileID: 8913881614188887950, guid: 2a1d364fac760b541bb1c2977cd63885, type: 3}
   - Name: Spike
     PropColor: {r: 0.32156864, g: 0.3764706, b: 0.4862745, a: 1}
-    ProPrefab: {fileID: 0}
+    ProPrefab: {fileID: 749514950049657764, guid: ce485dd1fdd8b6b42a35665e7cbc0113, type: 3}
