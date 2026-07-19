@@ -19,12 +19,17 @@ public class Room : MonoBehaviour
 
     [Header("Grid")]
     [SerializeField] private Tilemap extraTilemap;
+    [Header("Doors")]
+    [SerializeField] private Transform[] posDoorNS;
+    [SerializeField] private Transform[] posDoorWE;
     
     // Position (Key) - Free/ Not Free (Value)
     private Dictionary<Vector3, bool> tiles = new Dictionary<Vector3, bool>();
+    private List<Door> doorList = new List<Door>();
     private void Start()
     {
         GetTiles();
+        CreateDoors();
         GenerateRoomUsingTemplate();
     }
     
@@ -80,6 +85,31 @@ public class Room : MonoBehaviour
                 }
             }
         }
+    }
+    
+    private void CreateDoors() 
+    {
+        if (posDoorNS.Length > 0)
+        {
+            for (int i = 0; i < posDoorNS.Length; i++)
+            {
+                RegisterDoor(LevelManager.Instance.DungeonLibrary.DoorNS, posDoorNS[i]);
+            }
+        }
+
+        if (posDoorWE.Length > 0)
+        {
+            for (int i = 0; i < posDoorWE.Length; i++)
+            {
+                RegisterDoor(LevelManager.Instance.DungeonLibrary.DoorWE, posDoorWE[i]);
+            }
+        }
+    }
+    private void RegisterDoor(GameObject doorPrefab, Transform objTransform)
+    {
+       GameObject doorGO = Instantiate(doorPrefab, objTransform.position, Quaternion.identity, objTransform);
+       Door door = doorGO.GetComponent<Door>();
+       doorList.Add(door);
     }
 
     private bool NormalRoom()

@@ -133,7 +133,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 54433004477142631, guid: 784d697a125a0a747b66368aac5dd365, type: 3}
       propertyPath: useDebug
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 555074337953985795, guid: 784d697a125a0a747b66368aac5dd365, type: 3}
       propertyPath: m_LocalPosition.x
@@ -189,7 +189,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1968228706676262161, guid: 784d697a125a0a747b66368aac5dd365, type: 3}
       propertyPath: useDebug
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1968228706676262161, guid: 784d697a125a0a747b66368aac5dd365, type: 3}
       propertyPath: extraTilemap
@@ -828,6 +828,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelManager
   roomTemplates: {fileID: 11400000, guid: 991f8268fadbcdd49b497d608dc9f2f0, type: 2}
+  dungeonLibrary: {fileID: 11400000, guid: fec53140458e1044aa25987dc02861a1, type: 2}
 --- !u!4 &443172666
 Transform:
   m_ObjectHideFlags: 0
