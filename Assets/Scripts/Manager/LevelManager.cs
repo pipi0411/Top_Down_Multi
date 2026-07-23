@@ -19,11 +19,44 @@ public class LevelManager : MonoBehaviour
 
     public RoomTemplate RoomTemplates => roomTemplates;
     public DungeonLibrary DungeonLibrary => dungeonLibrary;
+
+    private Room currentRoom;
+    private int currentLevelIndex;
+    private int currentDungeonIndex;
+    private GameObject currentDungeonGO;
     
     private void Awake()
     {
         Instance = this;
         boxBudgetInitialized = false;
+    }
+
+    private void  Start()
+    {
+        CreateDungeon();
+    }
+
+    private void CreateDungeon()
+    {
+      currentDungeonGO = Instantiate(dungeonLibrary.Levels[currentLevelIndex].Dungeons[currentDungeonIndex], transform);  
+      currentDungeonIndex++;
+    }
+    private void  PlayerEnterEventCallback(Room room)
+    {
+        currentRoom = room;
+        if (currentRoom.RoomCompleted == false)
+        {
+            currentRoom.CloseDoors();
+        }
+    }
+    private void OnEnable()
+    {
+        Room.OnPlayerEnterEvent += PlayerEnterEventCallback;
+    }
+
+    private void OnDisable()
+    {
+        Room.OnPlayerEnterEvent -= PlayerEnterEventCallback;
     }
 
     public int RequestBoxCountForRoom(int candidateCount)

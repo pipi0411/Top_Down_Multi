@@ -18,9 +18,10 @@ GameObject:
   - component: {fileID: 2756812780320096703}
   - component: {fileID: 7445540419748212163}
   - component: {fileID: 910000000000000002}
+  - component: {fileID: 884422002}
   m_Layer: 0
   m_Name: Player_Ganfald
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -69,52 +70,6 @@ Rigidbody2D:
   m_SleepingMode: 1
   m_CollisionDetection: 0
   m_Constraints: 4
---- !u!61 &884422002
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016924958820410742}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
-    newSize: {x: 1, y: 1}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
-  m_EdgeRadius: 0
 --- !u!114 &6222541652244197584
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -127,7 +82,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2574091362
+  GlobalObjectIdHash: 4023225579
   InScenePlacedSourceGlobalObjectIdHash: 4023225579
   DeferredDespawnTick: 0
   Ownership: 1
@@ -255,7 +210,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b708c12896f0252489ce9e5e797db7e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  ShowTopMostFoldoutHeaderGroup: 1
   playerConfig: {fileID: 11400000, guid: 16620368ab9f06d4ab7fd9fc132863f0, type: 2}
+  startingAmmo: 30
+  startingReserveAmmo: 120
+  energyRegenerationDelay: 1.5
+  energyRegenerationPerSecond: 10
+  reloadDuration: 1.2
+  allowWeaponDamageFromPlayers: 0
+  respawnDelay: 2
+  respawnInvulnerableTime: 1.5
+  checkpointObjectName: Checkpoint
+  spawnPointObjectName: SpawnPoint
 --- !u!114 &7445540419748212163
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -269,6 +235,69 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerEnergy
   playerConfig: {fileID: 11400000, guid: 16620368ab9f06d4ab7fd9fc132863f0, type: 2}
+--- !u!114 &910000000000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3016924958820410742}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4c7f912ad684321ba07d155a5b349c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
+  ShowTopMostFoldoutHeaderGroup: 1
+  startingWeaponPrefab: {fileID: 5190589855246738795, guid: 74b05e7c11021364d8d09d9da93efd4a, type: 3}
+  socketLocalPosition: {x: 0.2, y: -0.08, z: -0.1}
+  socketLocalEulerAngles: {x: 0, y: 0, z: 0}
+  aimSyncThreshold: 0.5
+--- !u!61 &884422002
+BoxCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3016924958820410742}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_SpriteTilingProperty:
+    border: {x: 0, y: 0, z: 0, w: 0}
+    pivot: {x: 0.5, y: 0.5}
+    oldSize: {x: 1, y: 1}
+    newSize: {x: 1, y: 1}
+    adaptiveTilingThreshold: 0.5
+    drawMode: 0
+    adaptiveTiling: 0
+  m_AutoTiling: 0
+  m_Size: {x: 1, y: 1}
+  m_EdgeRadius: 0
 --- !u!1 &3390172431318967560
 GameObject:
   m_ObjectHideFlags: 0
@@ -347,7 +376,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1034213121
-  m_SortingLayer: 1
+  m_SortingLayer: 6
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: -1915686967, guid: f822b81d9aaa15a4397af6125f3e0705, type: 3}
@@ -438,7 +467,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 1034213121
-  m_SortingLayer: 1
+  m_SortingLayer: 6
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Sprite: {fileID: 1293583603, guid: 16f3bde4aaa4b1b4ca1fa23e590a10c6, type: 3}
@@ -451,18 +480,3 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!114 &910000000000000002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3016924958820410742}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a4c7f912ad684321ba07d155a5b349c8, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
-  startingWeaponPrefab: {fileID: 5190589855246738795, guid: 74b05e7c11021364d8d09d9da93efd4a, type: 3}
-  socketLocalPosition: {x: 0.2, y: -0.08, z: -0.1}
-  socketLocalEulerAngles: {x: 0, y: 0, z: 0}

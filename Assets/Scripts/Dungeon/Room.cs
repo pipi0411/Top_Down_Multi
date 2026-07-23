@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
+using System;
 
 public enum RoomType
 {
@@ -12,6 +13,7 @@ public enum RoomType
 }
 public class Room : MonoBehaviour
 {
+    public static event Action<Room> OnPlayerEnterEvent;
     [Header("Config")]
     [SerializeField] private bool useDebug;
     [SerializeField] private RoomType roomType;
@@ -22,6 +24,8 @@ public class Room : MonoBehaviour
     [Header("Doors")]
     [SerializeField] private Transform[] posDoorNS;
     [SerializeField] private Transform[] posDoorWE;
+
+    public bool RoomCompleted { get; set; }
 
     // Position (Key) - Free/ Not Free (Value)
     private Dictionary<Vector3, bool> tiles = new Dictionary<Vector3, bool>();
@@ -261,6 +265,22 @@ public class Room : MonoBehaviour
             Prop = prop;
         }
     }
+
+    public void CloseDoors()
+    {
+        for (int i = 0; i < doorList.Count; i++)
+        {
+            doorList[i].ShowCloseAnimation();
+        }
+    }
+
+    public void  OpenDoors()
+    {
+        for (int i = 0; i < doorList.Count; i++)
+        {
+            doorList[i].ShowOpenAnimation();
+        }
+    }
     
     private void CreateDoors() 
     {
@@ -305,6 +325,21 @@ public class Room : MonoBehaviour
         return roomType == RoomType.RoomFree || roomType == RoomType.RoomEntrance;
     }
 
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (NormalRoom())
+        {
+            return;
+        }
+
+        if (other.CompareTag("Player"))
+        {
+            if (OnPlayerEnterEvent != null)
+            {
+                OnPlayerEnterEvent.Invoke(this);
+            }
+        }
+    }
 
     private void OnDrawGizmosSelected()
     {
