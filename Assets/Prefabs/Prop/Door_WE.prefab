@@ -70,8 +70,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Door
   openWhenPlayerNear: 1
   openDistance: 1.25
-  closeDistance: 1.3
-  closeDelayAfterPlayerLeaves: 0.05
+  closeDistance: 2.1
+  closeDelayAfterPlayerLeaves: 0.25
+  minOpenDuration: 0.35
   checkInterval: 0.02
   animationFadeDuration: 0
 --- !u!1 &5788759579398889182
@@ -205,10 +206,10 @@ BoxCollider2D:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
     oldSize: {x: 1, y: 5}
-    newSize: {x: 1, y: 5}
+    newSize: {x: 0.65, y: 4.6}
     adaptiveTilingThreshold: 0.5
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1, y: 5}
+  m_Size: {x: 0.65, y: 4.6}
   m_EdgeRadius: 0

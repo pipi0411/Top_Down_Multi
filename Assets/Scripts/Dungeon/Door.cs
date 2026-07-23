@@ -4,16 +4,21 @@ public class Door : MonoBehaviour
 {
     [SerializeField] private bool openWhenPlayerNear = true;
     [SerializeField] private float openDistance = 1.25f;
-    [SerializeField] private float closeDistance = 1.3f;
-    [SerializeField] private float closeDelayAfterPlayerLeaves = 0.05f;
+    [SerializeField] private float closeDistance = 2.1f;
+    [SerializeField] private float closeDelayAfterPlayerLeaves = 0.25f;
+    [SerializeField] private float minOpenDuration = 0.35f;
     [SerializeField] private float checkInterval = 0.02f;
     [SerializeField] private float animationFadeDuration = 0f;
 
     private Animator animator;
     private Collider2D[] doorColliders;
+    private Bounds detectionBounds;
+    private bool hasDetectionBounds;
+    private bool isLocked;
     private bool isOpen;
     private float nextCheckTime;
     private float lastPlayerNearTime = float.NegativeInfinity;
+    private float lastStateChangeTime = float.NegativeInfinity;
     private int openedStateHash;
     private int closedStateHash;
 
@@ -26,14 +31,23 @@ public class Door : MonoBehaviour
         CacheDoorColliders();
     }
 
+    private void OnValidate()
+    {
+        closeDistance = Mathf.Max(closeDistance, openDistance + 0.25f);
+        closeDelayAfterPlayerLeaves = Mathf.Max(0f, closeDelayAfterPlayerLeaves);
+        minOpenDuration = Mathf.Max(0f, minOpenDuration);
+        checkInterval = Mathf.Max(0.01f, checkInterval);
+    }
+
     private void Start()
     {
         PlayClosedInstantly();
+        CacheDetectionBounds();
     }
 
     private void Update()
     {
-        if (!openWhenPlayerNear || Time.time < nextCheckTime) return;
+        if (isLocked || !openWhenPlayerNear || Time.time < nextCheckTime) return;
 
         nextCheckTime = Time.time + checkInterval;
         bool shouldOpen = HasPlayerNear(isOpen ? closeDistance : openDistance);
@@ -43,7 +57,9 @@ public class Door : MonoBehaviour
             lastPlayerNearTime = Time.time;
             ShowOpenAnimation();
         }
-        else if (isOpen && Time.time - lastPlayerNearTime >= closeDelayAfterPlayerLeaves)
+        else if (isOpen
+                 && Time.time - lastPlayerNearTime >= closeDelayAfterPlayerLeaves
+                 && Time.time - lastStateChangeTime >= minOpenDuration)
         {
             ShowCloseAnimation();
         }
@@ -55,6 +71,28 @@ public class Door : MonoBehaviour
         SetDoorPassable(false);
     }
 
+    private void CacheDetectionBounds()
+    {
+        hasDetectionBounds = false;
+
+        if (doorColliders == null) return;
+
+        foreach (Collider2D doorCollider in doorColliders)
+        {
+            if (doorCollider == null || !doorCollider.enabled) continue;
+
+            if (!hasDetectionBounds)
+            {
+                detectionBounds = doorCollider.bounds;
+                hasDetectionBounds = true;
+            }
+            else
+            {
+                detectionBounds.Encapsulate(doorCollider.bounds);
+            }
+        }
+    }
+
     private bool HasPlayerNear(float distance)
     {
         PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
@@ -64,27 +102,85 @@ public class Door : MonoBehaviour
         {
             if (player == null || player.CurrentHealth <= 0f) continue;
 
-            Vector2 playerPosition = player.transform.position;
-            if (((Vector2)transform.position - playerPosition).sqrMagnitude <= sqrDistance)
+            if (GetSqrDistanceToPlayer(player) <= sqrDistance)
                 return true;
         }
 
         return false;
     }
 
+    private float GetSqrDistanceToPlayer(PlayerHealth player)
+    {
+        Collider2D[] playerColliders = player.GetComponentsInChildren<Collider2D>();
+        float nearestSqrDistance = float.PositiveInfinity;
+
+        if (playerColliders != null && playerColliders.Length > 0)
+        {
+            foreach (Collider2D playerCollider in playerColliders)
+            {
+                if (playerCollider == null || !playerCollider.enabled || playerCollider.isTrigger) continue;
+
+                float sqrDistance = GetSqrDistanceToDoor(playerCollider);
+                if (sqrDistance < nearestSqrDistance)
+                    nearestSqrDistance = sqrDistance;
+            }
+        }
+
+        if (!float.IsPositiveInfinity(nearestSqrDistance))
+            return nearestSqrDistance;
+
+        return GetSqrDistanceToDoor(player.transform.position);
+    }
+
+    private float GetSqrDistanceToDoor(Collider2D playerCollider)
+    {
+        return GetSqrDistanceToDoor(playerCollider.bounds);
+    }
+
+    private float GetSqrDistanceToDoor(Bounds playerBounds)
+    {
+        if (hasDetectionBounds)
+            return GetSqrDistanceBetweenBounds(detectionBounds, playerBounds);
+
+        return ((Vector2)transform.position - (Vector2)playerBounds.center).sqrMagnitude;
+    }
+
+    private float GetSqrDistanceToDoor(Vector2 point)
+    {
+        if (hasDetectionBounds)
+            return detectionBounds.SqrDistance(point);
+
+        return ((Vector2)transform.position - point).sqrMagnitude;
+    }
+
+    private float GetSqrDistanceBetweenBounds(Bounds a, Bounds b)
+    {
+        float dx = Mathf.Max(0f, Mathf.Max(a.min.x - b.max.x, b.min.x - a.max.x));
+        float dy = Mathf.Max(0f, Mathf.Max(a.min.y - b.max.y, b.min.y - a.max.y));
+        return dx * dx + dy * dy;
+    }
+
     public void ShowCloseAnimation()
     {
         if (!isOpen) return;
+
+        if (HasPlayerNear(closeDistance))
+        {
+            lastPlayerNearTime = Time.time;
+            return;
+        }
 
         if (animator != null)
             animator.CrossFade(closedStateHash, animationFadeDuration, 0, 0f);
 
         SetDoorPassable(false);
         isOpen = false;
+        lastStateChangeTime = Time.time;
     }
 
     public void ShowOpenAnimation()
     {
+        if (isLocked) return;
         if (isOpen) return;
 
         if (animator != null)
@@ -92,6 +188,25 @@ public class Door : MonoBehaviour
 
         SetDoorPassable(true);
         isOpen = true;
+        lastStateChangeTime = Time.time;
+    }
+
+    public void LockClosed()
+    {
+        isLocked = true;
+
+        if (animator != null)
+            animator.CrossFade(closedStateHash, animationFadeDuration, 0, 0f);
+
+        SetDoorPassable(false);
+        isOpen = false;
+        lastStateChangeTime = Time.time;
+    }
+
+    public void UnlockAndOpen()
+    {
+        isLocked = false;
+        ShowOpenAnimation();
     }
 
     private void ResolveAnimationStates()
@@ -117,6 +232,7 @@ public class Door : MonoBehaviour
 
         SetDoorPassable(false);
         isOpen = false;
+        lastStateChangeTime = Time.time;
     }
 
     private void SetDoorPassable(bool passable)

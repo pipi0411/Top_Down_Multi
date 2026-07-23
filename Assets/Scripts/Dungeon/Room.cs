@@ -21,6 +21,11 @@ public class Room : MonoBehaviour
     [Header("Grid")]
     [SerializeField] private Tilemap extraTilemap;
 
+    [Header("Enemy Waves")]
+    [SerializeField] private EnemyWaveData waveData;
+    [HideInInspector]
+    [SerializeField] private EnemyWaveSpawner waveSpawner;
+
     [Header("Doors")]
     [SerializeField] private Transform[] posDoorNS;
     [SerializeField] private Transform[] posDoorWE;
@@ -33,11 +38,13 @@ public class Room : MonoBehaviour
     private readonly List<BoxSpawnPoint> pendingBoxPoints = new List<BoxSpawnPoint>();
 
     public bool CanSpawnBoxes => !NormalRoom();
+    public bool HasEnemyWave => IsCombatRoom() && waveData != null;
 
     private void Start()
     {
         GetTiles();
         CreateDoors();
+        EnsureWaveSpawner();
         GenerateRoomUsingTemplate();
     }
     
@@ -274,12 +281,51 @@ public class Room : MonoBehaviour
         }
     }
 
+    public void LockDoors()
+    {
+        for (int i = 0; i < doorList.Count; i++)
+        {
+            doorList[i].LockClosed();
+        }
+    }
+
     public void  OpenDoors()
     {
         for (int i = 0; i < doorList.Count; i++)
         {
-            doorList[i].ShowOpenAnimation();
+            doorList[i].UnlockAndOpen();
         }
+    }
+
+    public void BeginEncounter()
+    {
+        if (RoomCompleted || !IsCombatRoom()) return;
+
+        EnsureWaveSpawner();
+        if (waveSpawner != null)
+        {
+            waveSpawner.SetWaveData(waveData);
+            waveSpawner.StartWaves(this);
+        }
+        else
+        {
+            RoomCompleted = true;
+            OpenDoors();
+        }
+    }
+
+    private void EnsureWaveSpawner()
+    {
+        if (!IsCombatRoom()) return;
+
+        if (waveSpawner == null)
+            waveSpawner = GetComponent<EnemyWaveSpawner>();
+
+        if (waveSpawner == null && waveData != null)
+            waveSpawner = gameObject.AddComponent<EnemyWaveSpawner>();
+
+        if (waveSpawner != null)
+            waveSpawner.SetWaveData(waveData);
     }
     
     private void CreateDoors() 
@@ -323,6 +369,11 @@ public class Room : MonoBehaviour
     private bool NormalRoom()
     {
         return roomType == RoomType.RoomFree || roomType == RoomType.RoomEntrance;
+    }
+
+    private bool IsCombatRoom()
+    {
+        return roomType == RoomType.RoomEnemy || roomType == RoomType.RoomBoss;
     }
 
     private void OnTriggerEnter2D(Collider2D other)

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class LevelManager : MonoBehaviour
@@ -21,6 +22,7 @@ public class LevelManager : MonoBehaviour
     public DungeonLibrary DungeonLibrary => dungeonLibrary;
 
     private Room currentRoom;
+    private readonly HashSet<Room> closedRooms = new HashSet<Room>();
     private int currentLevelIndex;
     private int currentDungeonIndex;
     private GameObject currentDungeonGO;
@@ -43,10 +45,16 @@ public class LevelManager : MonoBehaviour
     }
     private void  PlayerEnterEventCallback(Room room)
     {
-        currentRoom = room;
-        if (currentRoom.RoomCompleted == false)
+        if (room == null)
         {
-            currentRoom.CloseDoors();
+            return;
+        }
+
+        currentRoom = room;
+        if (currentRoom.RoomCompleted == false && closedRooms.Add(currentRoom))
+        {
+            currentRoom.LockDoors();
+            currentRoom.BeginEncounter();
         }
     }
     private void OnEnable()

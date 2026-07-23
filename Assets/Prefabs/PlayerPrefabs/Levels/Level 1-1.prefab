@@ -336,6 +336,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Room_1C_Entrance
       objectReference: {fileID: 0}
+    - target: {fileID: 5022670146906164989, guid: c123d3c92120c4449bcac8ba8bc86612, type: 3}
+      propertyPath: waveData
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 9017073248594050883, guid: c123d3c92120c4449bcac8ba8bc86612, type: 3}
       propertyPath: m_LocalPosition.x
       value: 6.1
@@ -472,29 +476,9 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 555074337953985795}
     m_Modifications:
-    - target: {fileID: -1211574472482485706, guid: dea135b1d47210f4699028321b5a812d, type: 3}
-      propertyPath: roomType
-      value: 2
-      objectReference: {fileID: 0}
     - target: {fileID: 2119858852610964162, guid: dea135b1d47210f4699028321b5a812d, type: 3}
       propertyPath: m_Name
       value: Room_2C_SW
-      objectReference: {fileID: 0}
-    - target: {fileID: 2188934609402773927, guid: dea135b1d47210f4699028321b5a812d, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2.22
-      objectReference: {fileID: 0}
-    - target: {fileID: 2188934609402773927, guid: dea135b1d47210f4699028321b5a812d, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -7.652
-      objectReference: {fileID: 0}
-    - target: {fileID: 6926381780910197157, guid: dea135b1d47210f4699028321b5a812d, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -9.74
-      objectReference: {fileID: 0}
-    - target: {fileID: 6926381780910197157, guid: dea135b1d47210f4699028321b5a812d, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 1.28
       objectReference: {fileID: 0}
     - target: {fileID: 7651567904301638537, guid: dea135b1d47210f4699028321b5a812d, type: 3}
       propertyPath: m_LocalPosition.x
