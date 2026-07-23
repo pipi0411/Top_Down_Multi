@@ -12,5 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7284ee850f8770d439b66d4dece64ff8, type: 3}
   m_Name: DungeonLibrary
   m_EditorClassIdentifier: Assembly-CSharp::DungeonLibrary
+  Levels:
+  - Name: Level 1
+    Dungeons:
+    - {fileID: 4801310401583679969, guid: 784d697a125a0a747b66368aac5dd365, type: 3}
+    - {fileID: 2990279858676883596, guid: b59e8a30036eb4a408f2d60ae0e1900c, type: 3}
+    - {fileID: 6550446182209057907, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
+    - {fileID: 2628770328114923572, guid: 9c2f9e7299bc9ba4796ce74413d197ba, type: 3}
+    - {fileID: 6243869940527183153, guid: 7f9529421db28c74a8c5bb9705b3361c, type: 3}
   DoorNS: {fileID: 8761839046180524636, guid: 428c5d727ce32e242b25a7dfcc400546, type: 3}
   DoorWE: {fileID: 414494077919614872, guid: 4f6e00977a31f8e46b48e6bdd4f199c4, type: 3}
