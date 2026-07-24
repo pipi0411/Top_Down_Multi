@@ -38,6 +38,7 @@ public class EnemyStateMachine : MonoBehaviour
     EnemyDeadState deadState;
     Vector2 moveDirection;
     float nextAttackTime;
+    bool hasRangedWeapon;
 
     public PlayerHealth Target { get; private set; }
     public float IdleWanderRadius => enemyData != null ? enemyData.IdleWanderRadius : idleWanderRadius;
@@ -59,6 +60,7 @@ public class EnemyStateMachine : MonoBehaviour
         if (enemyData == null && health != null) enemyData = health.EnemyData;
         ApplyEnemyDataToInspector();
         if (health != null && enemyData != null) health.SetEnemyData(enemyData);
+        hasRangedWeapon = GetComponentInChildren<EnemyWeapon>(true) != null;
 
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
@@ -173,6 +175,7 @@ public class EnemyStateMachine : MonoBehaviour
 
     public void DealAttackDamage()
     {
+        if (hasRangedWeapon) return;
         if (Target == null || !CanAttack || !TargetInAttackRange()) return;
         nextAttackTime = Time.time + AttackCooldown;
         SetTrigger(attackTrigger);
