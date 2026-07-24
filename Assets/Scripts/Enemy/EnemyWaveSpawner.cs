@@ -50,6 +50,18 @@ public class EnemyWaveSpawner : MonoBehaviour
         waveRoutine = StartCoroutine(RunWaves());
     }
 
+    public void ResetWaves()
+    {
+        if (waveRoutine != null)
+        {
+            StopCoroutine(waveRoutine);
+            waveRoutine = null;
+        }
+
+        ClearAliveEnemies();
+        completed = false;
+    }
+
     private IEnumerator RunWaves()
     {
         for (int i = 0; i < waveData.Waves.Count; i++)
@@ -110,6 +122,23 @@ public class EnemyWaveSpawner : MonoBehaviour
         aliveEnemies.Remove(health);
     }
 
+    private void ClearAliveEnemies()
+    {
+        for (int i = aliveEnemies.Count - 1; i >= 0; i--)
+        {
+            EnemyHealth enemy = aliveEnemies[i];
+            if (enemy == null) continue;
+
+            NetworkObject networkObject = enemy.GetComponent<NetworkObject>();
+            if (networkObject != null && networkObject.IsSpawned)
+                networkObject.Despawn(true);
+            else
+                Destroy(enemy.gameObject);
+        }
+
+        aliveEnemies.Clear();
+    }
+
     private Transform GetRandomSpawnPoint()
     {
         if (spawnPoints == null || spawnPoints.Length == 0) return null;
@@ -129,8 +158,7 @@ public class EnemyWaveSpawner : MonoBehaviour
         EnemyWaveAnnouncementUI.Show("Unlock Door");
         if (ownerRoom != null)
         {
-            ownerRoom.RoomCompleted = true;
-            ownerRoom.OpenDoors();
+            ownerRoom.CompleteEncounter();
         }
     }
 

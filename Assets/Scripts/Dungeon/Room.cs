@@ -14,6 +14,8 @@ public enum RoomType
 public class Room : MonoBehaviour
 {
     public static event Action<Room> OnPlayerEnterEvent;
+    public static event Action<Room> OnCombatStartedEvent;
+    public static event Action<Room> OnCombatEndedEvent;
     [Header("Config")]
     [SerializeField] private bool useDebug;
     [SerializeField] private RoomType roomType;
@@ -301,6 +303,8 @@ public class Room : MonoBehaviour
     {
         if (RoomCompleted || !IsCombatRoom()) return;
 
+        OnCombatStartedEvent?.Invoke(this);
+
         EnsureWaveSpawner();
         if (waveSpawner != null)
         {
@@ -309,9 +313,31 @@ public class Room : MonoBehaviour
         }
         else
         {
-            RoomCompleted = true;
-            OpenDoors();
+            CompleteEncounter();
         }
+    }
+
+    public void CompleteEncounter()
+    {
+        if (RoomCompleted) return;
+
+        RoomCompleted = true;
+        OpenDoors();
+        OnCombatEndedEvent?.Invoke(this);
+    }
+
+    public void ResetEncounter()
+    {
+        if (!IsCombatRoom()) return;
+
+        RoomCompleted = false;
+        EnsureWaveSpawner();
+
+        if (waveSpawner != null)
+            waveSpawner.ResetWaves();
+
+        OpenDoors();
+        OnCombatEndedEvent?.Invoke(this);
     }
 
     private void EnsureWaveSpawner()

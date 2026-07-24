@@ -10,7 +10,7 @@ public class InGameHUDUIManager : MonoBehaviour
     [SerializeField] private Image hpBarFill;
     [SerializeField] private TextMeshProUGUI hpText;
 
-    [Header("Ammo")]
+    [Header("Mana")]
     [SerializeField] private TextMeshProUGUI ammoText;
 
     [Header("MiniMap")]
@@ -22,9 +22,10 @@ public class InGameHUDUIManager : MonoBehaviour
 
     private float currentHP = 100f;
     private float maxHP = 100f;
+    private float currentMana = 100f;
+    private float maxMana = 100f;
     private int currentAmmo = 30;
     private int maxAmmo = 30;
-    private int reserveAmmo;
     private bool isReloading;
     private PlayerHealth localPlayerStats;
 
@@ -47,7 +48,7 @@ public class InGameHUDUIManager : MonoBehaviour
 
         // Initialize HUD
         UpdateHPBar();
-        UpdateAmmo();
+        UpdateMana();
     }
 
     private void OnDisable()
@@ -81,12 +82,13 @@ public class InGameHUDUIManager : MonoBehaviour
             {
                 currentHP = localPlayerStats.CurrentHealth;
                 maxHP = localPlayerStats.PlayerConfig.MaxHealth;
+                currentMana = localPlayerStats.CurrentEnergy;
+                maxMana = localPlayerStats.PlayerConfig.MaxEnergy;
                 currentAmmo = localPlayerStats.CurrentAmmo;
                 maxAmmo = localPlayerStats.MaxAmmo;
-                reserveAmmo = localPlayerStats.CurrentReserveAmmo;
                 isReloading = localPlayerStats.IsReloading;
                 UpdateHPBar();
-                UpdateAmmo();
+                UpdateMana();
             }
         }
     }
@@ -136,23 +138,24 @@ public class InGameHUDUIManager : MonoBehaviour
     public void UpdateAmmo(int ammo = -1)
     {
         if (ammo >= 0)
-            currentAmmo = ammo;
+            currentMana = ammo;
 
+        UpdateMana();
+    }
+
+    public void UpdateMana()
+    {
         if (ammoText != null)
         {
             ammoText.text = isReloading
-                ? $"Ammo: {currentAmmo}/{maxAmmo} | {reserveAmmo} (Reloading...)"
-                : $"Ammo: {currentAmmo}/{maxAmmo} | {reserveAmmo}";
+                ? $"Ammo: {currentAmmo}/{maxAmmo} (Reloading...)"
+                : $"Ammo: {currentAmmo}/{maxAmmo}";
         }
     }
 
     public void FireWeapon()
     {
-        if (currentAmmo > 0)
-        {
-            currentAmmo--;
-            UpdateAmmo();
-        }
+        UpdateMana();
     }
 
     private void OnPauseClicked()

@@ -57,6 +57,14 @@ public class LevelManager : MonoBehaviour
             currentRoom.BeginEncounter();
         }
     }
+
+    public void ResetCurrentRoomEncounter()
+    {
+        if (currentRoom == null || currentRoom.RoomCompleted) return;
+
+        closedRooms.Remove(currentRoom);
+        currentRoom.ResetEncounter();
+    }
     private void OnEnable()
     {
         Room.OnPlayerEnterEvent += PlayerEnterEventCallback;

@@ -1,9 +1,26 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 public class PlayerEnergy : MonoBehaviour
 {
     [Header("Player")]
     [SerializeField] private PlayerConfig playerConfig;
+    [SerializeField] private float regenerationDelayAfterCombat = 15f;
+    [SerializeField] private float regenerationPerSecond = 1f;
+
+    private bool isInCombat;
+    private float lastCombatEndTime = float.NegativeInfinity;
+    private float lastEnergyUseTime = float.NegativeInfinity;
+
+    private void OnEnable()
+    {
+        Room.OnCombatStartedEvent += HandleCombatStarted;
+        Room.OnCombatEndedEvent += HandleCombatEnded;
+    }
+
+    private void OnDisable()
+    {
+        Room.OnCombatStartedEvent -= HandleCombatStarted;
+        Room.OnCombatEndedEvent -= HandleCombatEnded;
+    }
 
     private void Start()
     {
@@ -22,24 +39,13 @@ public class PlayerEnergy : MonoBehaviour
 
     private void Update()
     {
-        if (Keyboard.current == null)
-        {
-            return;
-        }
-
-        if (Keyboard.current.hKey.wasPressedThisFrame)
-        {
-            UseEnergy(1f);
-        }
-        if (Keyboard.current.jKey.wasPressedThisFrame)
-        {
-            RecoverEnergy(1f);
-        }
+        RegenerateEnergyOutsideCombat();
     }
     public void UseEnergy(float amount)
     {
         if (playerConfig == null) return;
         playerConfig.Energy -= amount;
+        lastEnergyUseTime = Time.time;
         if (playerConfig.Energy < 0)
         {
             playerConfig.Energy = 0;
@@ -62,5 +68,24 @@ public class PlayerEnergy : MonoBehaviour
         {
             playerConfig.Energy = playerConfig.MaxEnergy;
         }
+    }
+
+    private void RegenerateEnergyOutsideCombat()
+    {
+        if (playerConfig == null || isInCombat) return;
+        if (Time.time - lastCombatEndTime < regenerationDelayAfterCombat) return;
+        if (Time.time - lastEnergyUseTime < regenerationDelayAfterCombat) return;
+        RecoverEnergy(regenerationPerSecond * Time.deltaTime);
+    }
+
+    private void HandleCombatStarted(Room room)
+    {
+        isInCombat = true;
+    }
+
+    private void HandleCombatEnded(Room room)
+    {
+        isInCombat = false;
+        lastCombatEndTime = Time.time;
     }
 }

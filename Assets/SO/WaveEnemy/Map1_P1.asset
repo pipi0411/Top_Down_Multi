@@ -19,17 +19,17 @@ MonoBehaviour:
     nextWaveDelay: 1.5
     enemies:
     - enemyPrefab: {fileID: 29814264549648042, guid: bef6a482f71c32b48ada81ae21bc6e81, type: 3}
-      count: 4
+      count: 1
     - enemyPrefab: {fileID: 181632380999484921, guid: 03df4a5ff23c51146a71b2f8b84a2ced, type: 3}
-      count: 3
+      count: 2
   - waveName: Wave 2
     startDelay: 0.5
     spawnInterval: 0.5
     nextWaveDelay: 2
     enemies:
     - enemyPrefab: {fileID: 181632380999484921, guid: 03df4a5ff23c51146a71b2f8b84a2ced, type: 3}
-      count: 5
+      count: 2
     - enemyPrefab: {fileID: 29814264549648042, guid: bef6a482f71c32b48ada81ae21bc6e81, type: 3}
-      count: 3
+      count: 2
     - enemyPrefab: {fileID: 552693198520379478, guid: ec10a2a78d527e34d96e1c37f2059627, type: 3}
-      count: 3
+      count: 2

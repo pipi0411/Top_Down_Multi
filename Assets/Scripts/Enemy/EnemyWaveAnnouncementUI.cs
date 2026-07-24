@@ -1,17 +1,18 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class EnemyWaveAnnouncementUI : MonoBehaviour
 {
+    private const float ShowDurationSeconds = 1f;
+
     [SerializeField] private TextMeshProUGUI waveText;
-    [SerializeField] private float showDuration = 5f;
-    [SerializeField] private float fadeDuration = 0.35f;
 
     private static EnemyWaveAnnouncementUI instance;
-    private Coroutine showRoutine;
     private CanvasGroup canvasGroup;
+    private string currentMessage;
+    private float hideAtTime;
+    private bool isVisible;
 
     private void Awake()
     {
@@ -25,7 +26,13 @@ public class EnemyWaveAnnouncementUI : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         canvasGroup = GetComponent<CanvasGroup>();
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        if (waveText != null) waveText.gameObject.SetActive(false);
+        HideImmediate();
+    }
+
+    private void Update()
+    {
+        if (isVisible && Time.unscaledTime >= hideAtTime)
+            HideImmediate();
     }
 
     public static void Show(string message)
@@ -65,8 +72,10 @@ public class EnemyWaveAnnouncementUI : MonoBehaviour
         rect.sizeDelta = new Vector2(900f, 120f);
 
         instance.waveText = text;
-        instance.canvasGroup = canvasObject.AddComponent<CanvasGroup>();
-        instance.waveText.gameObject.SetActive(false);
+        instance.canvasGroup = canvasObject.GetComponent<CanvasGroup>();
+        if (instance.canvasGroup == null)
+            instance.canvasGroup = canvasObject.AddComponent<CanvasGroup>();
+        instance.HideImmediate();
         DontDestroyOnLoad(canvasObject);
     }
 
@@ -74,29 +83,27 @@ public class EnemyWaveAnnouncementUI : MonoBehaviour
     {
         if (waveText == null) return;
 
-        if (showRoutine != null) StopCoroutine(showRoutine);
-        showRoutine = StartCoroutine(ShowRoutine(message));
-    }
+        if (isVisible && currentMessage == message)
+            return;
 
-    private IEnumerator ShowRoutine(string message)
-    {
+        currentMessage = message;
         waveText.text = message;
         waveText.color = Color.red;
         waveText.gameObject.SetActive(true);
         canvasGroup.alpha = 1f;
+        hideAtTime = Time.unscaledTime + ShowDurationSeconds;
+        isVisible = true;
+    }
 
-        yield return new WaitForSeconds(showDuration);
+    private void HideImmediate()
+    {
+        isVisible = false;
+        currentMessage = null;
 
-        float elapsed = 0f;
-        while (elapsed < fadeDuration)
-        {
-            elapsed += Time.deltaTime;
-            canvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
-            yield return null;
-        }
+        if (canvasGroup != null)
+            canvasGroup.alpha = 0f;
 
-        canvasGroup.alpha = 0f;
-        waveText.gameObject.SetActive(false);
-        showRoutine = null;
+        if (waveText != null)
+            waveText.gameObject.SetActive(false);
     }
 }

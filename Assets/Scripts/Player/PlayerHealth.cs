@@ -8,11 +8,12 @@ public class PlayerHealth : NetworkBehaviour
 {
     const int WallsSortingLayerId = unchecked((int)2393433307u);
     [SerializeField] PlayerConfig playerConfig;
-    [SerializeField] int startingAmmo = 30;
-    [SerializeField] int startingReserveAmmo = 120;
-    [SerializeField] float energyRegenerationDelay = 1.5f;
-    [SerializeField] float energyRegenerationPerSecond = 10f;
+    [SerializeField] int magazineSize = 30;
     [SerializeField] float reloadDuration = 1.2f;
+    [SerializeField] float energyRegenerationDelay = 15f;
+    [SerializeField] float energyRegenerationPerSecond = 1f;
+    [SerializeField] float healthRegenerationPerSecond = 1f;
+    [SerializeField] float armorRegenerationPerSecond = 0.2f;
     [SerializeField] bool allowWeaponDamageFromPlayers;
     [Header("Respawn")]
     [SerializeField] float respawnDelay = 2f;
@@ -23,14 +24,14 @@ public class PlayerHealth : NetworkBehaviour
     readonly NetworkVariable<float> networkHealth = new(0);
     readonly NetworkVariable<float> networkArmor = new(0);
     readonly NetworkVariable<float> networkEnergy = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    readonly NetworkVariable<int> networkAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    readonly NetworkVariable<int> networkReserveAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    readonly NetworkVariable<int> networkMagazineAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<bool> networkIsDead = new(false);
     float lastShotTime = float.NegativeInfinity;
+    float lastCombatEndTime = float.NegativeInfinity;
     float reloadCompleteTime;
-    int offlineAmmo;
-    int offlineReserveAmmo;
+    int offlineMagazineAmmo;
     bool isReloading;
+    bool isInCombat;
     bool offlineIsDead;
     bool isInvulnerable;
     Coroutine respawnRoutine;
@@ -41,9 +42,9 @@ public class PlayerHealth : NetworkBehaviour
     public PlayerConfig PlayerConfig => playerConfig;
     public float CurrentHealth => IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
     public float CurrentEnergy => IsSpawned ? networkEnergy.Value : playerConfig.Energy;
-    public int CurrentAmmo => IsSpawned ? networkAmmo.Value : offlineAmmo;
-    public int MaxAmmo => startingAmmo;
-    public int CurrentReserveAmmo => IsSpawned ? networkReserveAmmo.Value : offlineReserveAmmo;
+    public int CurrentAmmo => IsSpawned ? networkMagazineAmmo.Value : offlineMagazineAmmo;
+    public int MaxAmmo => magazineSize;
+    public int CurrentReserveAmmo => 0;
     public bool IsReloading => isReloading;
     public bool AllowWeaponDamageFromPlayers => allowWeaponDamageFromPlayers;
     public bool IsDead => IsSpawned ? networkIsDead.Value : offlineIsDead;
@@ -51,8 +52,7 @@ public class PlayerHealth : NetworkBehaviour
     void Awake()
     {
         if (playerConfig != null) playerConfig = Instantiate(playerConfig);
-        offlineAmmo = startingAmmo;
-        offlineReserveAmmo = startingReserveAmmo;
+        offlineMagazineAmmo = magazineSize;
         colliders = GetComponentsInChildren<Collider2D>(true);
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         rb = GetComponent<Rigidbody2D>();
@@ -70,8 +70,7 @@ public class PlayerHealth : NetworkBehaviour
         if (IsOwner)
         {
             networkEnergy.Value = playerConfig.MaxEnergy;
-            networkAmmo.Value = startingAmmo;
-            networkReserveAmmo.Value = startingReserveAmmo;
+            networkMagazineAmmo.Value = magazineSize;
             BindLocalUI();
         }
         SyncConfig();
@@ -101,6 +100,7 @@ public class PlayerHealth : NetworkBehaviour
         if (canControlResources)
         {
             RegenerateEnergy();
+            RegenerateHealthAndArmor();
             UpdateReload();
         }
         if (!canControlResources || Keyboard.current == null) return;
@@ -108,21 +108,33 @@ public class PlayerHealth : NetworkBehaviour
         if (Keyboard.current.pKey.wasPressedThisFrame) RecoverHealth(1);
     }
 
+    void OnEnable()
+    {
+        Room.OnCombatStartedEvent += HandleCombatStarted;
+        Room.OnCombatEndedEvent += HandleCombatEnded;
+    }
+
+    void OnDisable()
+    {
+        Room.OnCombatStartedEvent -= HandleCombatStarted;
+        Room.OnCombatEndedEvent -= HandleCombatEnded;
+    }
+
     public bool TryConsumeShot(float energyCost)
     {
         if (IsDead || IsSpawned && !IsOwner || isReloading) return false;
         float energy = IsSpawned ? networkEnergy.Value : playerConfig.Energy;
-        int ammo = IsSpawned ? networkAmmo.Value : offlineAmmo;
+        int ammo = IsSpawned ? networkMagazineAmmo.Value : offlineMagazineAmmo;
         if (energy < energyCost || ammo <= 0) return false;
         if (IsSpawned)
         {
             networkEnergy.Value = energy - energyCost;
-            networkAmmo.Value = ammo - 1;
+            networkMagazineAmmo.Value = ammo - 1;
         }
         else
         {
             playerConfig.Energy = energy - energyCost;
-            offlineAmmo = ammo - 1;
+            offlineMagazineAmmo = ammo - 1;
         }
         lastShotTime = Time.time;
         return true;
@@ -131,21 +143,19 @@ public class PlayerHealth : NetworkBehaviour
     public void ConfigureWeapon(ItemWeapon weaponData)
     {
         if (weaponData == null) return;
-        startingAmmo = Mathf.Max(1, weaponData.MagazineSize);
-        startingReserveAmmo = Mathf.Max(0, weaponData.StartingReserveAmmo);
+
+        magazineSize = Mathf.Max(1, weaponData.MagazineSize);
         reloadDuration = Mathf.Max(0.1f, weaponData.ReloadDuration);
-        offlineAmmo = startingAmmo;
-        offlineReserveAmmo = startingReserveAmmo;
+        offlineMagazineAmmo = magazineSize;
+
         if (IsSpawned && IsOwner)
-        {
-            networkAmmo.Value = startingAmmo;
-            networkReserveAmmo.Value = startingReserveAmmo;
-        }
+            networkMagazineAmmo.Value = magazineSize;
     }
 
     public bool TryStartReload()
     {
-        if (IsDead || IsSpawned && !IsOwner || isReloading || CurrentAmmo >= MaxAmmo || CurrentReserveAmmo <= 0) return false;
+        if (IsDead || IsSpawned && !IsOwner || isReloading || CurrentAmmo >= MaxAmmo) return false;
+
         isReloading = true;
         reloadCompleteTime = Time.time + reloadDuration;
         return true;
@@ -154,29 +164,60 @@ public class PlayerHealth : NetworkBehaviour
     void UpdateReload()
     {
         if (!isReloading || Time.time < reloadCompleteTime) return;
-        int neededAmmo = MaxAmmo - CurrentAmmo;
-        int loadedAmmo = Mathf.Min(neededAmmo, CurrentReserveAmmo);
-        if (IsSpawned)
-        {
-            networkAmmo.Value += loadedAmmo;
-            networkReserveAmmo.Value -= loadedAmmo;
-        }
-        else
-        {
-            offlineAmmo += loadedAmmo;
-            offlineReserveAmmo -= loadedAmmo;
-        }
+
+        if (IsSpawned) networkMagazineAmmo.Value = magazineSize;
+        else offlineMagazineAmmo = magazineSize;
+
         isReloading = false;
     }
 
     void RegenerateEnergy()
     {
-        if (Time.time - lastShotTime < energyRegenerationDelay || playerConfig == null) return;
+        if (playerConfig == null || isInCombat) return;
+        if (Time.time - lastCombatEndTime < energyRegenerationDelay) return;
+        if (Time.time - lastShotTime < energyRegenerationDelay) return;
+
         float energy = IsSpawned ? networkEnergy.Value : playerConfig.Energy;
         if (energy >= playerConfig.MaxEnergy) return;
         energy = Mathf.Min(playerConfig.MaxEnergy, energy + energyRegenerationPerSecond * Time.deltaTime);
         if (IsSpawned) networkEnergy.Value = energy;
         else playerConfig.Energy = energy;
+    }
+
+    void RegenerateHealthAndArmor()
+    {
+        if (playerConfig == null || isInCombat || IsDead) return;
+        if (Time.time - lastCombatEndTime < energyRegenerationDelay) return;
+        if (Time.time - lastShotTime < energyRegenerationDelay) return;
+
+        float health = IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
+        float armor = IsSpawned ? networkArmor.Value : playerConfig.Armor;
+
+        bool changed = false;
+        if (health < playerConfig.MaxHealth)
+        {
+            health = Mathf.Min(playerConfig.MaxHealth, health + healthRegenerationPerSecond * Time.deltaTime);
+            changed = true;
+        }
+
+        if (armor < playerConfig.MaxArmor)
+        {
+            armor = Mathf.Min(playerConfig.MaxArmor, armor + armorRegenerationPerSecond * Time.deltaTime);
+            changed = true;
+        }
+
+        if (!changed) return;
+
+        if (IsSpawned)
+        {
+            networkHealth.Value = health;
+            networkArmor.Value = armor;
+        }
+        else
+        {
+            playerConfig.CurrentHealth = health;
+            playerConfig.Armor = armor;
+        }
     }
 
     public void TakeDamage(float amount)
@@ -283,19 +324,64 @@ public class PlayerHealth : NetworkBehaviour
 
     void StartRespawn()
     {
-        if (respawnRoutine != null) return;
+        if (respawnRoutine != null || IsDead) return;
 
         if (IsSpawned)
         {
             if (!IsServer) return;
             networkIsDead.Value = true;
+
+            if (!AllNetworkPlayersDead())
+                return;
+
+            if (LevelManager.Instance != null)
+                LevelManager.Instance.ResetCurrentRoomEncounter();
+
+            RespawnAllDeadNetworkPlayers();
+            return;
         }
         else
         {
             offlineIsDead = true;
             SetDeadState(true);
+
+            if (LevelManager.Instance != null)
+                LevelManager.Instance.ResetCurrentRoomEncounter();
         }
 
+        respawnRoutine = StartCoroutine(RespawnRoutine());
+    }
+
+    bool AllNetworkPlayersDead()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        bool foundPlayer = false;
+
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned) continue;
+
+            foundPlayer = true;
+            if (!player.IsDead)
+                return false;
+        }
+
+        return foundPlayer;
+    }
+
+    void RespawnAllDeadNetworkPlayers()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned || !player.IsDead) continue;
+            player.StartTeamRespawn();
+        }
+    }
+
+    void StartTeamRespawn()
+    {
+        if (respawnRoutine != null) return;
         respawnRoutine = StartCoroutine(RespawnRoutine());
     }
 
@@ -337,17 +423,26 @@ public class PlayerHealth : NetworkBehaviour
             networkHealth.Value = playerConfig.MaxHealth;
             networkArmor.Value = playerConfig.MaxArmor;
             networkEnergy.Value = playerConfig.MaxEnergy;
-            networkAmmo.Value = startingAmmo;
-            networkReserveAmmo.Value = startingReserveAmmo;
+            networkMagazineAmmo.Value = magazineSize;
         }
         else
         {
             playerConfig.CurrentHealth = playerConfig.MaxHealth;
             playerConfig.Armor = playerConfig.MaxArmor;
             playerConfig.Energy = playerConfig.MaxEnergy;
-            offlineAmmo = startingAmmo;
-            offlineReserveAmmo = startingReserveAmmo;
+            offlineMagazineAmmo = magazineSize;
         }
+    }
+
+    void HandleCombatStarted(Room room)
+    {
+        isInCombat = true;
+    }
+
+    void HandleCombatEnded(Room room)
+    {
+        isInCombat = false;
+        lastCombatEndTime = Time.time;
     }
 
     Vector3 GetRespawnPosition()
