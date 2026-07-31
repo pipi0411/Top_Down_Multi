@@ -134,7 +134,7 @@ public class StoryManager : MonoBehaviour
     {
         isTransitioning = true;
         yield return StartCoroutine(Fade(0f, 1f)); // Fade ra đen
-        SceneManager.LoadScene("SampleScene");
+        GameSceneLoader.LoadPendingGameplaySceneOrDefault("SampleScene");
     }
 
     // Hàm Fade chung

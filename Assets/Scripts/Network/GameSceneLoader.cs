@@ -8,8 +8,12 @@ public class GameSceneLoader : MonoBehaviour
 {
     const float MinLoadingVisibleTime = 0.65f;
     const float ReadyWaitTimeout = 8f;
+    const string DefaultIntroSceneName = "IntroStory";
+    const string DefaultGameplaySceneName = "SampleScene";
 
     static GameSceneLoader instance;
+    static string pendingGameplaySceneName;
+    static bool pendingGameplayWaitForReady;
 
     Canvas canvas;
     CanvasGroup canvasGroup;
@@ -21,6 +25,24 @@ public class GameSceneLoader : MonoBehaviour
     public static void LoadGameplayScene(string sceneName)
     {
         EnsureInstance().StartLoad(sceneName, true);
+    }
+
+    public static void LoadGameplaySceneAfterIntro(string sceneName, string introSceneName = DefaultIntroSceneName)
+    {
+        pendingGameplaySceneName = string.IsNullOrEmpty(sceneName) ? DefaultGameplaySceneName : sceneName;
+        pendingGameplayWaitForReady = true;
+        EnsureInstance().StartIntro(introSceneName);
+    }
+
+    public static void LoadPendingGameplaySceneOrDefault(string fallbackSceneName = DefaultGameplaySceneName)
+    {
+        string sceneName = string.IsNullOrEmpty(pendingGameplaySceneName) ? fallbackSceneName : pendingGameplaySceneName;
+        bool waitForReady = string.IsNullOrEmpty(pendingGameplaySceneName) || pendingGameplayWaitForReady;
+
+        pendingGameplaySceneName = null;
+        pendingGameplayWaitForReady = false;
+
+        EnsureInstance().StartLoad(sceneName, waitForReady);
     }
 
     public static void LoadScene(string sceneName)
@@ -57,6 +79,19 @@ public class GameSceneLoader : MonoBehaviour
     {
         if (isLoading || string.IsNullOrEmpty(sceneName)) return;
         StartCoroutine(LoadSceneRoutine(sceneName, waitForGameplayReady));
+    }
+
+    void StartIntro(string introSceneName)
+    {
+        if (isLoading) return;
+
+        if (string.IsNullOrEmpty(introSceneName))
+        {
+            LoadPendingGameplaySceneOrDefault();
+            return;
+        }
+
+        SceneManager.LoadScene(introSceneName);
     }
 
     IEnumerator LoadSceneRoutine(string sceneName, bool waitForGameplayReady)
