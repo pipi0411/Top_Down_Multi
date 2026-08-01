@@ -39,6 +39,8 @@ public class EnemyStateMachine : MonoBehaviour
     Vector2 moveDirection;
     float nextAttackTime;
     bool hasRangedWeapon;
+    Collider2D bodyCollider;
+    const float meleeContactAttackPadding = 0.25f;
 
     public PlayerHealth Target { get; private set; }
     public float IdleWanderRadius => enemyData != null ? enemyData.IdleWanderRadius : idleWanderRadius;
@@ -60,7 +62,8 @@ public class EnemyStateMachine : MonoBehaviour
         if (enemyData == null && health != null) enemyData = health.EnemyData;
         ApplyEnemyDataToInspector();
         if (health != null && enemyData != null) health.SetEnemyData(enemyData);
-        hasRangedWeapon = GetComponentInChildren<EnemyWeapon>(true) != null;
+        hasRangedWeapon = GetComponentInChildren<EnemyWeapon>(false) != null;
+        bodyCollider = GetComponent<Collider2D>();
 
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
@@ -146,7 +149,14 @@ public class EnemyStateMachine : MonoBehaviour
 
     public bool TargetInAttackRange()
     {
-        return Target != null && Vector2.Distance(transform.position, Target.transform.position) <= AttackRange;
+        if (Target == null) return false;
+
+        float centerDistance = Vector2.Distance(transform.position, Target.transform.position);
+        if (centerDistance <= AttackRange) return true;
+
+        if (hasRangedWeapon) return false;
+
+        return GetColliderDistanceToTarget(Target) <= meleeContactAttackPadding;
     }
 
     public void MoveTowards(Vector2 worldPosition)
@@ -189,6 +199,19 @@ public class EnemyStateMachine : MonoBehaviour
         Vector2 direction = targetPosition - origin;
         RaycastHit2D hit = Physics2D.Raycast(origin, direction.normalized, direction.magnitude, lineOfSightMask);
         return hit.collider == null || hit.collider.GetComponentInParent<PlayerHealth>() != null;
+    }
+
+    float GetColliderDistanceToTarget(PlayerHealth target)
+    {
+        if (target == null) return float.MaxValue;
+        if (bodyCollider == null) bodyCollider = GetComponent<Collider2D>();
+
+        Collider2D targetCollider = target.GetComponentInChildren<Collider2D>();
+        if (bodyCollider == null || targetCollider == null)
+            return Vector2.Distance(transform.position, target.transform.position);
+
+        ColliderDistance2D distance = bodyCollider.Distance(targetCollider);
+        return Mathf.Max(0f, distance.distance);
     }
 
     void HandleDied()

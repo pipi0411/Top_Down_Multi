@@ -69,6 +69,13 @@ public class EnemyProjectile : MonoBehaviour
                 return;
             }
 
+            BreakableBox box = hit.collider.GetComponentInParent<BreakableBox>();
+            if (box != null)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             if (IsWallCollider(hit.collider))
             {
                 Destroy(gameObject);

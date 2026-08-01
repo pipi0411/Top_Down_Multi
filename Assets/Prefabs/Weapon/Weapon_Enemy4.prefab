@@ -77,9 +77,9 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingLayerID: -1504439425
+  m_SortingLayer: 7
+  m_SortingOrder: 30
   m_MaskInteraction: 0
   m_Sprite: {fileID: 110090364, guid: 02fe7b08866dad343aed90626195e7c3, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
@@ -141,6 +141,7 @@ MonoBehaviour:
   projectileSprite: {fileID: -3076364756126269321, guid: e0481e1b8bcf9cf47878c832c7580851, type: 3}
   weaponSortingLayer: Weapon
   weaponSortingOrder: 30
+  flipSpriteWhenAimingLeft: 1
   autoFitHeldWeapon: 1
   heldLocalPosition: {x: 0.12, y: -0.05}
   spriteLocalPosition: {x: 0.08, y: 0.03}

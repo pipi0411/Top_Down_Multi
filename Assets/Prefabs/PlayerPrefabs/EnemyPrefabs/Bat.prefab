@@ -216,7 +216,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 5233430657124762428}
   health: {fileID: 910000000000000101}
   detectionRange: 7.5
-  attackRange: 1
+  attackRange: 1.15
   lineOfSightMask:
     serializedVersion: 2
     m_Bits: 128
@@ -310,7 +310,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2910585096389869851, guid: 40cd56b7ef410c242988d394ffaa6d84, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8547822623300904132, guid: 40cd56b7ef410c242988d394ffaa6d84, type: 3}
       propertyPath: m_SortingOrder

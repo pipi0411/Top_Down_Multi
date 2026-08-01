@@ -216,7 +216,7 @@ MonoBehaviour:
   spriteRenderer: {fileID: 2627657412443757310}
   health: {fileID: 910000000000000103}
   detectionRange: 6
-  attackRange: 1.15
+  attackRange: 1.25
   lineOfSightMask:
     serializedVersion: 2
     m_Bits: 128
@@ -259,6 +259,10 @@ PrefabInstance:
     - target: {fileID: 1241881219689094487, guid: 18e250899df645d4b9ef9dc755b1e72e, type: 3}
       propertyPath: m_Name
       value: Weapon_Enemy3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1241881219689094487, guid: 18e250899df645d4b9ef9dc755b1e72e, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2004861001870350392, guid: 18e250899df645d4b9ef9dc755b1e72e, type: 3}
       propertyPath: m_LocalScale.x

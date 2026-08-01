@@ -322,7 +322,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerWeaponController
   ShowTopMostFoldoutHeaderGroup: 1
   startingWeaponPrefab: {fileID: 5190589855246738795, guid: 74b05e7c11021364d8d09d9da93efd4a, type: 3}
-  socketLocalPosition: {x: 0.2, y: -0.08, z: -0.1}
+  startingGunPrefab: {fileID: 5190589855246738795, guid: 74b05e7c11021364d8d09d9da93efd4a, type: 3}
+  startingMeleeWeaponPrefab: {fileID: 2910585096389869851, guid: 58a60810f1be23f4db08e246c2833644, type: 3}
+  socketLocalPosition: {x: 0.34, y: -0.1, z: -0.1}
   socketLocalEulerAngles: {x: 0, y: 0, z: 0}
   aimSyncThreshold: 0.5
 --- !u!114 &910000000000000011

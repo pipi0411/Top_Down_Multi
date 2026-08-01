@@ -10,6 +10,7 @@ public class EnemyWeapon : MonoBehaviour
     [Header("Visual")]
     [SerializeField] string weaponSortingLayer = "Weapon";
     [SerializeField] int weaponSortingOrder = 30;
+    [SerializeField] bool flipSpriteWhenAimingLeft = true;
     [SerializeField] bool autoFitHeldWeapon = true;
     [SerializeField] Vector2 heldLocalPosition = new(0.12f, -0.05f);
     [SerializeField] Vector2 spriteLocalPosition = new(0.08f, 0.03f);
@@ -69,6 +70,7 @@ public class EnemyWeapon : MonoBehaviour
             float angle = Mathf.Atan2(aimDirection.y, aimDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Euler(0f, 0f, angle + rotationOffset);
         }
+        ApplyAimFlip(aimDirection);
 
         float distance = Vector2.Distance(firePoint.position, target.transform.position);
         if (distance > fireRange || Time.time < nextFireTime) return;
@@ -170,6 +172,19 @@ public class EnemyWeapon : MonoBehaviour
             fireLocalPosition.x = firePointLocalPosition.x;
             fireLocalPosition.y = firePointLocalPosition.y;
             firePoint.localPosition = fireLocalPosition;
+        }
+    }
+
+    void ApplyAimFlip(Vector2 aimDirection)
+    {
+        if (!flipSpriteWhenAimingLeft) return;
+
+        bool aimingLeft = aimDirection.x < -0.01f;
+        SpriteRenderer[] renderers = GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (SpriteRenderer renderer in renderers)
+        {
+            if (renderer == null) continue;
+            renderer.flipY = aimingLeft;
         }
     }
 }

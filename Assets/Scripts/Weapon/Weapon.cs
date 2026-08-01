@@ -2,6 +2,12 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+public enum MeleeAnimationStyle
+{
+    Thrust,
+    Slash
+}
+
 public class Weapon : MonoBehaviour
 {
     public ItemWeapon WeaponData => weaponData;
@@ -16,6 +22,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] float recoilDuration = 0.06f;
     [SerializeField] float recoveryDuration = 0.1f;
     [SerializeField] bool previewFireWithLeftClick = true;
+    [SerializeField] bool mirrorSocketByAim = true;
     [SerializeField] ItemWeapon weaponData;
     [SerializeField] Sprite projectileSprite;
     [SerializeField] Transform shootPosition;
@@ -25,6 +32,12 @@ public class Weapon : MonoBehaviour
     [SerializeField] float projectileLifetime = 2f;
     [SerializeField] float fallbackDamage = 1f;
     [SerializeField] float fallbackShotInterval = 0.2f;
+    [Header("Melee")]
+    [SerializeField] float meleeRange = 0.85f;
+    [SerializeField] float meleeHitRadius = 0.45f;
+    [SerializeField] MeleeAnimationStyle meleeAnimationStyle;
+    [SerializeField] float meleeThrustDistance = 0.28f;
+    [SerializeField] float meleeSlashAngle = 55f;
 
     Camera mainCamera;
     NetworkObject ownerNetworkObject;
@@ -35,6 +48,10 @@ public class Weapon : MonoBehaviour
     PlayerHealth playerHealth;
     PlayerEnergy fallbackPlayerEnergy;
     PlayerWeaponController weaponController;
+    Transform weaponSocket;
+    Vector3 socketRightLocalPosition;
+    bool socketCached;
+    public bool IsMelee => weaponData != null && weaponData.Type == WeaponType.Melee;
     void Awake()
     {
         if (spriteRenderer == null) spriteRenderer = GetComponentInChildren<SpriteRenderer>();
@@ -47,6 +64,13 @@ public class Weapon : MonoBehaviour
         playerHealth = GetComponentInParent<PlayerHealth>();
         fallbackPlayerEnergy = GetComponentInParent<PlayerEnergy>();
         weaponController = GetComponentInParent<PlayerWeaponController>();
+        CacheWeaponSocket();
+    }
+
+    void OnTransformParentChanged()
+    {
+        socketCached = false;
+        CacheWeaponSocket();
     }
 
     void Update()
@@ -96,17 +120,22 @@ public class Weapon : MonoBehaviour
 
     public bool TryFire()
     {
-        if (Time.time < nextShotTime || shootPosition == null) return false;
+        if (Time.time < nextShotTime) return false;
+        bool isMelee = IsMelee;
+        if (!isMelee && shootPosition == null) return false;
         if (playerHealth == null) playerHealth = FindLocalPlayerStats();
         float energyCost = weaponData != null ? weaponData.RequiredEnergy : 0f;
-        if (playerHealth != null)
+        if (!isMelee)
         {
-            if (!playerHealth.TryConsumeShot(energyCost)) return false;
-        }
-        else
-        {
-            if (fallbackPlayerEnergy == null) fallbackPlayerEnergy = FindAnyObjectByType<PlayerEnergy>();
-            if (fallbackPlayerEnergy == null || !fallbackPlayerEnergy.TryUseEnergy(energyCost)) return false;
+            if (playerHealth != null)
+            {
+                if (!playerHealth.TryConsumeShot(energyCost)) return false;
+            }
+            else
+            {
+                if (fallbackPlayerEnergy == null) fallbackPlayerEnergy = FindAnyObjectByType<PlayerEnergy>();
+                if (fallbackPlayerEnergy == null || !fallbackPlayerEnergy.TryUseEnergy(energyCost)) return false;
+            }
         }
 
         float interval = weaponData != null
@@ -117,6 +146,28 @@ public class Weapon : MonoBehaviour
         float spread = Random.Range(minSpread, maxSpread);
         Vector2 direction = Quaternion.Euler(0, 0, spread) * transform.right;
         bool networkShot = playerHealth != null && playerHealth.IsSpawned;
+
+        if (isMelee)
+        {
+            Vector2 meleeOrigin = transform.position;
+            if (networkShot)
+            {
+                if (weaponController == null) weaponController = GetComponentInParent<PlayerWeaponController>();
+                if (weaponController != null && weaponController.IsSpawned)
+                    weaponController.SubmitNetworkMelee(meleeOrigin, direction, damage, meleeRange, meleeHitRadius);
+                else
+                    playerHealth.SubmitMelee(meleeOrigin, direction, damage, meleeRange, meleeHitRadius);
+            }
+            else
+            {
+                ResolveLocalMelee(meleeOrigin, direction, damage, meleeRange, meleeHitRadius);
+            }
+
+            nextShotTime = Time.time + Mathf.Max(0.02f, interval);
+            PlayFireAnimation();
+            return true;
+        }
+
         Vector2 origin = shootPosition.position;
         float range = projectileSpeed * projectileLifetime;
         if (networkShot)
@@ -135,6 +186,33 @@ public class Weapon : MonoBehaviour
         return true;
     }
 
+    public void ResolveLocalMelee(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
+    {
+        direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
+        Vector2 hitCenter = origin + direction * Mathf.Max(0.05f, range);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(hitCenter, Mathf.Max(0.05f, hitRadius));
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null || hit.isTrigger) continue;
+            if (hit.transform.IsChildOf(transform.root)) continue;
+
+            EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
+
+            BreakableBox box = hit.GetComponentInParent<BreakableBox>();
+            if (box != null)
+            {
+                box.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
+        }
+    }
+
     public void SpawnProjectileVisual(Vector2 origin, Vector2 direction, float damage, float speed, float lifetime, bool canApplyLocalDamage)
     {
         GameObject projectileObject = new GameObject();
@@ -146,13 +224,56 @@ public class Weapon : MonoBehaviour
 
     void ApplyAimPose(float aimAngle)
     {
+        ApplySocketMirror(aimAngle);
+
         float sway = Mathf.Sin(Time.time * idleSwaySpeed) * idleSwayAmount;
+        bool isMelee = IsMelee;
         float recoil = RecoilAmount();
-        transform.rotation = Quaternion.Euler(0, 0, aimAngle + sway + recoil * recoilAngle);
+        float attackProgress = AttackProgress();
+        float attackPulse = Mathf.Sin(attackProgress * Mathf.PI);
+        float meleeAngle = 0f;
+        bool aimingLeft = Mathf.Abs(Mathf.DeltaAngle(0, aimAngle)) > 90f;
+
+        if (isMelee && recoilTimer > 0f && meleeAnimationStyle == MeleeAnimationStyle.Slash)
+        {
+            float slashAngle = aimingLeft ? -meleeSlashAngle : meleeSlashAngle;
+            meleeAngle = Mathf.Lerp(-slashAngle, slashAngle, attackProgress);
+        }
+
+        float fireAngle = isMelee ? meleeAngle : recoil * recoilAngle;
+        transform.rotation = Quaternion.Euler(0, 0, aimAngle + sway + fireAngle);
         if (spriteRenderer != null)
-            spriteRenderer.flipY = Mathf.Abs(Mathf.DeltaAngle(0, aimAngle)) > 90f;
-        Vector3 targetPosition = spriteStartPosition + Vector3.left * (recoilDistance * recoil);
+            spriteRenderer.flipY = aimingLeft;
+
+        Vector3 attackOffset = isMelee
+            ? Vector3.right * (meleeThrustDistance * attackPulse)
+            : Vector3.left * (recoilDistance * recoil);
+        Vector3 targetPosition = spriteStartPosition + attackOffset;
         weaponSprite.localPosition = Vector3.Lerp(weaponSprite.localPosition, targetPosition, 30f * Time.deltaTime);
+    }
+
+    void CacheWeaponSocket()
+    {
+        Transform parent = transform.parent;
+        if (parent == null || parent.name != "WeaponSocket") return;
+
+        weaponSocket = parent;
+        socketRightLocalPosition = weaponSocket.localPosition;
+        socketRightLocalPosition.x = Mathf.Abs(socketRightLocalPosition.x);
+        socketCached = true;
+    }
+
+    void ApplySocketMirror(float aimAngle)
+    {
+        if (!mirrorSocketByAim) return;
+        if (!socketCached || weaponSocket == null)
+            CacheWeaponSocket();
+        if (weaponSocket == null) return;
+
+        bool aimingLeft = Mathf.Abs(Mathf.DeltaAngle(0f, aimAngle)) > 90f;
+        Vector3 targetPosition = socketRightLocalPosition;
+        targetPosition.x = aimingLeft ? -socketRightLocalPosition.x : socketRightLocalPosition.x;
+        weaponSocket.localPosition = targetPosition;
     }
 
     float RecoilAmount()
@@ -161,6 +282,13 @@ public class Weapon : MonoBehaviour
         if (recoilTimer > recoveryDuration)
             return Mathf.Clamp01((recoilDuration - recoilTimer + recoveryDuration) / recoilDuration);
         return Mathf.Clamp01(recoilTimer / recoveryDuration);
+    }
+
+    float AttackProgress()
+    {
+        float totalDuration = recoilDuration + recoveryDuration;
+        if (recoilTimer <= 0f || totalDuration <= 0f) return 0f;
+        return Mathf.Clamp01(1f - recoilTimer / totalDuration);
     }
 
     bool CanAnimateLocally()

@@ -13,6 +13,10 @@ public class InGameHUDUIManager : MonoBehaviour
     [Header("Mana")]
     [SerializeField] private TextMeshProUGUI ammoText;
 
+    [Header("Hotbar")]
+    [SerializeField] private HotbarUI hotbarPrefab;
+    [SerializeField] private Sprite hotbarSlotSprite;
+
     [Header("MiniMap")]
     [SerializeField] private RawImage miniMap;
 
@@ -27,7 +31,9 @@ public class InGameHUDUIManager : MonoBehaviour
     private int currentAmmo = 30;
     private int maxAmmo = 30;
     private bool isReloading;
+    private bool currentWeaponUsesAmmo = true;
     private PlayerHealth localPlayerStats;
+    private HotbarUI hotbarUI;
 
     private void OnEnable()
     {
@@ -49,6 +55,7 @@ public class InGameHUDUIManager : MonoBehaviour
         // Initialize HUD
         UpdateHPBar();
         UpdateMana();
+        EnsureHotbar();
     }
 
     private void OnDisable()
@@ -87,6 +94,7 @@ public class InGameHUDUIManager : MonoBehaviour
                 currentAmmo = localPlayerStats.CurrentAmmo;
                 maxAmmo = localPlayerStats.MaxAmmo;
                 isReloading = localPlayerStats.IsReloading;
+                currentWeaponUsesAmmo = localPlayerStats.CurrentWeaponUsesAmmo;
                 UpdateHPBar();
                 UpdateMana();
             }
@@ -98,13 +106,31 @@ public class InGameHUDUIManager : MonoBehaviour
         if (newState == GameManager.GameState.InGame)
         {
             inGameHUD.SetActive(true);
+            EnsureHotbar();
+            if (hotbarUI != null)
+                hotbarUI.gameObject.SetActive(true);
             if (pausePanel != null)
                 pausePanel.SetActive(false);
         }
         else
         {
             inGameHUD.SetActive(false);
+            if (hotbarUI != null)
+                hotbarUI.gameObject.SetActive(false);
         }
+    }
+
+    private void EnsureHotbar()
+    {
+        if (hotbarUI != null) return;
+
+        Canvas canvas = GetComponent<Canvas>();
+        if (canvas == null)
+            canvas = GetComponentInParent<Canvas>();
+        if (canvas == null)
+            canvas = FindAnyObjectByType<Canvas>();
+
+        hotbarUI = HotbarUI.Ensure(canvas, hotbarSlotSprite, hotbarPrefab);
     }
 
     public void UpdateHPBar(float hp = -1f)
@@ -147,6 +173,12 @@ public class InGameHUDUIManager : MonoBehaviour
     {
         if (ammoText != null)
         {
+            if (!currentWeaponUsesAmmo)
+            {
+                ammoText.text = "Melee";
+                return;
+            }
+
             ammoText.text = isReloading
                 ? $"Ammo: {currentAmmo}/{maxAmmo} (Reloading...)"
                 : $"Ammo: {currentAmmo}/{maxAmmo}";

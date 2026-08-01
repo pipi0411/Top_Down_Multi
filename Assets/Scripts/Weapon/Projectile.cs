@@ -75,6 +75,14 @@ public class Projectile : MonoBehaviour
                 return;
             }
 
+            BreakableBox box = hit.collider.GetComponentInParent<BreakableBox>();
+            if (box != null)
+            {
+                box.TakeDamage(damage);
+                Destroy(gameObject);
+                return;
+            }
+
             PlayerHealth health = hit.collider.GetComponentInParent<PlayerHealth>();
             if (health != null)
             {

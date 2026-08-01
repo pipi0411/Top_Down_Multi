@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 8044470815977068404}
   - component: {fileID: 2946354524761400841}
   - component: {fileID: 2020303546413981533}
+  - component: {fileID: 922423039081060782}
   m_Layer: 0
   m_Name: Box_4
   m_TagString: Untagged
@@ -138,3 +139,26 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.8800508, y: 0.87255424}
   m_EdgeRadius: 0
+--- !u!114 &922423039081060782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8913881614188887950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a9f68c30f8f4f1f9dbf0d9e7054e301, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxHealth: 2
+  dropChance: 0.8
+  spawnSpreadRadius: 0.2
+  healthBottlePrefab: {fileID: 4883453321002724546, guid: e5a76e0aeec3911489bcbbda5ee2a498, type: 3}
+  manaBottlePrefab: {fileID: 7014432625559398020, guid: 1de89f43593ec0541934f9166a2da094, type: 3}
+  shieldBottlePrefab: {fileID: 6121397840856021094, guid: 14dbf7fce75de064f90bc7decb3f27dc, type: 3}
+  coinPrefab: {fileID: 808705959965074031, guid: 3953dc64bbc553342bd5a02d1c4c9216, type: 3}
+  healthWeight: 30
+  manaWeight: 30
+  shieldWeight: 20
+  coinWeight: 50

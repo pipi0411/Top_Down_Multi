@@ -31,6 +31,7 @@ public class PlayerHealth : NetworkBehaviour
     float reloadCompleteTime;
     int offlineMagazineAmmo;
     bool isReloading;
+    bool currentWeaponUsesAmmo = true;
     bool isInCombat;
     bool offlineIsDead;
     bool isInvulnerable;
@@ -41,11 +42,13 @@ public class PlayerHealth : NetworkBehaviour
 
     public PlayerConfig PlayerConfig => playerConfig;
     public float CurrentHealth => IsSpawned ? networkHealth.Value : playerConfig.CurrentHealth;
+    public float CurrentArmor => IsSpawned ? networkArmor.Value : playerConfig.Armor;
     public float CurrentEnergy => IsSpawned ? networkEnergy.Value : playerConfig.Energy;
     public int CurrentAmmo => IsSpawned ? networkMagazineAmmo.Value : offlineMagazineAmmo;
     public int MaxAmmo => magazineSize;
     public int CurrentReserveAmmo => 0;
     public bool IsReloading => isReloading;
+    public bool CurrentWeaponUsesAmmo => currentWeaponUsesAmmo;
     public bool AllowWeaponDamageFromPlayers => allowWeaponDamageFromPlayers;
     public bool IsDead => IsSpawned ? networkIsDead.Value : offlineIsDead;
 
@@ -144,16 +147,19 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (weaponData == null) return;
 
-        magazineSize = Mathf.Max(1, weaponData.MagazineSize);
+        currentWeaponUsesAmmo = weaponData.Type != WeaponType.Melee;
+        isReloading = false;
+        magazineSize = currentWeaponUsesAmmo ? Mathf.Max(1, weaponData.MagazineSize) : 0;
         reloadDuration = Mathf.Max(0.1f, weaponData.ReloadDuration);
-        offlineMagazineAmmo = magazineSize;
+        offlineMagazineAmmo = currentWeaponUsesAmmo ? magazineSize : 0;
 
         if (IsSpawned && IsOwner)
-            networkMagazineAmmo.Value = magazineSize;
+            networkMagazineAmmo.Value = currentWeaponUsesAmmo ? magazineSize : 0;
     }
 
     public bool TryStartReload()
     {
+        if (!currentWeaponUsesAmmo) return false;
         if (IsDead || IsSpawned && !IsOwner || isReloading || CurrentAmmo >= MaxAmmo) return false;
 
         isReloading = true;
@@ -233,10 +239,22 @@ public class PlayerHealth : NetworkBehaviour
         ShotServerRpc(origin, direction.normalized, damage, range, hitRadius);
     }
 
+    public void SubmitMelee(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
+    {
+        if (!IsSpawned || !IsOwner) return;
+        MeleeServerRpc(origin, direction.normalized, damage, range, hitRadius);
+    }
+
     [Rpc(SendTo.Server)]
     void ShotServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
     {
         ResolveServerShot(origin, direction, damage, range, hitRadius);
+    }
+
+    [Rpc(SendTo.Server)]
+    void MeleeServerRpc(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
+    {
+        ResolveServerMelee(origin, direction, damage, range, hitRadius);
     }
 
     public void ResolveServerShot(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius = 0.12f)
@@ -267,7 +285,44 @@ public class PlayerHealth : NetworkBehaviour
                     target.ApplyDamage(Mathf.Max(0, damage));
                 return;
             }
+
+            BreakableBox box = hit.collider.GetComponentInParent<BreakableBox>();
+            if (box != null)
+            {
+                box.TakeDamage(Mathf.Max(0, damage));
+                return;
+            }
+
             if (IsWallCollider(hit.collider)) return;
+        }
+    }
+
+    public void ResolveServerMelee(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius)
+    {
+        if (!IsServer) return;
+
+        direction = direction.sqrMagnitude > 0.0001f ? direction.normalized : Vector2.right;
+        Vector2 hitCenter = origin + direction * Mathf.Max(0.05f, range);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(hitCenter, Mathf.Max(0.05f, hitRadius));
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null || hit.isTrigger) continue;
+            if (hit.transform.IsChildOf(transform)) continue;
+
+            EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
+            if (enemy != null)
+            {
+                enemy.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
+
+            BreakableBox box = hit.GetComponentInParent<BreakableBox>();
+            if (box != null)
+            {
+                box.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
         }
     }
 
@@ -289,11 +344,44 @@ public class PlayerHealth : NetworkBehaviour
         else ApplyRecovery(amount);
     }
 
+    public bool CanRecoverHealth(float amount = 0.01f)
+    {
+        return playerConfig != null && !IsDead && CurrentHealth < playerConfig.MaxHealth - Mathf.Max(0.01f, amount * 0.001f);
+    }
+
+    public void RecoverEnergy(float amount)
+    {
+        if (IsSpawned && !IsServer) RecoverEnergyServerRpc(amount);
+        else ApplyEnergyRecovery(amount);
+    }
+
+    public bool CanRecoverEnergy(float amount = 0.01f)
+    {
+        return playerConfig != null && !IsDead && CurrentEnergy < playerConfig.MaxEnergy - Mathf.Max(0.01f, amount * 0.001f);
+    }
+
+    public void RecoverArmor(float amount)
+    {
+        if (IsSpawned && !IsServer) RecoverArmorServerRpc(amount);
+        else ApplyArmorRecovery(amount);
+    }
+
+    public bool CanRecoverArmor(float amount = 0.01f)
+    {
+        return playerConfig != null && !IsDead && CurrentArmor < playerConfig.MaxArmor - Mathf.Max(0.01f, amount * 0.001f);
+    }
+
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void DamageServerRpc(float amount) => ApplyDamage(amount);
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     void RecoverServerRpc(float amount) => ApplyRecovery(amount);
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    void RecoverEnergyServerRpc(float amount) => ApplyEnergyRecovery(amount);
+
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    void RecoverArmorServerRpc(float amount) => ApplyArmorRecovery(amount);
 
     void ApplyDamage(float amount)
     {
@@ -535,6 +623,22 @@ public class PlayerHealth : NetworkBehaviour
         float value = Mathf.Min(playerConfig.MaxHealth, CurrentHealth + amount);
         if (IsSpawned) networkHealth.Value = value;
         else playerConfig.CurrentHealth = value;
+    }
+
+    void ApplyEnergyRecovery(float amount)
+    {
+        float currentEnergy = IsSpawned ? networkEnergy.Value : playerConfig.Energy;
+        float value = Mathf.Min(playerConfig.MaxEnergy, currentEnergy + Mathf.Max(0f, amount));
+        if (IsSpawned) networkEnergy.Value = value;
+        else playerConfig.Energy = value;
+    }
+
+    void ApplyArmorRecovery(float amount)
+    {
+        float currentArmor = IsSpawned ? networkArmor.Value : playerConfig.Armor;
+        float value = Mathf.Min(playerConfig.MaxArmor, currentArmor + Mathf.Max(0f, amount));
+        if (IsSpawned) networkArmor.Value = value;
+        else playerConfig.Armor = value;
     }
 
     void SyncConfig()
