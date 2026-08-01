@@ -113,6 +113,21 @@ public class HotbarUI : MonoBehaviour
         }
     }
 
+    public void ClearSlot(int slotIndex)
+    {
+        if (slotIndex < 0 || slotIndex >= SlotCount) return;
+
+        if (itemIcons[slotIndex] != null)
+        {
+            itemIcons[slotIndex].sprite = null;
+            itemIcons[slotIndex].enabled = false;
+        }
+
+        slotQuantities[slotIndex] = 0;
+        if (quantityTexts[slotIndex] != null)
+            quantityTexts[slotIndex].text = slotIndex == selectedSlotIndex ? selectedSlotLabel : string.Empty;
+    }
+
     void EnsureBuilt()
     {
         RectTransform panelRect = GetComponent<RectTransform>();

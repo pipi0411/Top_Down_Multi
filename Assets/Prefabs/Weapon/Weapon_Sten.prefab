@@ -10,6 +10,9 @@ GameObject:
   m_Component:
   - component: {fileID: 6915930263534703293}
   - component: {fileID: 1163452503523440841}
+  - component: {fileID: 8682056489061116184}
+  - component: {fileID: 5861666405078297628}
+  - component: {fileID: 7244375287615193425}
   m_Layer: 0
   m_Name: Weapon_Sten
   m_TagString: Untagged
@@ -46,13 +49,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7433cb37adb52ca4690a73737564592f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Weapon
-  weaponData: {fileID: 11400000, guid: 49bfe9d92e2aea74784abd6782edeb2f, type: 2}
-  projectileSprite: {fileID: -3902446707764030561, guid: e0481e1b8bcf9cf47878c832c7580851, type: 3}
-  shootPosition: {fileID: 676211392408510498}
-  automatic: 1
-  projectileSpeed: 21
-  projectileLifetime: 0.75
-  fallbackShotInterval: 0.18
+  weaponSprite: {fileID: 0}
+  spriteRenderer: {fileID: 0}
+  aimAtMouse: 1
   aimSmoothSpeed: 24
   idleSwayAmount: 1.1
   idleSwaySpeed: 3
@@ -61,6 +60,103 @@ MonoBehaviour:
   recoilDuration: 0.04
   recoveryDuration: 0.08
   previewFireWithLeftClick: 1
+  mirrorSocketByAim: 1
+  weaponData: {fileID: 11400000, guid: 49bfe9d92e2aea74784abd6782edeb2f, type: 2}
+  projectileSprite: {fileID: -3902446707764030561, guid: e0481e1b8bcf9cf47878c832c7580851, type: 3}
+  shootPosition: {fileID: 676211392408510498}
+  automatic: 1
+  projectileSpeed: 21
+  projectileHitRadius: 0.12
+  projectileLifetime: 0.75
+  fallbackDamage: 1
+  fallbackShotInterval: 0.18
+  meleeRange: 0.85
+  meleeHitRadius: 0.45
+  meleeAnimationStyle: 0
+  meleeThrustDistance: 0.28
+  meleeSlashAngle: 55
+--- !u!58 &8682056489061116184
+CircleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2195211012945807876}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0.45455092, y: 0}
+  m_Radius: 0.42067415
+--- !u!50 &5861666405078297628
+Rigidbody2D:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2195211012945807876}
+  m_BodyType: 1
+  m_Simulated: 1
+  m_UseFullKinematicContacts: 0
+  m_UseAutoMass: 0
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_GravityScale: 0
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_Interpolate: 0
+  m_SleepingMode: 1
+  m_CollisionDetection: 0
+  m_Constraints: 0
+--- !u!114 &7244375287615193425
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2195211012945807876}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19c50036b85d93e4ca62c294e52e68de, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponPickup
+  weapon: {fileID: 1163452503523440841}
+  pickupDelay: 0.35
+  popDuration: 0.28
+  popHeight: 0.18
+  popScale: 1.2
+  bobHeight: 0.04
+  bobSpeed: 3.5
 --- !u!1 &5509560646546870014
 GameObject:
   m_ObjectHideFlags: 0

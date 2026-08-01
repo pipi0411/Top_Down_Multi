@@ -3516,6 +3516,11 @@ MonoBehaviour:
   socketLocalPosition: {x: 0.34, y: -0.1, z: -0.1}
   socketLocalEulerAngles: {x: 0, y: 0, z: 0}
   aimSyncThreshold: 0.5
+  dropWeaponKey: 21
+  dropDistance: 0.75
+  dropPickupDelay: 0.45
+  droppedWeaponScale: 1.15
+  pickupColliderRadius: 0.45
 --- !u!114 &910000000420916779
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3806,7 +3811,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &7518536145910946437
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -51,6 +51,7 @@ public class Weapon : MonoBehaviour
     Transform weaponSocket;
     Vector3 socketRightLocalPosition;
     bool socketCached;
+    bool isDropped;
     public bool IsMelee => weaponData != null && weaponData.Type == WeaponType.Melee;
     void Awake()
     {
@@ -76,6 +77,7 @@ public class Weapon : MonoBehaviour
     void Update()
     {
         recoilTimer = Mathf.Max(0f, recoilTimer - Time.deltaTime);
+        if (isDropped) return;
         if (!CanAnimateLocally()) return;
         if (previewFireWithLeftClick && Mouse.current != null)
         {
@@ -86,6 +88,7 @@ public class Weapon : MonoBehaviour
 
     void LateUpdate()
     {
+        if (isDropped) return;
         if (!CanAnimateLocally()) return;
         float targetAngle = currentAimAngle;
         if (aimAtMouse && Mouse.current != null)
@@ -106,6 +109,36 @@ public class Weapon : MonoBehaviour
     public float CurrentAimAngle => currentAimAngle;
     public float ProjectileSpeed => projectileSpeed;
     public float ProjectileLifetime => projectileLifetime;
+
+    public void SetDroppedState()
+    {
+        isDropped = true;
+        recoilTimer = 0f;
+        nextShotTime = Time.time;
+        ownerNetworkObject = null;
+        playerHealth = null;
+        fallbackPlayerEnergy = null;
+        weaponController = null;
+        weaponSocket = null;
+        socketCached = false;
+        currentAimAngle = transform.eulerAngles.z;
+
+        if (spriteRenderer != null)
+            spriteRenderer.flipY = false;
+        if (weaponSprite != null)
+            weaponSprite.localPosition = spriteStartPosition;
+    }
+
+    public void SetEquippedState()
+    {
+        isDropped = false;
+        ownerNetworkObject = GetComponentInParent<NetworkObject>();
+        playerHealth = GetComponentInParent<PlayerHealth>();
+        fallbackPlayerEnergy = GetComponentInParent<PlayerEnergy>();
+        weaponController = GetComponentInParent<PlayerWeaponController>();
+        currentAimAngle = transform.eulerAngles.z;
+        CacheWeaponSocket();
+    }
 
     public void ApplyRemoteAim(float aimAngle)
     {
@@ -293,6 +326,7 @@ public class Weapon : MonoBehaviour
 
     bool CanAnimateLocally()
     {
+        if (isDropped) return false;
         if (ownerNetworkObject != null)
             return !ownerNetworkObject.IsSpawned || ownerNetworkObject.IsOwner;
         return GetComponentInParent<PlayerWeaponController>() != null || FindAnyObjectByType<PlayerWeaponController>() == null;

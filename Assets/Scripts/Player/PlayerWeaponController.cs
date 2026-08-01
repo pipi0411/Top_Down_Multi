@@ -10,6 +10,12 @@ public class PlayerWeaponController : NetworkBehaviour
     [SerializeField] Vector3 socketLocalPosition = new(0.34f, -0.1f, -0.1f);
     [SerializeField] Vector3 socketLocalEulerAngles;
     [SerializeField] float aimSyncThreshold = 0.5f;
+    [Header("Drop / Pickup")]
+    [SerializeField] Key dropWeaponKey = Key.G;
+    [SerializeField] float dropDistance = 0.75f;
+    [SerializeField] float dropPickupDelay = 0.45f;
+    [SerializeField] float droppedWeaponScale = 1.15f;
+    [SerializeField] float pickupColliderRadius = 0.45f;
 
     readonly NetworkVariable<float> networkAimAngle = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<int> networkSelectedSlotIndex = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -42,6 +48,8 @@ public class PlayerWeaponController : NetworkBehaviour
             EquipSlot(0);
         else if (keyboard.digit2Key.wasPressedThisFrame || keyboard.numpad2Key.wasPressedThisFrame)
             EquipSlot(1);
+        else if (keyboard[dropWeaponKey].wasPressedThisFrame)
+            DropEquippedWeapon();
     }
 
     void LateUpdate()
@@ -103,10 +111,34 @@ public class PlayerWeaponController : NetworkBehaviour
         TryBindHotbar();
     }
 
+    public void PickupDroppedWeapon(WeaponPickup pickup)
+    {
+        if (pickup == null || pickup.Weapon == null) return;
+        Weapon pickedWeapon = pickup.Weapon;
+        int slotIndex = GetSlotIndexForWeapon(pickedWeapon);
+
+        Weapon oldWeapon = slotWeapons[slotIndex];
+        if (oldWeapon == pickedWeapon) return;
+
+        if (oldWeapon != null)
+            DropWeapon(oldWeapon, slotIndex, transform.position + GetDropDirection() * dropDistance, false);
+
+        PreparePickedWeapon(pickup, pickedWeapon);
+        Transform socket = GetOrCreateWeaponSocket();
+        AttachWeaponToSocket(pickedWeapon.transform, socket);
+        PrepareWeaponForEquip(pickedWeapon);
+        ConfigureWeaponRendering(pickedWeapon.gameObject);
+
+        slotWeapons[slotIndex] = pickedWeapon;
+        selectedSlotIndex = slotIndex;
+        EquipSlot(slotIndex);
+    }
+
     Weapon CreateWeaponForSlot(GameObject weaponPrefab, Transform socket)
     {
         GameObject weaponObject = Instantiate(weaponPrefab, socket);
         AttachWeaponToSocket(weaponObject.transform, socket);
+        PrepareWeaponForEquip(weaponObject.GetComponent<Weapon>());
         ConfigureWeaponRendering(weaponObject);
         return weaponObject.GetComponent<Weapon>();
     }
@@ -116,6 +148,7 @@ public class PlayerWeaponController : NetworkBehaviour
         int slotIndex = GetSlotIndexForWeapon(weapon);
         if (slotWeapons[slotIndex] == null)
             slotWeapons[slotIndex] = weapon;
+        PrepareWeaponForEquip(weapon);
         ConfigureWeaponRendering(weapon.gameObject);
     }
 
@@ -123,9 +156,20 @@ public class PlayerWeaponController : NetworkBehaviour
     {
         RebuildSlotAssignmentsFromChildren();
         slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
-        EnsureSlotWeapon(slotIndex);
         NormalizeWeaponSlots();
-        if (slotWeapons[slotIndex] == null) return;
+        if (slotWeapons[slotIndex] == null)
+        {
+            selectedSlotIndex = slotIndex;
+            EquippedWeapon = null;
+            for (int i = 0; i < slotWeapons.Length; i++)
+                if (slotWeapons[i] != null)
+                    slotWeapons[i].gameObject.SetActive(false);
+
+            if (updateNetwork && IsSpawned && IsOwner)
+                networkSelectedSlotIndex.Value = selectedSlotIndex;
+            TryBindHotbar();
+            return;
+        }
 
         selectedSlotIndex = slotIndex;
         EquippedWeapon = slotWeapons[slotIndex];
@@ -142,6 +186,114 @@ public class PlayerWeaponController : NetworkBehaviour
             networkSelectedSlotIndex.Value = selectedSlotIndex;
 
         TryBindHotbar();
+    }
+
+    void DropEquippedWeapon()
+    {
+        if (EquippedWeapon == null) return;
+
+        int slotIndex = GetSlotIndexForWeapon(EquippedWeapon);
+        Weapon weaponToDrop = EquippedWeapon;
+        Vector3 dropPosition = transform.position + GetDropDirection() * dropDistance;
+
+        DropWeapon(weaponToDrop, slotIndex, dropPosition, true);
+
+        int fallbackSlot = slotIndex == 0 ? 1 : 0;
+        if (slotWeapons[fallbackSlot] != null)
+            EquipSlot(fallbackSlot);
+        else
+        {
+            EquippedWeapon = null;
+            selectedSlotIndex = slotIndex;
+            TryBindHotbar();
+        }
+    }
+
+    void DropWeapon(Weapon weapon, int slotIndex, Vector3 dropPosition, bool clearSlot)
+    {
+        if (weapon == null) return;
+
+        if (clearSlot && slotIndex >= 0 && slotIndex < slotWeapons.Length && slotWeapons[slotIndex] == weapon)
+            slotWeapons[slotIndex] = null;
+
+        weapon.gameObject.SetActive(true);
+        weapon.transform.SetParent(null, true);
+        weapon.transform.position = dropPosition;
+        weapon.transform.rotation = Quaternion.identity;
+        weapon.transform.localScale = Vector3.one * droppedWeaponScale;
+        weapon.SetDroppedState();
+
+        ConfigureDroppedWeapon(weapon);
+    }
+
+    void ConfigureDroppedWeapon(Weapon weapon)
+    {
+        if (weapon == null) return;
+
+        CircleCollider2D trigger = weapon.GetComponent<CircleCollider2D>();
+        if (trigger == null)
+            trigger = weapon.gameObject.AddComponent<CircleCollider2D>();
+        trigger.isTrigger = true;
+        trigger.radius = pickupColliderRadius;
+
+        Rigidbody2D rb = weapon.GetComponent<Rigidbody2D>();
+        if (rb == null)
+            rb = weapon.gameObject.AddComponent<Rigidbody2D>();
+        rb.bodyType = RigidbodyType2D.Kinematic;
+        rb.gravityScale = 0f;
+        rb.linearVelocity = Vector2.zero;
+        rb.angularVelocity = 0f;
+
+        WeaponPickup pickup = weapon.GetComponent<WeaponPickup>();
+        if (pickup == null)
+            pickup = weapon.gameObject.AddComponent<WeaponPickup>();
+        pickup.Initialize(weapon, dropPickupDelay);
+
+        foreach (SpriteRenderer renderer in weapon.GetComponentsInChildren<SpriteRenderer>(true))
+        {
+            renderer.sortingLayerID = SortingLayer.NameToID(nameof(Weapon));
+            renderer.sortingOrder = 8;
+        }
+    }
+
+    void PreparePickedWeapon(WeaponPickup pickup, Weapon weapon)
+    {
+        if (pickup != null)
+            Destroy(pickup);
+
+        PrepareWeaponForEquip(weapon);
+    }
+
+    void PrepareWeaponForEquip(Weapon weapon)
+    {
+        if (weapon == null) return;
+
+        WeaponPickup pickup = weapon.GetComponent<WeaponPickup>();
+        if (pickup != null)
+            Destroy(pickup);
+
+        CircleCollider2D trigger = weapon.GetComponent<CircleCollider2D>();
+        if (trigger != null)
+            Destroy(trigger);
+
+        Rigidbody2D rb = weapon.GetComponent<Rigidbody2D>();
+        if (rb != null)
+            Destroy(rb);
+
+        weapon.transform.localScale = Vector3.one;
+        weapon.SetEquippedState();
+    }
+
+    Vector3 GetDropDirection()
+    {
+        if (EquippedWeapon != null)
+        {
+            Vector3 direction = EquippedWeapon.transform.right;
+            if (direction.sqrMagnitude > 0.001f)
+                return direction.normalized;
+        }
+
+        return transform.right.sqrMagnitude > 0.001f ? transform.right.normalized : Vector3.right;
     }
 
     Transform GetOrCreateWeaponSocket()
@@ -168,6 +320,10 @@ public class PlayerWeaponController : NetworkBehaviour
         weaponTransform.localPosition = Vector3.zero;
         weaponTransform.localRotation = Quaternion.identity;
         weaponTransform.localScale = Vector3.one;
+
+        Weapon weapon = weaponTransform.GetComponent<Weapon>();
+        if (weapon != null)
+            weapon.SetEquippedState();
     }
 
     void ConfigureWeaponRendering(GameObject weaponObject)
@@ -190,14 +346,19 @@ public class PlayerWeaponController : NetworkBehaviour
         if (hotbarUI == null) return;
 
         RebuildSlotAssignmentsFromChildren();
-        EnsureSlotWeapon(0);
-        EnsureSlotWeapon(1);
         NormalizeWeaponSlots();
 
         Weapon gun = FindWeaponByType(false);
         Weapon melee = FindWeaponByType(true);
-        hotbarUI.SetSlot(0, GetWeaponIcon(gun) ?? GetWeaponIcon(startingGunPrefab) ?? GetWeaponIcon(startingWeaponPrefab));
-        hotbarUI.SetSlot(1, GetWeaponIcon(melee) ?? GetWeaponIcon(startingMeleeWeaponPrefab));
+        if (gun != null)
+            hotbarUI.SetSlot(0, GetWeaponIcon(gun) ?? GetWeaponIcon(startingGunPrefab) ?? GetWeaponIcon(startingWeaponPrefab));
+        else
+            hotbarUI.ClearSlot(0);
+
+        if (melee != null)
+            hotbarUI.SetSlot(1, GetWeaponIcon(melee) ?? GetWeaponIcon(startingMeleeWeaponPrefab));
+        else
+            hotbarUI.ClearSlot(1);
 
         hotbarUI.SelectSlot(selectedSlotIndex);
     }
