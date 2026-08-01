@@ -2710,6 +2710,10 @@ PrefabInstance:
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
+    - target: {fileID: 2460042202340083811, guid: a4747e1c77d60584eaa418fc5f5e3d05, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     - target: {fileID: 2482703206329197456, guid: a4747e1c77d60584eaa418fc5f5e3d05, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
@@ -2827,6 +2831,10 @@ PrefabInstance:
       value: -1183493901
       objectReference: {fileID: 0}
     - target: {fileID: 5846599460494678298, guid: a4747e1c77d60584eaa418fc5f5e3d05, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
+    - target: {fileID: 8251524318580109006, guid: a4747e1c77d60584eaa418fc5f5e3d05, type: 3}
       propertyPath: m_TextStyleHashCode
       value: -1183493901
       objectReference: {fileID: 0}
