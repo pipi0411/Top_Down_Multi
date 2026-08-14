@@ -1,13 +1,10 @@
 fileFormatVersion: 2
-guid: 5c803545dc6db294e8ff69538c0593da
+guid: 136bd436bcb6fa44b85e1202cb8abd79
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 2147942595954053752
-    second: title_you_win_0
-  - first:
-      213: 4764235344990538312
-    second: title_you_win_1
+      213: 5669609151598551793
+    second: Preview game_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -116,23 +113,23 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: title_you_win_0
+      name: Preview game_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 7
-        width: 811
-        height: 199
+        x: 0
+        y: 0
+        width: 1254
+        height: 1254
       alignment: 0
-      pivot: {x: 0.5, y: 0.5}
+      pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 87295c529660fcd10800000000000000
-      internalID: 2147942595954053752
+      spriteID: 1f2e5580c7f7eae40800000000000000
+      internalID: 5669609151598551793
       vertices: []
       indices: 
       edges: []
@@ -141,7 +138,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 71d0f9af2e2992d4aa51757ab8a724fd
+    spriteID: 
     internalID: 0
     vertices: []
     indices: 
@@ -151,8 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      title_you_win_0: 2147942595954053752
-      title_you_win_1: 4764235344990538312
+      Preview game_0: 5669609151598551793
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

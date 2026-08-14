@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 
 public class RoomClient : MonoBehaviour
 {
-    public string baseUrl = "https://servergame-production-7067.up.railway.app";
+    public string baseUrl = ServerUrlSettings.ProductionBaseUrl;
     public int timeoutSeconds = 10;
 
     private string EffectiveBaseUrl => ServerEndpointConfig.Resolve(baseUrl);

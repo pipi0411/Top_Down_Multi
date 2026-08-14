@@ -23,6 +23,8 @@ public class Weapon : MonoBehaviour
     [SerializeField] float recoveryDuration = 0.1f;
     [SerializeField] bool previewFireWithLeftClick = true;
     [SerializeField] bool mirrorSocketByAim = true;
+    [SerializeField] float handSwitchDeadZone = 0.18f;
+    [SerializeField] float handSwitchAngleBuffer = 10f;
     [SerializeField] ItemWeapon weaponData;
     [SerializeField] Sprite projectileSprite;
     [SerializeField] Transform shootPosition;
@@ -52,6 +54,8 @@ public class Weapon : MonoBehaviour
     Vector3 socketRightLocalPosition;
     bool socketCached;
     bool isDropped;
+    bool hasStableAimSide;
+    bool stableAimingLeft;
     public bool IsMelee => weaponData != null && weaponData.Type == WeaponType.Melee;
     void Awake()
     {
@@ -97,6 +101,8 @@ public class Weapon : MonoBehaviour
             if (mainCamera != null)
             {
                 Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
+                UpdateStableAimSideFromMouse(mouseWorld);
+
                 Vector2 direction = mouseWorld - transform.position;
                 if (direction.sqrMagnitude > 0.0001f)
                     targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
@@ -122,6 +128,7 @@ public class Weapon : MonoBehaviour
         weaponSocket = null;
         socketCached = false;
         currentAimAngle = transform.eulerAngles.z;
+        hasStableAimSide = false;
 
         if (spriteRenderer != null)
             spriteRenderer.flipY = false;
@@ -137,6 +144,7 @@ public class Weapon : MonoBehaviour
         fallbackPlayerEnergy = GetComponentInParent<PlayerEnergy>();
         weaponController = GetComponentInParent<PlayerWeaponController>();
         currentAimAngle = transform.eulerAngles.z;
+        hasStableAimSide = false;
         CacheWeaponSocket();
     }
 
@@ -265,7 +273,7 @@ public class Weapon : MonoBehaviour
         float attackProgress = AttackProgress();
         float attackPulse = Mathf.Sin(attackProgress * Mathf.PI);
         float meleeAngle = 0f;
-        bool aimingLeft = Mathf.Abs(Mathf.DeltaAngle(0, aimAngle)) > 90f;
+        bool aimingLeft = GetStableAimingLeft(aimAngle);
 
         if (isMelee && recoilTimer > 0f && meleeAnimationStyle == MeleeAnimationStyle.Slash)
         {
@@ -303,10 +311,53 @@ public class Weapon : MonoBehaviour
             CacheWeaponSocket();
         if (weaponSocket == null) return;
 
-        bool aimingLeft = Mathf.Abs(Mathf.DeltaAngle(0f, aimAngle)) > 90f;
+        bool aimingLeft = GetStableAimingLeft(aimAngle);
         Vector3 targetPosition = socketRightLocalPosition;
         targetPosition.x = aimingLeft ? -socketRightLocalPosition.x : socketRightLocalPosition.x;
         weaponSocket.localPosition = targetPosition;
+    }
+
+    void UpdateStableAimSideFromMouse(Vector3 mouseWorld)
+    {
+        Vector3 origin = GetAimSideOrigin();
+        float deltaX = mouseWorld.x - origin.x;
+        if (Mathf.Abs(deltaX) < handSwitchDeadZone)
+            return;
+
+        stableAimingLeft = deltaX < 0f;
+        hasStableAimSide = true;
+    }
+
+    bool GetStableAimingLeft(float aimAngle)
+    {
+        if (!hasStableAimSide)
+        {
+            stableAimingLeft = Mathf.Abs(Mathf.DeltaAngle(0f, aimAngle)) > 90f;
+            hasStableAimSide = true;
+            return stableAimingLeft;
+        }
+
+        float absAngle = Mathf.Abs(Mathf.DeltaAngle(0f, aimAngle));
+        float switchToLeftAngle = 90f + Mathf.Max(0f, handSwitchAngleBuffer);
+        float switchToRightAngle = 90f - Mathf.Max(0f, handSwitchAngleBuffer);
+
+        if (!stableAimingLeft && absAngle > switchToLeftAngle)
+            stableAimingLeft = true;
+        else if (stableAimingLeft && absAngle < switchToRightAngle)
+            stableAimingLeft = false;
+
+        return stableAimingLeft;
+    }
+
+    Vector3 GetAimSideOrigin()
+    {
+        if (weaponController != null)
+            return weaponController.transform.position;
+        if (playerHealth != null)
+            return playerHealth.transform.position;
+        if (ownerNetworkObject != null)
+            return ownerNetworkObject.transform.position;
+        return transform.root != null ? transform.root.position : transform.position;
     }
 
     float RecoilAmount()

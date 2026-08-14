@@ -71,6 +71,9 @@ public class NetworkButtons : MonoBehaviour
             return;
         }
 
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            isNetworkStarted = false;
+
         // Check if we're in the gameplay scene
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
         {
@@ -335,6 +338,12 @@ public class NetworkButtons : MonoBehaviour
         if (RoomClient.Instance != null && !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
             RoomClient.Instance.SendHeartbeat(GameManager.Instance.CurrentRoomCode);
         nextGameplayHeartbeat = Time.unscaledTime + 10f;
+    }
+
+    public void ResetNetworkStartupState()
+    {
+        isNetworkStarted = false;
+        nextGameplayHeartbeat = 0f;
     }
 
     private async Task<bool> ConfigureRelayClient()

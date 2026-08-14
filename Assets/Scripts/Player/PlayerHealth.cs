@@ -16,6 +16,7 @@ public class PlayerHealth : NetworkBehaviour
     [SerializeField] float armorRegenerationPerSecond = 0.2f;
     [SerializeField] bool allowWeaponDamageFromPlayers;
     [Header("Respawn")]
+    [SerializeField] int maxLives = 3;
     [SerializeField] float respawnDelay = 2f;
     [SerializeField] float respawnInvulnerableTime = 1.5f;
     [SerializeField] string checkpointObjectName = "Checkpoint";
@@ -25,11 +26,13 @@ public class PlayerHealth : NetworkBehaviour
     readonly NetworkVariable<float> networkArmor = new(0);
     readonly NetworkVariable<float> networkEnergy = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<int> networkMagazineAmmo = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+    readonly NetworkVariable<int> networkLives = new(0);
     readonly NetworkVariable<bool> networkIsDead = new(false);
     float lastShotTime = float.NegativeInfinity;
     float lastCombatEndTime = float.NegativeInfinity;
     float reloadCompleteTime;
     int offlineMagazineAmmo;
+    int offlineLives;
     bool isReloading;
     bool currentWeaponUsesAmmo = true;
     bool isInCombat;
@@ -47,15 +50,70 @@ public class PlayerHealth : NetworkBehaviour
     public int CurrentAmmo => IsSpawned ? networkMagazineAmmo.Value : offlineMagazineAmmo;
     public int MaxAmmo => magazineSize;
     public int CurrentReserveAmmo => 0;
+    public int CurrentLives => IsSpawned ? networkLives.Value : offlineLives;
+    public int MaxLives => Mathf.Max(1, maxLives);
     public bool IsReloading => isReloading;
     public bool CurrentWeaponUsesAmmo => currentWeaponUsesAmmo;
     public bool AllowWeaponDamageFromPlayers => allowWeaponDamageFromPlayers;
     public bool IsDead => IsSpawned ? networkIsDead.Value : offlineIsDead;
+    public bool IsOutOfLives => CurrentLives <= 0 && IsDead;
+
+    public static bool AreAllSpawnedPlayersOutOfLives()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        bool foundPlayer = false;
+
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned) continue;
+
+            foundPlayer = true;
+            if (!player.IsOutOfLives)
+                return false;
+        }
+
+        return foundPlayer;
+    }
+
+    public static bool AreAllSpawnedPlayersDead()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        bool foundPlayer = false;
+
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned) continue;
+
+            foundPlayer = true;
+            if (!player.IsDead)
+                return false;
+        }
+
+        return foundPlayer;
+    }
+
+    public static bool HasAnySpawnedPlayerOutOfLives()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        foreach (PlayerHealth player in players)
+        {
+            if (player != null && player.IsSpawned && player.IsOutOfLives)
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool IsSpawnedTeamLost()
+    {
+        return AreAllSpawnedPlayersOutOfLives();
+    }
 
     void Awake()
     {
         if (playerConfig != null) playerConfig = Instantiate(playerConfig);
         offlineMagazineAmmo = magazineSize;
+        offlineLives = MaxLives;
         colliders = GetComponentsInChildren<Collider2D>(true);
         spriteRenderers = GetComponentsInChildren<SpriteRenderer>(true);
         rb = GetComponent<Rigidbody2D>();
@@ -68,6 +126,7 @@ public class PlayerHealth : NetworkBehaviour
         {
             networkHealth.Value = playerConfig.MaxHealth;
             networkArmor.Value = playerConfig.MaxArmor;
+            networkLives.Value = MaxLives;
             networkIsDead.Value = false;
         }
         if (IsOwner)
@@ -92,6 +151,7 @@ public class PlayerHealth : NetworkBehaviour
             playerConfig.CurrentHealth = playerConfig.MaxHealth;
             playerConfig.Armor = playerConfig.MaxArmor;
             playerConfig.Energy = playerConfig.MaxEnergy;
+            offlineLives = MaxLives;
             BindLocalUI();
         }
     }
@@ -417,7 +477,17 @@ public class PlayerHealth : NetworkBehaviour
         if (IsSpawned)
         {
             if (!IsServer) return;
+            networkLives.Value = Mathf.Max(0, networkLives.Value - 1);
             networkIsDead.Value = true;
+
+            if (AllNetworkPlayersOutOfLives())
+            {
+                ShowTeamLostPanelClientRpc();
+                return;
+            }
+
+            if (networkLives.Value <= 0)
+                return;
 
             if (!AllNetworkPlayersDead())
                 return;
@@ -430,8 +500,15 @@ public class PlayerHealth : NetworkBehaviour
         }
         else
         {
+            offlineLives = Mathf.Max(0, offlineLives - 1);
             offlineIsDead = true;
             SetDeadState(true);
+
+            if (offlineLives <= 0)
+            {
+                ShowLocalLostPanel();
+                return;
+            }
 
             if (LevelManager.Instance != null)
                 LevelManager.Instance.ResetCurrentRoomEncounter();
@@ -457,18 +534,37 @@ public class PlayerHealth : NetworkBehaviour
         return foundPlayer;
     }
 
+    bool AllNetworkPlayersOutOfLives()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        bool foundPlayer = false;
+
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned) continue;
+
+            foundPlayer = true;
+            if (!player.IsOutOfLives)
+                return false;
+        }
+
+        return foundPlayer;
+    }
+
     void RespawnAllDeadNetworkPlayers()
     {
         PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
         foreach (PlayerHealth player in players)
         {
             if (player == null || !player.IsSpawned || !player.IsDead) continue;
+            if (player.IsOutOfLives) continue;
             player.StartTeamRespawn();
         }
     }
 
     void StartTeamRespawn()
     {
+        if (IsOutOfLives) return;
         if (respawnRoutine != null) return;
         respawnRoutine = StartCoroutine(RespawnRoutine());
     }
@@ -604,6 +700,9 @@ public class PlayerHealth : NetworkBehaviour
                 renderer.color = color;
             }
         }
+
+        if (dead && IsSpawned && IsOwner && IsOutOfLives)
+            FollowAliveTeammateCamera();
     }
 
     [Rpc(SendTo.ClientsAndHost)]
@@ -653,5 +752,54 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (GameManager.Instance != null) playerConfig.Name = GameManager.Instance.CurrentUsername;
         if (UIManager.Instance != null) UIManager.Instance.SetPlayerConfig(playerConfig);
+    }
+
+    public void RequestTeamRetryToRoomLobby()
+    {
+        if (!IsSpawned || !IsOwner) return;
+        RequestTeamRetryToRoomLobbyServerRpc();
+    }
+
+    [Rpc(SendTo.Server)]
+    void RequestTeamRetryToRoomLobbyServerRpc()
+    {
+        if (!AllNetworkPlayersOutOfLives())
+            return;
+
+        ReturnTeamToRoomLobbyClientRpc();
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    void ShowTeamLostPanelClientRpc()
+    {
+        ShowLocalLostPanel();
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    void ReturnTeamToRoomLobbyClientRpc()
+    {
+        InGameHUDUIManager hud = FindAnyObjectByType<InGameHUDUIManager>(FindObjectsInactive.Include);
+        if (hud != null)
+            hud.ReturnToRoomLobbyAfterTeamLost();
+    }
+
+    void ShowLocalLostPanel()
+    {
+        InGameHUDUIManager hud = FindAnyObjectByType<InGameHUDUIManager>(FindObjectsInactive.Include);
+        if (hud != null)
+            hud.ShowLostPanel();
+    }
+
+    void FollowAliveTeammateCamera()
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>();
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || player == this || !player.IsSpawned) continue;
+            if (player.IsOutOfLives || player.IsDead) continue;
+
+            PlayerMovement.FollowWithCamera(player.transform);
+            return;
+        }
     }
 }

@@ -192,12 +192,19 @@ private void MovePlayer()
 
     private void SetupCameraFollow()
     {
+        FollowWithCamera(transform);
+    }
+
+    public static void FollowWithCamera(Transform target)
+    {
+        if (target == null) return;
+
         CinemachineVirtualCamera vcam = FindAnyObjectByType<CinemachineVirtualCamera>();
         if (vcam != null)
         {
-            vcam.Follow = this.transform;
-            vcam.LookAt = this.transform;
-            Debug.Log($"[PlayerMovement] Cinemachine Camera is now following: {gameObject.name}");
+            vcam.Follow = target;
+            vcam.LookAt = target;
+            Debug.Log($"[PlayerMovement] Cinemachine Camera is now following: {target.name}");
         }
         else
         {

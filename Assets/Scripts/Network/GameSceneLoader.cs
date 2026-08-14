@@ -91,13 +91,53 @@ public class GameSceneLoader : MonoBehaviour
             return;
         }
 
-        SceneManager.LoadScene(introSceneName);
+        StartCoroutine(LoadIntroRoutine(introSceneName));
+    }
+
+    IEnumerator LoadIntroRoutine(string introSceneName)
+    {
+        isLoading = true;
+        Show("Loading intro...");
+        float shownAt = Time.unscaledTime;
+
+        yield return null;
+
+        AsyncOperation operation = SceneManager.LoadSceneAsync(introSceneName);
+        if (operation == null)
+        {
+            HideImmediate();
+            isLoading = false;
+            yield break;
+        }
+
+        operation.allowSceneActivation = false;
+
+        while (operation.progress < 0.9f)
+        {
+            SetProgress(Mathf.Clamp01(operation.progress / 0.9f), "Loading intro...");
+            yield return null;
+        }
+
+        SetProgress(0.95f, "Preparing story...");
+        while (Time.unscaledTime - shownAt < MinLoadingVisibleTime)
+            yield return null;
+
+        operation.allowSceneActivation = true;
+
+        while (!operation.isDone)
+            yield return null;
+
+        SetProgress(1f, "Complete!");
+        yield return new WaitForSecondsRealtime(0.12f);
+
+        HideImmediate();
+        isLoading = false;
     }
 
     IEnumerator LoadSceneRoutine(string sceneName, bool waitForGameplayReady)
     {
         isLoading = true;
-        Show("Đang tải màn chơi...");
+        Show("Loading gameplay...");
         float shownAt = Time.unscaledTime;
 
         yield return null;
@@ -114,11 +154,11 @@ public class GameSceneLoader : MonoBehaviour
 
         while (operation.progress < 0.9f)
         {
-            SetProgress(Mathf.Clamp01(operation.progress / 0.9f), "Đang tải map...");
+            SetProgress(Mathf.Clamp01(operation.progress / 0.9f), "Loading map...");
             yield return null;
         }
 
-        SetProgress(0.95f, "Chuẩn bị nhân vật...");
+        SetProgress(0.95f, "Preparing character...");
 
         while (Time.unscaledTime - shownAt < MinLoadingVisibleTime)
             yield return null;
@@ -131,7 +171,7 @@ public class GameSceneLoader : MonoBehaviour
         if (waitForGameplayReady)
             yield return WaitForGameplayReady();
 
-        SetProgress(1f, "Hoàn tất!");
+        SetProgress(1f, "Complete!");
         yield return new WaitForSecondsRealtime(0.15f);
 
         HideImmediate();
@@ -149,7 +189,7 @@ public class GameSceneLoader : MonoBehaviour
             if (hasPlayer && hasCamera)
                 yield break;
 
-            SetProgress(0.98f, hasPlayer ? "Đang gắn camera..." : "Đang tạo nhân vật...");
+            SetProgress(0.98f, hasPlayer ? "Loading camera..." : "Creating character...");
             yield return null;
         }
     }
@@ -176,7 +216,7 @@ public class GameSceneLoader : MonoBehaviour
         panelRect.offsetMin = Vector2.zero;
         panelRect.offsetMax = Vector2.zero;
 
-        loadingText = CreateText(panel.transform, "LoadingText", "Đang tải...", 42, TextAlignmentOptions.Center);
+        loadingText = CreateText(panel.transform, "LoadingText", "Loading...", 42, TextAlignmentOptions.Center);
         RectTransform loadingRect = loadingText.GetComponent<RectTransform>();
         loadingRect.anchorMin = new Vector2(0.5f, 0.5f);
         loadingRect.anchorMax = new Vector2(0.5f, 0.5f);

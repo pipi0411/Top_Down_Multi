@@ -3,16 +3,12 @@ using UnityEngine;
 
 public static class ServerEndpointConfig
 {
-    private const string DefaultBaseUrl = "https://servergame-production-7067.up.railway.app";
-    private const string LegacyBaseUrl = "https://servergame-production-eee3.up.railway.app";
-    private const string PlayerPrefsKey = "serverBaseUrl";
-
     public static string Resolve(string inspectorBaseUrl)
     {
-        string savedUrl = Normalize(PlayerPrefs.GetString(PlayerPrefsKey, string.Empty));
-        if (string.Equals(savedUrl, LegacyBaseUrl, StringComparison.OrdinalIgnoreCase))
+        string savedUrl = Normalize(PlayerPrefs.GetString(ServerUrlSettings.PlayerPrefsKey, string.Empty));
+        if (IsDeprecated(savedUrl))
         {
-            PlayerPrefs.DeleteKey(PlayerPrefsKey);
+            PlayerPrefs.DeleteKey(ServerUrlSettings.PlayerPrefsKey);
             savedUrl = string.Empty;
         }
         if (IsUsable(savedUrl))
@@ -20,13 +16,13 @@ public static class ServerEndpointConfig
             return savedUrl;
         }
 
-        string envUrl = Normalize(Environment.GetEnvironmentVariable("TOP_DOWN_MULTI_SERVER_URL"));
+        string envUrl = Normalize(Environment.GetEnvironmentVariable(ServerUrlSettings.PrimaryEnvironmentVariable));
         if (IsUsable(envUrl))
         {
             return envUrl;
         }
 
-        envUrl = Normalize(Environment.GetEnvironmentVariable("UNITY_SERVER_URL"));
+        envUrl = Normalize(Environment.GetEnvironmentVariable(ServerUrlSettings.SecondaryEnvironmentVariable));
         if (IsUsable(envUrl))
         {
             return envUrl;
@@ -38,7 +34,7 @@ public static class ServerEndpointConfig
             return candidate;
         }
 
-        return DefaultBaseUrl;
+        return ServerUrlSettings.ProductionBaseUrl;
     }
 
     public static void Save(string serverBaseUrl)
@@ -46,11 +42,11 @@ public static class ServerEndpointConfig
         string normalized = Normalize(serverBaseUrl);
         if (string.IsNullOrEmpty(normalized))
         {
-            PlayerPrefs.DeleteKey(PlayerPrefsKey);
+            PlayerPrefs.DeleteKey(ServerUrlSettings.PlayerPrefsKey);
         }
         else
         {
-            PlayerPrefs.SetString(PlayerPrefsKey, normalized);
+            PlayerPrefs.SetString(ServerUrlSettings.PlayerPrefsKey, normalized);
         }
 
         PlayerPrefs.Save();
@@ -77,5 +73,18 @@ public static class ServerEndpointConfig
             && !string.Equals(url, "https://localhost:3000", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(url, "http://127.0.0.1:3000", StringComparison.OrdinalIgnoreCase)
             && !string.Equals(url, "https://127.0.0.1:3000", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsDeprecated(string url)
+    {
+        foreach (string deprecatedUrl in ServerUrlSettings.DeprecatedBaseUrls)
+        {
+            if (string.Equals(url, Normalize(deprecatedUrl), StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
