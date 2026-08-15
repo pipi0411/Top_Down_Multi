@@ -1,4 +1,5 @@
 using System.Collections;
+using Unity.Netcode;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -184,7 +185,7 @@ public class GameSceneLoader : MonoBehaviour
 
         while (Time.unscaledTime < deadline)
         {
-            bool hasPlayer = FindAnyObjectByType<PlayerHealth>() != null;
+            bool hasPlayer = HasReadyLocalPlayer();
             bool hasCamera = Camera.main != null;
             if (hasPlayer && hasCamera)
                 yield break;
@@ -192,6 +193,23 @@ public class GameSceneLoader : MonoBehaviour
             SetProgress(0.98f, hasPlayer ? "Loading camera..." : "Creating character...");
             yield return null;
         }
+    }
+
+    bool HasReadyLocalPlayer()
+    {
+        NetworkManager networkManager = NetworkManager.Singleton;
+        bool multiplayerStarting = GameManager.Instance != null && GameManager.Instance.IsMultiplayer;
+
+        if (!multiplayerStarting || networkManager == null || !networkManager.IsListening)
+            return FindAnyObjectByType<PlayerHealth>() != null;
+
+        foreach (PlayerHealth player in FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude))
+        {
+            if (player != null && player.IsSpawned && player.IsOwner)
+                return true;
+        }
+
+        return false;
     }
 
     void BuildUI()

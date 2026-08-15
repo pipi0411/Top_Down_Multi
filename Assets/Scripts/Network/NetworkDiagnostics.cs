@@ -32,7 +32,12 @@ public class NetworkDiagnostics : MonoBehaviour
         {
             Debug.Log("✓ GameManager found");
             Debug.Log($"  - CurrentState: {GameManager.Instance.CurrentState}");
+            Debug.Log($"  - IsMultiplayer: {GameManager.Instance.IsMultiplayer}");
+            Debug.Log($"  - CurrentRoomCode: {GameManager.Instance.CurrentRoomCode}");
+            Debug.Log($"  - CurrentRelayRoomCode: {GameManager.Instance.CurrentRelayRoomCode}");
+            Debug.Log($"  - CurrentRelayJoinCode: {(string.IsNullOrEmpty(GameManager.Instance.CurrentRelayJoinCode) ? "EMPTY" : GameManager.Instance.CurrentRelayJoinCode)}");
             Debug.Log($"  - SelectedCharacter: {GameManager.Instance.SelectedCharacter}");
+            Debug.Log($"  - RoomSelectedCharacter: {GameManager.Instance.RoomSelectedCharacter}");
             Debug.Log($"  - IsHost: {GameManager.Instance.IsHost}");
         }
 

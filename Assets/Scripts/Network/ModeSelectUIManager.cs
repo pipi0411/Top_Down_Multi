@@ -136,12 +136,14 @@ public class ModeSelectUIManager : MonoBehaviour
         var buttons = panel.GetComponentsInChildren<Button>(true);
         Button createBtn = null;
         Button joinBtn = null;
+        Button backBtn = null;
         foreach (var b in buttons)
         {
             if (b == null) continue;
             var n = b.name.ToLowerInvariant();
             if (createBtn == null && n.Contains("create")) createBtn = b;
             if (joinBtn == null && n.Contains("join")) joinBtn = b;
+            if (backBtn == null && (n.Contains("back") || n.Contains("exit"))) backBtn = b;
         }
 
         if (createBtn != null)
@@ -187,6 +189,19 @@ public class ModeSelectUIManager : MonoBehaviour
                     if (joinRoom != null) joinRoom.SetActive(true);
                 }
                 Debug.Log("ModeSelectUIManager: JoinRoom opened");
+            });
+        }
+
+        if (backBtn != null)
+        {
+            backBtn.onClick.RemoveAllListeners();
+            backBtn.onClick.AddListener(() =>
+            {
+                Debug.Log("ModeSelectUIManager: Create/Join back to ModeSelect");
+                GameManager.Instance.SetMultiplayerMode(false);
+                panel.SetActive(false);
+                ShowModeSelectPanel();
+                GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
             });
         }
     }

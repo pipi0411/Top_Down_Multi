@@ -646,15 +646,26 @@ public class CharacterSelectUIManager : MonoBehaviour
 
         takenRoomCharacters.Clear();
 
+        string currentUserId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
         string currentUsername = GameManager.Instance != null ? GameManager.Instance.CurrentUsername : null;
         foreach (var player in result.players)
         {
             if (player == null || string.IsNullOrEmpty(player.character))
                 continue;
 
-            bool isSelf = !string.IsNullOrEmpty(currentUsername) &&
-                          !string.IsNullOrEmpty(player.username) &&
-                          string.Equals(player.username, currentUsername, StringComparison.OrdinalIgnoreCase);
+            bool isSelf = false;
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                isSelf = !string.IsNullOrEmpty(player.userId) &&
+                         string.Equals(player.userId, currentUserId, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                isSelf = !string.IsNullOrEmpty(currentUsername) &&
+                         !string.IsNullOrEmpty(player.username) &&
+                         string.Equals(player.username, currentUsername, StringComparison.OrdinalIgnoreCase);
+            }
+
             if (!isSelf)
             {
                 takenRoomCharacters.Add(player.character);

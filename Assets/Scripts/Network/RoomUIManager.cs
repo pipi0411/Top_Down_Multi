@@ -1,4 +1,5 @@
 using TMPro;
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -206,7 +207,7 @@ public class RoomUIManager : MonoBehaviour
 
     private void Update()
     {
-        if (GameManager.Instance == null || GameManager.Instance.CurrentState != GameManager.GameState.RoomLobby)
+        if (GameManager.Instance == null)
         {
             return;
         }
@@ -216,7 +217,17 @@ public class RoomUIManager : MonoBehaviour
             return;
         }
 
-        if (GameManager.Instance.IsHost && RoomClient.Instance != null && Time.unscaledTime >= nextRoomHeartbeatTime)
+        bool shouldPollRoom = GameManager.Instance.CurrentState == GameManager.GameState.RoomLobby ||
+                              GameManager.Instance.CurrentState == GameManager.GameState.GameStarting ||
+                              GameManager.Instance.CurrentState == GameManager.GameState.InGame;
+
+        if (!shouldPollRoom)
+        {
+            return;
+        }
+
+        if (GameManager.Instance.IsHost && GameManager.Instance.CurrentState == GameManager.GameState.RoomLobby &&
+            RoomClient.Instance != null && Time.unscaledTime >= nextRoomHeartbeatTime)
         {
             RoomClient.Instance.SendHeartbeat(GameManager.Instance.CurrentRoomCode);
             nextRoomHeartbeatTime = Time.unscaledTime + roomHeartbeatInterval;
@@ -368,7 +379,7 @@ public class RoomUIManager : MonoBehaviour
         }
     }
 
-    private void OnStartGameClicked()
+    private async void OnStartGameClicked()
     {
         if (GameManager.Instance != null && string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode))
         {
@@ -391,7 +402,16 @@ public class RoomUIManager : MonoBehaviour
         if (startGameButton != null)
             startGameButton.interactable = false;
 
-        RoomClient.Instance.StartRoom(GameManager.Instance.CurrentRoomCode);
+        bool relayReady = await NetworkButtons.Instance.PrepareRelayHostBeforeGameplay();
+        if (!relayReady)
+        {
+            Debug.LogError("Failed to prepare Relay before starting room.");
+            if (startGameButton != null)
+                startGameButton.interactable = true;
+            return;
+        }
+
+        RoomClient.Instance.StartRoom(GameManager.Instance.CurrentRoomCode, "loading");
     }
 
     private void OnLeaveRoomClicked()
@@ -554,12 +574,11 @@ public class RoomUIManager : MonoBehaviour
             return;
         }
 
-        if (GameManager.Instance != null)
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.RoomLobby)
         {
             GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
+            GameSceneLoader.LoadGameplaySceneAfterIntro(gameplaySceneName);
         }
-
-        GameSceneLoader.LoadGameplaySceneAfterIntro(gameplaySceneName);
     }
 
     private void HandleStateChanged(GameManager.GameState newState)
@@ -697,8 +716,13 @@ public class RoomUIManager : MonoBehaviour
             return false;
 
         string localUserId = AuthClient.Instance != null ? AuthClient.Instance.GetStoredUserId() : string.Empty;
-        if (!string.IsNullOrEmpty(localUserId) && !string.IsNullOrEmpty(player.userId))
+        if (!string.IsNullOrEmpty(localUserId))
+        {
+            if (string.IsNullOrEmpty(player.userId))
+                return false;
+
             return string.Equals(player.userId, localUserId, System.StringComparison.OrdinalIgnoreCase);
+        }
 
         return !string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
                !string.IsNullOrEmpty(player.username) &&
@@ -794,8 +818,7 @@ public class RoomUIManager : MonoBehaviour
                 if (player == null || string.IsNullOrEmpty(player.username))
                     continue;
 
-                if (!string.IsNullOrEmpty(GameManager.Instance.CurrentUsername) &&
-                    string.Equals(player.username, GameManager.Instance.CurrentUsername, System.StringComparison.OrdinalIgnoreCase))
+                if (IsLocalPlayer(player))
                 {
                     return player.character;
                 }
@@ -858,13 +881,34 @@ public class RoomUIManager : MonoBehaviour
             string roomName = string.IsNullOrEmpty(result.room.name) ? GameManager.Instance.CurrentRoomName : result.room.name;
             GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
             if (!string.IsNullOrEmpty(result.room.relayJoinCode))
-                GameManager.Instance.SetRelayJoinCode(result.room.relayJoinCode);
+                GameManager.Instance.SetRelayJoinCode(result.room.relayJoinCode, roomCode);
         }
 
         currentRoomPlayers = result.players ?? new RoomClient.PlayerInfo[0];
+        SyncLocalRoomCharacterFromPlayers();
         RefreshPlayerList();
         UpdateLocalPlayerUI();
         nextRoomPlayersRefreshTime = Time.unscaledTime + roomPlayersRefreshInterval;
+    }
+
+    private void SyncLocalRoomCharacterFromPlayers()
+    {
+        if (GameManager.Instance == null || currentRoomPlayers == null)
+            return;
+
+        foreach (var player in currentRoomPlayers)
+        {
+            if (player == null || !IsLocalPlayer(player))
+                continue;
+
+            if (!string.IsNullOrEmpty(player.character))
+            {
+                GameManager.Instance.SetRoomSelectedCharacter(player.character);
+                Debug.Log($"[RoomUIManager] Synced local room character: {player.character}");
+            }
+
+            return;
+        }
     }
 
     private void HandleGetRoomDetailsComplete(RoomClient.RoomDetailsResult result)
@@ -884,10 +928,12 @@ public class RoomUIManager : MonoBehaviour
             string roomCode = string.IsNullOrEmpty(result.room.roomCode) ? GameManager.Instance.CurrentRoomCode : result.room.roomCode;
             string roomName = string.IsNullOrEmpty(result.room.name) ? GameManager.Instance.CurrentRoomName : result.room.name;
             GameManager.Instance.SetCurrentRoom(roomCode, roomName, GameManager.Instance.IsHost);
+            if (!string.IsNullOrEmpty(result.room.relayJoinCode))
+                GameManager.Instance.SetRelayJoinCode(result.room.relayJoinCode, roomCode);
 
             if (GameManager.Instance.IsMultiplayer && !GameManager.Instance.IsHost &&
                 !GameManager.Instance.SuppressRoomGameplayAutoLoad &&
-                result.room.status == "playing" && !gameplayLoadRequested)
+                (result.room.status == "loading" || result.room.status == "playing") && !gameplayLoadRequested)
             {
                 gameplayLoadRequested = true;
                 GameManager.Instance.ChangeState(GameManager.GameState.GameStarting);
@@ -974,8 +1020,17 @@ public class RoomUIManager : MonoBehaviour
     {
         if (GameManager.Instance != null)
         {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            if (NetworkButtons.Instance != null)
+                NetworkButtons.Instance.ResetNetworkStartupState();
+
             GameManager.Instance.ClearCurrentRoom();
             GameManager.Instance.SetMultiplayerMode(false);
+            GameManager.Instance.SetSuppressRoomGameplayAutoLoad(false);
             if (GameManager.Instance.CurrentState != GameManager.GameState.MainMenu)
             {
                 GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
@@ -997,6 +1052,12 @@ public class RoomUIManager : MonoBehaviour
         if (mainMenuUIManager != null)
         {
             mainMenuUIManager.ShowMainMenuUI();
+        }
+
+        const string mainMenuSceneName = "Main Manager";
+        if (SceneManager.GetActiveScene().name != mainMenuSceneName)
+        {
+            SceneManager.LoadScene(mainMenuSceneName);
         }
     }
 

@@ -358,7 +358,16 @@ router.post("/:roomCode/start", authMiddleware, async (req, res) => {
             return res.status(403).json({ message: "Only host can start game" });
         }
 
-        if (room.status === "playing") {
+        const requestedStatus = (req.body?.status || "playing").trim().toLowerCase();
+        if (!["loading", "playing"].includes(requestedStatus)) {
+            return res.status(400).json({ message: "Invalid start status" });
+        }
+
+        if (room.status === "playing" && requestedStatus === "playing") {
+            return res.status(400).json({ message: "Game already started" });
+        }
+
+        if (room.status === "playing" && requestedStatus === "loading") {
             return res.status(400).json({ message: "Game already started" });
         }
 
@@ -373,7 +382,7 @@ router.post("/:roomCode/start", authMiddleware, async (req, res) => {
             });
         }
 
-        room.status = "playing";
+        room.status = requestedStatus;
         await room.save();
 
         return res.json({

@@ -5,7 +5,7 @@ const roomSchema = new mongoose.Schema(
         roomCode: { type: String, required: true, unique: true, uppercase: true, trim: true },
         name: { type: String, required: true, trim: true },
         ownerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-        status: { type: String, enum: ["waiting", "playing", "closed"], default: "waiting" },
+        status: { type: String, enum: ["waiting", "loading", "playing", "closed"], default: "waiting" },
         maxPlayers: { type: Number, default: 2, min: 1, max: 8 },
         relayJoinCode: { type: String, default: null, trim: true },
         hostLastHeartbeatAt: { type: Date, default: Date.now },

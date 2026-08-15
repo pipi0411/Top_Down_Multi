@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     public string CurrentRoomCode { get; private set; }
     public string CurrentRoomName { get; private set; }
     public string CurrentRelayJoinCode { get; private set; }
+    public string CurrentRelayRoomCode { get; private set; }
     public bool IsHost { get; private set; }
     public string CurrentUsername { get; private set; }
     public bool IsMultiplayer { get; private set; } = false;
@@ -110,6 +111,9 @@ public class GameManager : MonoBehaviour
         if (NetworkButtons.Instance == null)
             Debug.LogWarning("NetworkButtons not initialized");
 
+        // Keep watching room closure even after loading IntroStory/SampleScene.
+        _ = RoomClosureWatcher.Instance;
+
         // Subscribe to events
         AuthClient.Instance.OnLoginComplete += HandleLoginComplete;
         RoomClient.Instance.OnCreateRoomComplete += HandleCreateRoomComplete;
@@ -139,7 +143,10 @@ public class GameManager : MonoBehaviour
         if (!string.Equals(CurrentRoomCode, roomCode, StringComparison.OrdinalIgnoreCase))
         {
             RoomSelectedCharacter = null;
+            CurrentRelayJoinCode = null;
+            CurrentRelayRoomCode = null;
             SuppressRoomGameplayAutoLoad = false;
+            Debug.Log($"[GameManager] Room changed to '{roomCode}'. Cleared cached Relay join code.");
         }
 
         CurrentRoomCode = roomCode;
@@ -151,6 +158,8 @@ public class GameManager : MonoBehaviour
     {
         CurrentRoomCode = null;
         CurrentRoomName = null;
+        CurrentRelayJoinCode = null;
+        CurrentRelayRoomCode = null;
         IsHost = false;
         RoomSelectedCharacter = null;
         SuppressRoomGameplayAutoLoad = false;
@@ -158,7 +167,29 @@ public class GameManager : MonoBehaviour
 
     public void SetRelayJoinCode(string joinCode)
     {
+        SetRelayJoinCode(joinCode, CurrentRoomCode);
+    }
+
+    public void SetRelayJoinCode(string joinCode, string roomCode)
+    {
+        if (string.IsNullOrEmpty(joinCode))
+        {
+            CurrentRelayJoinCode = null;
+            CurrentRelayRoomCode = null;
+            return;
+        }
+
+        string targetRoomCode = string.IsNullOrEmpty(roomCode) ? CurrentRoomCode : roomCode;
+        if (!string.IsNullOrEmpty(CurrentRoomCode) &&
+            !string.IsNullOrEmpty(targetRoomCode) &&
+            !string.Equals(CurrentRoomCode, targetRoomCode, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.LogWarning($"[GameManager] Ignored Relay join code for stale room '{targetRoomCode}'. Current room is '{CurrentRoomCode}'.");
+            return;
+        }
+
         CurrentRelayJoinCode = joinCode;
+        CurrentRelayRoomCode = targetRoomCode;
     }
 
     public void SetMultiplayerMode(bool isMultiplayer)
@@ -240,7 +271,7 @@ public class GameManager : MonoBehaviour
     public void Logout()
     {
         Debug.Log("[Logout Flow] Starting logout...");
-        AuthClient.Instance.ClearAuth();
+        AuthClient.Instance.Logout();
         ClearCurrentRoom();
         CurrentUsername = null;
         IsMultiplayer = false;

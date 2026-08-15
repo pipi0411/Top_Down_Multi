@@ -17,8 +17,12 @@ using UnityEngine.SceneManagement;
 public class NetworkButtons : MonoBehaviour
 {
     [SerializeField] private string gameplaySceneName = "SampleScene";
+    [SerializeField] private float localPlayerSpawnTimeout = 15f;
     private bool isNetworkStarted = false;
+    private bool relayHostConfigured = false;
     private float nextGameplayHeartbeat;
+    private Coroutine enterGameWhenPlayerReadyCoroutine;
+    private readonly Dictionary<ulong, string> approvedClientCharacters = new Dictionary<ulong, string>();
 
     private static NetworkButtons instance;
     public static NetworkButtons Instance
@@ -144,7 +148,16 @@ public class NetworkButtons : MonoBehaviour
             return null;
 
         if (GameManager.Instance.IsMultiplayer)
-            return GameManager.Instance.RoomSelectedCharacter;
+        {
+            if (!string.IsNullOrEmpty(GameManager.Instance.RoomSelectedCharacter))
+                return GameManager.Instance.RoomSelectedCharacter;
+
+            if (!string.IsNullOrEmpty(GameManager.Instance.SelectedCharacter))
+                return GameManager.Instance.SelectedCharacter;
+
+            Debug.LogWarning("[NetworkButtons] RoomSelectedCharacter is empty. Connection approval may fail.");
+            return null;
+        }
 
         return GameManager.Instance.SelectedCharacter;
     }
@@ -190,12 +203,14 @@ public class NetworkButtons : MonoBehaviour
         }
 
         Debug.Log($"[NetworkButtons.ApprovalCheck] Client character: {clientCharacter}");
+        approvedClientCharacters[request.ClientNetworkId] = clientCharacter;
 
-        if (!CharacterPrefabManager.Instance.TryGetPrefabHashForCharacter(clientCharacter, out uint prefabHash))
+        GameObject characterPrefab = CharacterPrefabManager.Instance.GetPrefabForCharacter(clientCharacter);
+        if (characterPrefab == null || characterPrefab.GetComponent<NetworkObject>() == null)
         {
             response.Approved = false;
             response.CreatePlayerObject = false;
-            response.Reason = $"No registered prefab found for character '{clientCharacter}'.";
+            response.Reason = $"No valid NetworkObject prefab found for character '{clientCharacter}'.";
             Debug.LogError($"[NetworkButtons.ApprovalCheck] {response.Reason}");
             return;
         }
@@ -203,12 +218,11 @@ public class NetworkButtons : MonoBehaviour
         // Luôn approve kết nối
         response.Approved = true;
         
-        response.CreatePlayerObject = true;
-        response.PlayerPrefabHash = prefabHash;
+        response.CreatePlayerObject = false;
         response.Position = GetSpawnPosition(request.ClientNetworkId);
         response.Rotation = Quaternion.identity;
 
-        Debug.Log($"[NetworkButtons.ApprovalCheck] Approved with prefab hash {prefabHash} for '{clientCharacter}'");
+        Debug.Log($"[NetworkButtons.ApprovalCheck] Approved '{clientCharacter}'. Server will spawn prefab '{characterPrefab.name}'.");
     }
 
     /// <summary>
@@ -228,6 +242,9 @@ public class NetworkButtons : MonoBehaviour
             return;
         }
 
+        if (GameManager.Instance.IsMultiplayer)
+            Debug.Log($"[NetworkButtons] Client preparing Relay for room '{GameManager.Instance.CurrentRoomCode}', cachedRelayRoom='{GameManager.Instance.CurrentRelayRoomCode}', cachedJoinCode='{GameManager.Instance.CurrentRelayJoinCode}'");
+
         if (GameManager.Instance.IsMultiplayer && !await ConfigureRelayClient())
             return;
 
@@ -235,6 +252,12 @@ public class NetworkButtons : MonoBehaviour
 
         string selectedCharacter = GetCharacterForNetworkStartup();
         Debug.Log($"[NetworkButtons] Client starting with character: {selectedCharacter}");
+        if (string.IsNullOrEmpty(selectedCharacter))
+        {
+            Debug.LogError("[NetworkButtons] Cannot start client because selected character is empty.");
+            isNetworkStarted = false;
+            return;
+        }
 
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
 
@@ -258,7 +281,6 @@ public class NetworkButtons : MonoBehaviour
         else
         {
             Debug.Log("[NetworkButtons] ✓ Client started successfully");
-            GameManager.Instance.ChangeState(GameManager.GameState.InGame);
         }
     }
 
@@ -279,13 +301,19 @@ public class NetworkButtons : MonoBehaviour
             return;
         }
 
-        if (GameManager.Instance.IsMultiplayer && !await ConfigureRelayHost())
+        if (GameManager.Instance.IsMultiplayer && !relayHostConfigured && !await ConfigureRelayHost())
             return;
 
         Debug.Log("[NetworkButtons] Starting as Host...");
 
         string selectedCharacter = GetCharacterForNetworkStartup();
         Debug.Log($"[NetworkButtons] Host starting with character: {selectedCharacter}");
+        if (string.IsNullOrEmpty(selectedCharacter))
+        {
+            Debug.LogError("[NetworkButtons] Cannot start host because selected character is empty.");
+            isNetworkStarted = false;
+            return;
+        }
 
         NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
 
@@ -300,7 +328,7 @@ public class NetworkButtons : MonoBehaviour
         else
         {
             Debug.Log("[NetworkButtons] ✓ Host started successfully");
-            GameManager.Instance.ChangeState(GameManager.GameState.InGame);
+            StartEnterGameWhenPlayerReady("Host");
         }
     }
 
@@ -316,19 +344,40 @@ public class NetworkButtons : MonoBehaviour
             string joinCode = await RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
             UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
             if (transport == null) throw new InvalidOperationException("UnityTransport is missing from NetworkManager.");
-            transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
-            GameManager.Instance.SetRelayJoinCode(joinCode);
+            string connectionType = GetRelayConnectionType();
+            ConfigureTransportForRelay(transport, connectionType);
+            transport.SetRelayServerData(allocation.ToRelayServerData(connectionType));
+            GameManager.Instance.SetRelayJoinCode(joinCode, GameManager.Instance.CurrentRoomCode);
             bool published = await PublishRelayCode(joinCode);
             if (!published) throw new InvalidOperationException("Could not publish Relay join code to room.");
-            Debug.Log($"[Relay] Host allocation ready. Join code: {joinCode}");
+            relayHostConfigured = true;
+            Debug.Log($"[Relay] Host allocation ready. Join code: {joinCode}, connection: {connectionType}");
             return true;
         }
         catch (Exception exception)
         {
             Debug.LogError($"[Relay] Host setup failed: {exception.Message}");
             isNetworkStarted = false;
+            relayHostConfigured = false;
             return false;
         }
+    }
+
+    public async Task<bool> PrepareRelayHostBeforeGameplay()
+    {
+        if (GameManager.Instance == null || !GameManager.Instance.IsMultiplayer || !GameManager.Instance.IsHost)
+            return true;
+
+        if (relayHostConfigured &&
+            !string.IsNullOrEmpty(GameManager.Instance.CurrentRelayJoinCode) &&
+            string.Equals(GameManager.Instance.CurrentRelayRoomCode, GameManager.Instance.CurrentRoomCode, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log($"[Relay] Reusing prepared host Relay join code: {GameManager.Instance.CurrentRelayJoinCode}");
+            return true;
+        }
+
+        Debug.Log($"[Relay] Preparing host Relay before starting room '{GameManager.Instance.CurrentRoomCode}'.");
+        return await ConfigureRelayHost();
     }
 
     private void Update()
@@ -344,6 +393,7 @@ public class NetworkButtons : MonoBehaviour
     {
         isNetworkStarted = false;
         nextGameplayHeartbeat = 0f;
+        StopEnterGameWhenPlayerReady();
     }
 
     private async Task<bool> ConfigureRelayClient()
@@ -356,8 +406,10 @@ public class NetworkButtons : MonoBehaviour
             JoinAllocation allocation = await RelayService.Instance.JoinAllocationAsync(joinCode);
             UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
             if (transport == null) throw new InvalidOperationException("UnityTransport is missing from NetworkManager.");
-            transport.SetRelayServerData(allocation.ToRelayServerData("dtls"));
-            Debug.Log($"[Relay] Client joined allocation: {joinCode}");
+            string connectionType = GetRelayConnectionType();
+            ConfigureTransportForRelay(transport, connectionType);
+            transport.SetRelayServerData(allocation.ToRelayServerData(connectionType));
+            Debug.Log($"[Relay] Client joined allocation: {joinCode}, connection: {connectionType}");
             return true;
         }
         catch (Exception exception)
@@ -376,6 +428,25 @@ public class NetworkButtons : MonoBehaviour
             await AuthenticationService.Instance.SignInAnonymouslyAsync();
     }
 
+    private string GetRelayConnectionType()
+    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        return "wss";
+#else
+        return "dtls";
+#endif
+    }
+
+    private void ConfigureTransportForRelay(UnityTransport transport, string connectionType)
+    {
+        if (transport == null) return;
+
+        bool useWebSockets = string.Equals(connectionType, "wss", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(connectionType, "ws", StringComparison.OrdinalIgnoreCase);
+        transport.UseWebSockets = useWebSockets;
+        Debug.Log($"[Relay] UnityTransport UseWebSockets={transport.UseWebSockets}");
+    }
+
     private async Task<bool> PublishRelayCode(string joinCode)
     {
         if (RoomClient.Instance == null || string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode)) return false;
@@ -390,8 +461,14 @@ public class NetworkButtons : MonoBehaviour
 
     private async Task<string> WaitForRelayCode()
     {
-        if (!string.IsNullOrEmpty(GameManager.Instance.CurrentRelayJoinCode))
+        if (!string.IsNullOrEmpty(GameManager.Instance.CurrentRelayJoinCode) &&
+            string.Equals(GameManager.Instance.CurrentRelayRoomCode, GameManager.Instance.CurrentRoomCode, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log($"[Relay] Using cached room join code: {GameManager.Instance.CurrentRelayJoinCode}");
             return GameManager.Instance.CurrentRelayJoinCode;
+        }
+
+        Debug.Log($"[Relay] Waiting for relay code from room '{GameManager.Instance.CurrentRoomCode}'.");
         for (int attempt = 0; attempt < 20; attempt++)
         {
             var completion = new TaskCompletionSource<RoomClient.RoomDetailsResult>();
@@ -405,9 +482,14 @@ public class NetworkButtons : MonoBehaviour
                 string code = completion.Task.Result.room.relayJoinCode;
                 if (!string.IsNullOrEmpty(code))
                 {
-                    GameManager.Instance.SetRelayJoinCode(code);
+                    GameManager.Instance.SetRelayJoinCode(code, GameManager.Instance.CurrentRoomCode);
+                    Debug.Log($"[Relay] Received room join code on attempt {attempt + 1}: {code}");
                     return code;
                 }
+            }
+            else if (completion.Task.IsCompleted && !completion.Task.Result.success)
+            {
+                Debug.LogWarning($"[Relay] Room details failed while waiting for relay code. Room='{GameManager.Instance.CurrentRoomCode}', Error='{completion.Task.Result.error}'");
             }
             await Task.Delay(500);
         }
@@ -448,11 +530,132 @@ public class NetworkButtons : MonoBehaviour
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"[NetworkButtons] Client connected: {clientId}");
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+        {
+            StartCoroutine(EnsureServerPlayerObjectSpawned(clientId));
+        }
+
+        if (NetworkManager.Singleton != null
+            && clientId == NetworkManager.Singleton.LocalClientId
+            && GameManager.Instance != null
+            && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
+        {
+            Debug.Log("[NetworkButtons] Local client connected. Waiting for local PlayerObject before entering InGame.");
+            StartEnterGameWhenPlayerReady("Client");
+        }
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
         Debug.Log($"[NetworkButtons] Client disconnected: {clientId}");
+
+        if (NetworkManager.Singleton != null && clientId == NetworkManager.Singleton.LocalClientId)
+        {
+            StopEnterGameWhenPlayerReady();
+            isNetworkStarted = false;
+            Debug.LogWarning("[NetworkButtons] Local client disconnected before/while in game. Check Relay, approval reason, and selected character.");
+        }
+
+        approvedClientCharacters.Remove(clientId);
+    }
+
+    private System.Collections.IEnumerator EnsureServerPlayerObjectSpawned(ulong clientId)
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsServer)
+            yield break;
+
+        yield return null;
+
+        if (!TryGetConnectedClient(manager, clientId, out NetworkClient connectedClient) || connectedClient.PlayerObject != null)
+            yield break;
+
+        string character = approvedClientCharacters.TryGetValue(clientId, out string approvedCharacter)
+            ? approvedCharacter
+            : GetCharacterForNetworkStartup();
+
+        GameObject prefab = CharacterPrefabManager.Instance.GetPrefabForCharacter(character);
+        if (prefab == null)
+        {
+            Debug.LogError($"[NetworkButtons] Fallback spawn failed: no prefab for client {clientId}, character '{character}'.");
+            yield break;
+        }
+
+        NetworkObject prefabNetworkObject = prefab.GetComponent<NetworkObject>();
+        if (prefabNetworkObject == null)
+        {
+            Debug.LogError($"[NetworkButtons] Fallback spawn failed: prefab '{prefab.name}' has no NetworkObject.");
+            yield break;
+        }
+
+        Vector3 position = GetSpawnPosition(clientId);
+        GameObject playerInstance = Instantiate(prefab, position, Quaternion.identity);
+        NetworkObject playerNetworkObject = playerInstance.GetComponent<NetworkObject>();
+        playerNetworkObject.SpawnAsPlayerObject(clientId, false);
+        Debug.LogWarning($"[NetworkButtons] Fallback spawned player for client {clientId} as '{character}' using prefab '{prefab.name}'.");
+    }
+
+    private bool TryGetConnectedClient(NetworkManager manager, ulong clientId, out NetworkClient client)
+    {
+        client = null;
+        return manager != null && manager.ConnectedClients.TryGetValue(clientId, out client);
+    }
+
+    private void StartEnterGameWhenPlayerReady(string roleLabel)
+    {
+        StopEnterGameWhenPlayerReady();
+        enterGameWhenPlayerReadyCoroutine = StartCoroutine(EnterGameWhenLocalPlayerReady(roleLabel));
+    }
+
+    private void StopEnterGameWhenPlayerReady()
+    {
+        if (enterGameWhenPlayerReadyCoroutine == null)
+            return;
+
+        StopCoroutine(enterGameWhenPlayerReadyCoroutine);
+        enterGameWhenPlayerReadyCoroutine = null;
+    }
+
+    private System.Collections.IEnumerator EnterGameWhenLocalPlayerReady(string roleLabel)
+    {
+        float deadline = Time.unscaledTime + Mathf.Max(1f, localPlayerSpawnTimeout);
+
+        while (Time.unscaledTime < deadline)
+        {
+            NetworkObject localPlayerObject = GetLocalPlayerObject();
+            if (localPlayerObject != null)
+            {
+                Debug.Log($"[NetworkButtons] {roleLabel} local PlayerObject ready: {localPlayerObject.name}. Entering InGame.");
+                enterGameWhenPlayerReadyCoroutine = null;
+
+                if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
+                    GameManager.Instance.ChangeState(GameManager.GameState.InGame);
+
+                yield break;
+            }
+
+            yield return null;
+        }
+
+        enterGameWhenPlayerReadyCoroutine = null;
+        isNetworkStarted = false;
+        Debug.LogError($"[NetworkButtons] Timed out waiting for local PlayerObject as {roleLabel}. The client likely connected but player spawn was denied or prefab/hash is not registered in the WebGL build.");
+    }
+
+    private NetworkObject GetLocalPlayerObject()
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null)
+            return null;
+
+        if (manager.LocalClient != null && manager.LocalClient.PlayerObject != null)
+            return manager.LocalClient.PlayerObject;
+
+        if (manager.IsServer && manager.ConnectedClients.TryGetValue(manager.LocalClientId, out NetworkClient client))
+            return client.PlayerObject;
+
+        return null;
     }
 
     private void OnDestroy()

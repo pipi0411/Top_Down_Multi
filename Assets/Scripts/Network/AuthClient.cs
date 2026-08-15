@@ -24,6 +24,7 @@ public class AuthClient : MonoBehaviour
     {
         public string token;
         public string userId;
+        public string username;
     }
 
     [System.Serializable]
@@ -248,8 +249,11 @@ public class AuthClient : MonoBehaviour
 
     IEnumerator LoginCoroutine(string username, string password)
     {
+        ClearAuth();
+
         var body = new AuthRequest { username = username, password = password };
         string json = JsonUtility.ToJson(body);
+        var result = new AuthResult();
 
         using (var req = new UnityWebRequest(EffectiveBaseUrl + "/auth/login", "POST"))
         {
@@ -260,8 +264,6 @@ public class AuthClient : MonoBehaviour
             req.timeout = timeoutSeconds;
 
             yield return req.SendWebRequest();
-
-            var result = new AuthResult();
 
             if (req.result != UnityWebRequest.Result.Success)
             {
@@ -274,13 +276,18 @@ public class AuthClient : MonoBehaviour
                 {
                     result.error = "User not found";
                 }
+                else if (req.responseCode == 409)
+                {
+                    result.error = GetErrorMessage(req.downloadHandler.text,
+                        "Tài khoản này đang được đăng nhập ở máy khác. Vui lòng đăng xuất trước.");
+                }
                 else if (req.result == UnityWebRequest.Result.ConnectionError)
                 {
                     result.error = $"Connection failed: {req.error}";
                 }
                 else
                 {
-                    result.error = $"Error: {req.responseCode}";
+                    result.error = GetErrorMessage(req.downloadHandler.text, $"Error: {req.responseCode}");
                 }
             }
             else
@@ -303,7 +310,7 @@ public class AuthClient : MonoBehaviour
                         {
                             result.userId = loginRes.userId;
                             PlayerPrefs.SetString("userId", loginRes.userId);
-                            PlayerPrefs.SetString("username", username);
+                            PlayerPrefs.SetString("username", string.IsNullOrEmpty(loginRes.username) ? username : loginRes.username);
                             PlayerPrefs.Save();
                             Debug.Log("Login successful. Token and userId saved.");
 
@@ -326,6 +333,27 @@ public class AuthClient : MonoBehaviour
             }
 
         }
+
+        OnLoginComplete?.Invoke(result);
+    }
+
+    string GetErrorMessage(string responseText, string fallback)
+    {
+        if (string.IsNullOrEmpty(responseText))
+            return fallback;
+
+        try
+        {
+            ErrorResponse error = JsonUtility.FromJson<ErrorResponse>(responseText);
+            if (error != null && !string.IsNullOrEmpty(error.message))
+                return error.message;
+        }
+        catch
+        {
+            // Keep fallback for malformed error responses.
+        }
+
+        return fallback;
     }
 
     IEnumerator InvokeLoginCompleteAfterDelayCoroutine(AuthResult result)
@@ -415,5 +443,33 @@ public class AuthClient : MonoBehaviour
         PlayerPrefs.DeleteKey("userId");
         PlayerPrefs.DeleteKey("username");
         PlayerPrefs.Save();
+    }
+
+    public void Logout()
+    {
+        string token = GetStoredToken();
+        if (!string.IsNullOrEmpty(token))
+        {
+            StartCoroutine(LogoutCoroutine(token));
+        }
+
+        ClearAuth();
+    }
+
+    IEnumerator LogoutCoroutine(string token)
+    {
+        using (var req = new UnityWebRequest(EffectiveBaseUrl + "/auth/logout", "POST"))
+        {
+            req.downloadHandler = new DownloadHandlerBuffer();
+            req.SetRequestHeader("Authorization", "Bearer " + token);
+            req.timeout = timeoutSeconds;
+
+            yield return req.SendWebRequest();
+
+            if (req.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogWarning($"Logout request failed ({req.responseCode}): {req.error}");
+            }
+        }
     }
 }

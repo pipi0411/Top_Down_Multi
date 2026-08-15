@@ -1,6 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 const User = require("../Models/user");
 const authMiddleware = require("../Middleware/authMiddleware");
 
@@ -49,13 +50,27 @@ router.post("/login", async (req, res) => {
             return res.status(400).json({ message: "Wrong password" });
         }
 
+        const now = new Date();
+        if (user.activeSessionId && user.activeSessionExpiresAt && user.activeSessionExpiresAt > now) {
+            return res.status(409).json({
+                message: "Tài khoản này đang được đăng nhập ở máy khác. Vui lòng đăng xuất trước."
+            });
+        }
+
+        const sessionId = crypto.randomUUID();
+        const expiresAt = new Date(now.getTime() + 60 * 60 * 1000);
         const token = jwt.sign(
-            { id: user._id, username: user.username },
+            { id: user._id, username: user.username, sessionId },
             process.env.JWT_SECRET,
             { expiresIn: "1h" }
         );
 
-        return res.json({ token });
+        user.activeSessionId = sessionId;
+        user.activeSessionExpiresAt = expiresAt;
+        user.lastLoginAt = now;
+        await user.save();
+
+        return res.json({ token, userId: user._id, username: user.username });
     } catch (error) {
         return res.status(500).json({ message: error.message });
     }
@@ -63,6 +78,26 @@ router.post("/login", async (req, res) => {
 
 router.get("/protected", authMiddleware, (req, res) => {
     res.json({ message: "Access granted", user: req.user });
+});
+
+router.post("/logout", authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        if (!user.activeSessionId || user.activeSessionId === req.user.sessionId) {
+            user.activeSessionId = null;
+            user.activeSessionExpiresAt = null;
+            user.lastLogoutAt = new Date();
+            await user.save();
+        }
+
+        return res.json({ message: "Logged out" });
+    } catch (error) {
+        return res.status(500).json({ message: error.message });
+    }
 });
 
 module.exports = router;

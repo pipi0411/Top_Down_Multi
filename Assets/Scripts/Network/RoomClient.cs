@@ -37,6 +37,12 @@ public class RoomClient : MonoBehaviour
     }
 
     [System.Serializable]
+    public class StartRoomRequest
+    {
+        public string status = "playing";
+    }
+
+    [System.Serializable]
     public class CloseRoomRequest
     {
         public string roomCode;
@@ -287,7 +293,7 @@ public class RoomClient : MonoBehaviour
         StartCoroutine(SetPlayerCharacterCoroutine(roomCode, userId, character, token));
     }
 
-    public void StartRoom(string roomCode)
+    public void StartRoom(string roomCode, string status = "playing")
     {
         string token = AuthClient.Instance.GetStoredToken();
         if (string.IsNullOrEmpty(token))
@@ -297,7 +303,7 @@ public class RoomClient : MonoBehaviour
             return;
         }
 
-        StartCoroutine(StartRoomCoroutine(roomCode, token));
+        StartCoroutine(StartRoomCoroutine(roomCode, token, status));
     }
 
     public void SetRelayJoinCode(string roomCode, string relayJoinCode)
@@ -580,13 +586,14 @@ public class RoomClient : MonoBehaviour
         }
     }
 
-    IEnumerator StartRoomCoroutine(string roomCode, string token)
+    IEnumerator StartRoomCoroutine(string roomCode, string token, string status)
     {
         string url = EffectiveBaseUrl + "/rooms/" + UnityWebRequest.EscapeURL(roomCode) + "/start";
+        string json = JsonUtility.ToJson(new StartRoomRequest { status = string.IsNullOrEmpty(status) ? "playing" : status });
 
         using (var req = new UnityWebRequest(url, "POST"))
         {
-            req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes("{}"));
+            req.uploadHandler = new UploadHandlerRaw(Encoding.UTF8.GetBytes(json));
             req.downloadHandler = new DownloadHandlerBuffer();
             req.SetRequestHeader("Content-Type", "application/json");
             req.SetRequestHeader("Authorization", "Bearer " + token);

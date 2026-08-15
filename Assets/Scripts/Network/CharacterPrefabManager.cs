@@ -67,11 +67,11 @@ public class CharacterPrefabManager : MonoBehaviour
     {
         characterMappings = new List<CharacterPrefabMapping>
         {
-            new CharacterPrefabMapping { characterName = "Knight", prefabPath = "Prefabs/Player_Shadowblade" },
-            new CharacterPrefabMapping { characterName = "Archer", prefabPath = "Prefabs/Player_Novak" },
-            new CharacterPrefabMapping { characterName = "Mage", prefabPath = "Prefabs/Player_Ganfald" },
-            new CharacterPrefabMapping { characterName = "Rogue", prefabPath = "Prefabs/Player_Ember" },
-            new CharacterPrefabMapping { characterName = "Paladin", prefabPath = "Prefabs/Player_Iron" }
+            new CharacterPrefabMapping { characterName = "Knight", prefabPath = "Prefabs/PlayerPrefabs/Player_Shadowblade" },
+            new CharacterPrefabMapping { characterName = "Archer", prefabPath = "Prefabs/PlayerPrefabs/Player_Novak" },
+            new CharacterPrefabMapping { characterName = "Mage", prefabPath = "Prefabs/PlayerPrefabs/Player_Ganfald" },
+            new CharacterPrefabMapping { characterName = "Rogue", prefabPath = "Prefabs/PlayerPrefabs/Player_Ember" },
+            new CharacterPrefabMapping { characterName = "Paladin", prefabPath = "Prefabs/PlayerPrefabs/Player_Iron" }
         };
 
         Debug.Log("[CharacterPrefabManager] Initialized with default mappings (5 characters)");
@@ -129,6 +129,11 @@ public class CharacterPrefabManager : MonoBehaviour
             if (prefab == null)
             {
                 prefab = TryFindPrefabByName(mapping.characterName);
+            }
+
+            if (prefab == null)
+            {
+                prefab = TryFindPrefabInNetworkManager(mapping);
             }
 
             if (prefab != null)
@@ -190,6 +195,55 @@ public class CharacterPrefabManager : MonoBehaviour
         return null;
     }
 
+    private GameObject TryFindPrefabInNetworkManager(CharacterPrefabMapping mapping)
+    {
+        if (mapping == null || NetworkManager.Singleton == null || NetworkManager.Singleton.NetworkConfig == null)
+            return null;
+
+        string expectedPrefabName = GetExpectedPrefabName(mapping);
+        foreach (NetworkPrefab networkPrefab in NetworkManager.Singleton.NetworkConfig.Prefabs.Prefabs)
+        {
+            GameObject prefab = networkPrefab?.Prefab;
+            if (prefab == null)
+                continue;
+
+            if (!string.IsNullOrEmpty(expectedPrefabName) &&
+                string.Equals(prefab.name, expectedPrefabName, System.StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.Log($"[CharacterPrefabManager] Loaded '{mapping.characterName}' from NetworkManager prefab list: {prefab.name}");
+                return prefab;
+            }
+        }
+
+        return null;
+    }
+
+    private string GetExpectedPrefabName(CharacterPrefabMapping mapping)
+    {
+        if (mapping == null)
+            return null;
+
+        if (mapping.prefabReference != null)
+            return mapping.prefabReference.name;
+
+        if (!string.IsNullOrEmpty(mapping.prefabPath))
+        {
+            string normalized = mapping.prefabPath.Replace('\\', '/').Trim();
+            int slashIndex = normalized.LastIndexOf('/');
+            return slashIndex >= 0 ? normalized.Substring(slashIndex + 1) : normalized;
+        }
+
+        switch (mapping.characterName)
+        {
+            case "Knight": return "Player_Shadowblade";
+            case "Archer": return "Player_Novak";
+            case "Mage": return "Player_Ganfald";
+            case "Rogue": return "Player_Ember";
+            case "Paladin": return "Player_Iron";
+            default: return mapping.characterName;
+        }
+    }
+
     /// <summary>
     /// Lấy prefab cho một nhân vật
     /// </summary>
@@ -204,6 +258,15 @@ public class CharacterPrefabManager : MonoBehaviour
         if (prefabCache.TryGetValue(characterName, out GameObject prefab))
         {
             Debug.Log($"[CharacterPrefabManager] Retrieved prefab for '{characterName}'");
+            return prefab;
+        }
+
+        CharacterPrefabMapping mapping = characterMappings.Find(m => m != null &&
+            string.Equals(m.characterName, characterName, System.StringComparison.OrdinalIgnoreCase));
+        prefab = TryFindPrefabInNetworkManager(mapping);
+        if (prefab != null)
+        {
+            CachePrefab(characterName, prefab);
             return prefab;
         }
 
