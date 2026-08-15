@@ -40,8 +40,111 @@ public class LevelManager : MonoBehaviour
 
     private void CreateDungeon()
     {
-      currentDungeonGO = Instantiate(dungeonLibrary.Levels[currentLevelIndex].Dungeons[currentDungeonIndex], transform);  
-      currentDungeonIndex++;
+        if (!TryInstantiateCurrentDungeon())
+            Debug.LogWarning("[LevelManager] Could not create dungeon. Check DungeonLibrary setup.");
+    }
+
+    public bool LoadNextDungeonFromPortal(Vector3 playerArrivalOffset)
+    {
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null || dungeonLibrary.Levels.Length == 0)
+        {
+            Debug.LogWarning("[LevelManager] Cannot load next dungeon: DungeonLibrary is missing.");
+            return false;
+        }
+
+        if (!HasNextDungeon())
+        {
+            Debug.Log("[LevelManager] No next dungeon available.");
+            return false;
+        }
+
+        if (currentDungeonGO != null)
+            Destroy(currentDungeonGO);
+
+        currentRoom = null;
+        closedRooms.Clear();
+        boxBudgetInitialized = false;
+
+        if (!TryInstantiateCurrentDungeon())
+            return false;
+
+        Vector3 spawnPosition = GetSpawnPointPosition() + playerArrivalOffset;
+        TeleportLocalPlayersTo(spawnPosition);
+
+        foreach (TeleportGate gate in FindObjectsByType<TeleportGate>(FindObjectsInactive.Exclude))
+        {
+            if (gate != null && gate.PlayReverseOnArrival)
+            {
+                gate.PlayArrivalReverse();
+                break;
+            }
+        }
+
+        return true;
+    }
+
+    private bool TryInstantiateCurrentDungeon()
+    {
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null || dungeonLibrary.Levels.Length == 0)
+            return false;
+
+        currentLevelIndex = Mathf.Clamp(currentLevelIndex, 0, dungeonLibrary.Levels.Length - 1);
+        Level level = dungeonLibrary.Levels[currentLevelIndex];
+        if (level == null || level.Dungeons == null || level.Dungeons.Length == 0)
+            return false;
+
+        if (currentDungeonIndex >= level.Dungeons.Length)
+        {
+            if (currentLevelIndex + 1 >= dungeonLibrary.Levels.Length)
+                return false;
+
+            currentLevelIndex++;
+            currentDungeonIndex = 0;
+            level = dungeonLibrary.Levels[currentLevelIndex];
+            if (level == null || level.Dungeons == null || level.Dungeons.Length == 0)
+                return false;
+        }
+
+        GameObject dungeonPrefab = level.Dungeons[currentDungeonIndex];
+        if (dungeonPrefab == null)
+            return false;
+
+        currentDungeonGO = Instantiate(dungeonPrefab, transform);
+        currentDungeonIndex++;
+        return true;
+    }
+
+    private bool HasNextDungeon()
+    {
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null || dungeonLibrary.Levels.Length == 0)
+            return false;
+
+        if (currentLevelIndex < 0 || currentLevelIndex >= dungeonLibrary.Levels.Length)
+            return false;
+
+        Level level = dungeonLibrary.Levels[currentLevelIndex];
+        if (level != null && level.Dungeons != null && currentDungeonIndex < level.Dungeons.Length)
+            return true;
+
+        return currentLevelIndex + 1 < dungeonLibrary.Levels.Length;
+    }
+
+    private Vector3 GetSpawnPointPosition()
+    {
+        Transform spawnPoint = GameObject.Find("SpawnPoint")?.transform;
+        return spawnPoint != null ? spawnPoint.position : Vector3.zero;
+    }
+
+    private void TeleportLocalPlayersTo(Vector3 position)
+    {
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude);
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null)
+                continue;
+
+            player.transform.position = position;
+        }
     }
     private void  PlayerEnterEventCallback(Room room)
     {
