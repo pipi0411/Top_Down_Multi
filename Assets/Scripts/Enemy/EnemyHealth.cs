@@ -69,6 +69,7 @@ public class EnemyHealth : MonoBehaviour
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         OnHealthChanged?.Invoke(currentHealth, MaxHealth);
         EnemyDamagePopup.Show(transform.position, amount);
+        GameAudioManager.Instance?.PlayMonsterScream(transform.position);
         if (broadcast)
             MultiplayerGameplaySync.BroadcastEnemyHealth(this, amount);
         if (currentHealth <= 0f)
@@ -81,7 +82,10 @@ public class EnemyHealth : MonoBehaviour
         currentHealth = Mathf.Clamp(health, 0f, Mathf.Max(1f, maxHealthValue));
         OnHealthChanged?.Invoke(currentHealth, Mathf.Max(1f, maxHealthValue));
         if (damageAmount > 0f)
+        {
             EnemyDamagePopup.Show(popupPosition, damageAmount);
+            GameAudioManager.Instance?.PlayMonsterScream(popupPosition);
+        }
         if (dead || currentHealth <= 0f)
             Die();
     }
@@ -91,6 +95,8 @@ public class EnemyHealth : MonoBehaviour
         if (isDead) return;
         isDead = true;
         OnDied?.Invoke();
+        GameAudioManager.Instance?.PlayKill(transform.position);
+        GameAudioManager.Instance?.PlayMonsterDead(transform.position);
 
         Collider2D[] colliders = GetComponentsInChildren<Collider2D>();
         foreach (Collider2D col in colliders)

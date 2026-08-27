@@ -316,6 +316,8 @@ public class Room : MonoBehaviour
         if (RoomCompleted || !IsCombatRoom()) return;
 
         OnCombatStartedEvent?.Invoke(this);
+        if (roomType == RoomType.RoomBoss)
+            GameAudioManager.Instance?.PlayFinalBossBgm();
 
         EnsureWaveSpawner();
         if (waveSpawner != null)
@@ -336,6 +338,8 @@ public class Room : MonoBehaviour
         RoomCompleted = true;
         OpenDoors();
         OnCombatEndedEvent?.Invoke(this);
+        if (roomType == RoomType.RoomBoss)
+            GameAudioManager.Instance?.PlayRandomMapBgm();
     }
 
     public void ResetEncounter()

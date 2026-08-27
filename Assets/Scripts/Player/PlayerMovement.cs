@@ -118,6 +118,8 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
         rb.MovePosition(rb.position + serverMoveDirection * (currentSpeed * Time.fixedDeltaTime));
+        if ((IsOwner || useOfflineControl) && serverMoveDirection.sqrMagnitude > 0.01f)
+            GameAudioManager.Instance?.PlayFootstep();
     }
     private void Dash()
     {

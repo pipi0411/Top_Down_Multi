@@ -72,6 +72,8 @@ public class LevelManager : MonoBehaviour
         if (!TryInstantiateCurrentDungeon())
             return false;
 
+        GameAudioManager.Instance?.PlayRandomMapBgm();
+
         Vector3 spawnPosition = GetSpawnPointPosition() + playerArrivalOffset;
         TeleportLocalPlayersTo(spawnPosition);
 

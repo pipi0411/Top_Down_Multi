@@ -206,6 +206,7 @@ public class Weapon : MonoBehaviour
 
             nextShotTime = Time.time + Mathf.Max(0.02f, interval);
             PlayFireAnimation();
+            GameAudioManager.Instance?.PlayWeapon(true, transform.position);
             return true;
         }
 
@@ -224,6 +225,7 @@ public class Weapon : MonoBehaviour
 
         nextShotTime = Time.time + Mathf.Max(0.02f, interval);
         PlayFireAnimation();
+        GameAudioManager.Instance?.PlayWeapon(false, transform.position);
         return true;
     }
 

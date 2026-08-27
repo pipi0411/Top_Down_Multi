@@ -462,7 +462,7 @@ public class PlayerHealth : NetworkBehaviour
             networkArmor.Value = armor;
             networkHealth.Value = health;
             if (appliedDamage > 0f && IsServer)
-                ShowDamagePopupClientRpc(appliedDamage);
+                ShowDamagePopupClientRpc(appliedDamage, health <= 0);
             if (health <= 0 && IsServer) StartRespawn();
         }
         else
@@ -470,6 +470,8 @@ public class PlayerHealth : NetworkBehaviour
             playerConfig.Armor = armor;
             playerConfig.CurrentHealth = health;
             ShowDamagePopup(appliedDamage);
+            if (appliedDamage > 0f)
+                PlayDamageSound(health <= 0);
             if (health <= 0) StartRespawn();
         }
     }
@@ -710,15 +712,25 @@ public class PlayerHealth : NetworkBehaviour
     }
 
     [Rpc(SendTo.ClientsAndHost)]
-    void ShowDamagePopupClientRpc(float amount)
+    void ShowDamagePopupClientRpc(float amount, bool dead)
     {
         ShowDamagePopup(amount);
+        if (IsOwner)
+            PlayDamageSound(dead);
     }
 
     void ShowDamagePopup(float amount)
     {
         if (amount <= 0f) return;
         EnemyDamagePopup.Show(transform.position, amount);
+    }
+
+    void PlayDamageSound(bool dead)
+    {
+        if (dead)
+            GameAudioManager.Instance?.PlayPlayerDead();
+        else
+            GameAudioManager.Instance?.PlayPlayerHurt();
     }
 
     void ApplyRecovery(float amount)

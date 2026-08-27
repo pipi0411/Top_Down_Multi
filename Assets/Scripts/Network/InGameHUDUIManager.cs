@@ -273,6 +273,7 @@ public class InGameHUDUIManager : MonoBehaviour
 
     public void ShowWinPanel()
     {
+        GameAudioManager.Instance?.PlayWinSong();
         ShowResultPanel(winPanel);
     }
 
