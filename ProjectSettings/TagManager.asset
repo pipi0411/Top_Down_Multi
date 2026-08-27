@@ -3,7 +3,8 @@
 --- !u!78 &1
 TagManager:
   serializedVersion: 3
-  tags: []
+  tags:
+  - Boss
   layers:
   - Default
   - TransparentFX
@@ -44,11 +45,14 @@ TagManager:
   - name: Floor
     uniqueID: 673585699
     locked: 0
+  - name: Prop
+    uniqueID: 583822715
+    locked: 0
   - name: Walls
     uniqueID: 2393433307
     locked: 0
-  - name: Prop
-    uniqueID: 583822715
+  - name: Boss
+    uniqueID: 3477337225
     locked: 0
   - name: Item
     uniqueID: 3920791187

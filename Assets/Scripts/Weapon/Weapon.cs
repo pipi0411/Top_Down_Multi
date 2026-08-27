@@ -111,7 +111,6 @@ public class Weapon : MonoBehaviour
         currentAimAngle = Mathf.LerpAngle(currentAimAngle, targetAngle, aimSmoothSpeed * Time.deltaTime);
         ApplyAimPose(currentAimAngle);
     }
-
     public float CurrentAimAngle => currentAimAngle;
     public float ProjectileSpeed => projectileSpeed;
     public float ProjectileLifetime => projectileLifetime;
@@ -239,6 +238,13 @@ public class Weapon : MonoBehaviour
         {
             if (hit == null || hit.isTrigger) continue;
             if (hit.transform.IsChildOf(transform.root)) continue;
+            
+            BossManager boss = hit.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+            boss.TakeDamage(Mathf.Max(0, Mathf.RoundToInt(damage)));
+            return;
+            }
 
             EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
             if (enemy != null)
@@ -255,8 +261,7 @@ public class Weapon : MonoBehaviour
             }
         }
     }
-
-    public void SpawnProjectileVisual(Vector2 origin, Vector2 direction, float damage, float speed, float lifetime, bool canApplyLocalDamage)
+        public void SpawnProjectileVisual(Vector2 origin, Vector2 direction, float damage, float speed, float lifetime, bool canApplyLocalDamage)
     {
         GameObject projectileObject = new GameObject();
         projectileObject.transform.position = origin;

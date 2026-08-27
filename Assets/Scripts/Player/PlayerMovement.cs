@@ -221,4 +221,5 @@ public class PlayerMovement : NetworkBehaviour
             Debug.LogWarning("[PlayerMovement] No CinemachineVirtualCamera found in the scene!");
         }
     }
+    
 }
