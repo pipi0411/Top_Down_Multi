@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -17,6 +18,7 @@ public class TeleportGate : MonoBehaviour
     [Header("Teleport")]
     [SerializeField] private Vector3 playerArrivalOffset = Vector3.down * 1.25f;
     [SerializeField] private float reuseCooldown = 1.5f;
+    [SerializeField] private bool requireAllPlayersInsideInMultiplayer = true;
 
     [Header("Loading Screen")]
     [SerializeField] private bool showLoadingScreen = true;
@@ -50,6 +52,16 @@ public class TeleportGate : MonoBehaviour
 
         playerInside = true;
         if (!isBusy && Time.time >= nextAllowedUseTime)
+            StartAnimation(OpenThenTeleport());
+    }
+
+    private void OnTriggerStay2D(Collider2D other)
+    {
+        if (!IsValidPlayer(other))
+            return;
+
+        playerInside = true;
+        if (!isBusy && Time.time >= nextAllowedUseTime && CanTeleportNow())
             StartAnimation(OpenThenTeleport());
     }
 
@@ -88,6 +100,26 @@ public class TeleportGate : MonoBehaviour
 
         if (playerInside && LevelManager.Instance != null)
         {
+            if (!CanTeleportNow())
+            {
+                yield return AnimateToFrame(0);
+                isBusy = false;
+                yield break;
+            }
+
+            PlayerHealth playerHealth = GetPlayerHealthInsideGate();
+            if (playerHealth != null && playerHealth.IsSpawned)
+            {
+                playerHealth.RequestPortalTeleport(
+                    playerArrivalOffset,
+                    showLoadingScreen,
+                    loadingBeforeMapSwitch,
+                    loadingAfterMapSwitch);
+
+                nextAllowedUseTime = Time.time + reuseCooldown;
+                yield break;
+            }
+
             if (showLoadingScreen)
             {
                 PortalMapLoadingUI.Instance.PlayTransition(
@@ -173,5 +205,77 @@ public class TeleportGate : MonoBehaviour
 
         NetworkObject networkObject = playerHealth.GetComponent<NetworkObject>();
         return networkObject == null || networkObject.IsOwner;
+    }
+
+    private PlayerHealth GetPlayerHealthInsideGate()
+    {
+        Collider2D[] hits = Physics2D.OverlapBoxAll(
+            triggerCollider.bounds.center,
+            triggerCollider.bounds.size,
+            transform.eulerAngles.z);
+
+        foreach (Collider2D hit in hits)
+        {
+            PlayerHealth playerHealth = hit.GetComponentInParent<PlayerHealth>();
+            if (playerHealth == null) continue;
+
+            NetworkObject networkObject = playerHealth.GetComponent<NetworkObject>();
+            if (networkObject == null || networkObject.IsOwner)
+                return playerHealth;
+        }
+
+        return null;
+    }
+
+    private bool CanTeleportNow()
+    {
+        if (!requireAllPlayersInsideInMultiplayer)
+            return true;
+
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            return true;
+
+        PlayerHealth[] players = FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude);
+        int activePlayerCount = 0;
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned || player.IsOutOfLives) continue;
+            activePlayerCount++;
+        }
+
+        if (activePlayerCount <= 1)
+            return true;
+
+        HashSet<PlayerHealth> playersInside = GetPlayersInsideGate();
+        foreach (PlayerHealth player in players)
+        {
+            if (player == null || !player.IsSpawned || player.IsOutOfLives) continue;
+            if (!playersInside.Contains(player))
+                return false;
+        }
+
+        return true;
+    }
+
+    private HashSet<PlayerHealth> GetPlayersInsideGate()
+    {
+        HashSet<PlayerHealth> playersInside = new HashSet<PlayerHealth>();
+        if (triggerCollider == null)
+            return playersInside;
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(
+            triggerCollider.bounds.center,
+            triggerCollider.bounds.size,
+            transform.eulerAngles.z);
+
+        foreach (Collider2D hit in hits)
+        {
+            if (hit == null || hit.isTrigger) continue;
+            PlayerHealth playerHealth = hit.GetComponentInParent<PlayerHealth>();
+            if (playerHealth == null || playerHealth.IsOutOfLives) continue;
+            playersInside.Add(playerHealth);
+        }
+
+        return playersInside;
     }
 }

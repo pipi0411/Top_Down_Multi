@@ -15,6 +15,8 @@ public class BreakableBox : MonoBehaviour
     [SerializeField] GameObject shieldBottlePrefab;
     [SerializeField] GameObject coinPrefab;
 
+    GameObject[] LootPrefabs => new[] { coinPrefab, healthBottlePrefab, manaBottlePrefab, shieldBottlePrefab };
+
     [Header("Loot Weights")]
     [SerializeField] float healthWeight = 20f;
     [SerializeField] float manaWeight = 20f;
@@ -32,40 +34,80 @@ public class BreakableBox : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (isBroken) return;
+        if (MultiplayerGameplaySync.IsNetworkActive && !MultiplayerGameplaySync.IsServer)
+        {
+            MultiplayerGameplaySync.RequestBoxDamage(this, amount);
+            return;
+        }
 
-        currentHealth -= Mathf.Max(0f, amount);
-        if (currentHealth <= 0f)
-            Break();
+        ApplyDamageAuthoritative(amount, true);
     }
 
-    void Break()
+    public void ApplyDamageAuthoritative(float amount, bool broadcast)
+    {
+        if (isBroken) return;
+        currentHealth -= Mathf.Max(0f, amount);
+        if (currentHealth <= 0f)
+            Break(broadcast);
+    }
+
+    void Break(bool broadcast)
     {
         if (isBroken) return;
         isBroken = true;
 
-        TryDropLoot();
+        int lootIndex = -1;
+        Vector3 dropPosition = transform.position;
+        GameObject lootPrefab = TryPickLoot(out lootIndex, out dropPosition);
+        if (broadcast)
+            MultiplayerGameplaySync.BroadcastBoxBroken(this, lootIndex, dropPosition);
+        SpawnLoot(lootPrefab, lootIndex, dropPosition);
         Destroy(gameObject);
     }
 
-    void TryDropLoot()
+    GameObject TryPickLoot(out int lootIndex, out Vector3 dropPosition)
     {
-        if (Random.value > dropChance) return;
+        lootIndex = -1;
+        dropPosition = transform.position;
+        if (Random.value > dropChance) return null;
 
-        GameObject lootPrefab = PickLootPrefab();
-        if (lootPrefab == null) return;
+        GameObject lootPrefab = PickLootPrefab(out lootIndex);
+        if (lootPrefab == null) return null;
 
         Vector2 randomOffset = Random.insideUnitCircle * spawnSpreadRadius;
-        Vector3 dropPosition = transform.position + new Vector3(randomOffset.x, randomOffset.y, -0.5f);
+        dropPosition = transform.position + new Vector3(randomOffset.x, randomOffset.y, -0.5f);
+        return lootPrefab;
+    }
+
+    void SpawnLoot(GameObject lootPrefab, int lootIndex, Vector3 dropPosition)
+    {
+        if (lootPrefab == null || lootIndex < 0) return;
         Transform parent = transform.parent;
         GameObject loot = Instantiate(lootPrefab, dropPosition, Quaternion.identity, parent);
+        NetworkedWorldEntity entity = loot.GetComponent<NetworkedWorldEntity>();
+        if (entity == null)
+            entity = loot.AddComponent<NetworkedWorldEntity>();
+        string boxId = GetComponent<NetworkedWorldEntity>()?.NetworkId ?? gameObject.name;
+        entity.Initialize($"{boxId}_Loot");
 
         Collider2D lootCollider = loot.GetComponent<Collider2D>();
         if (lootCollider != null)
             lootCollider.isTrigger = true;
     }
 
-    GameObject PickLootPrefab()
+    public void BreakRemote(int lootIndex, Vector3 dropPosition)
     {
+        if (isBroken) return;
+        isBroken = true;
+        GameObject[] prefabs = LootPrefabs;
+        GameObject lootPrefab = lootIndex >= 0 && lootIndex < prefabs.Length ? prefabs[lootIndex] : null;
+        SpawnLoot(lootPrefab, lootIndex, dropPosition);
+        Destroy(gameObject);
+    }
+
+    GameObject PickLootPrefab(out int lootIndex)
+    {
+        lootIndex = -1;
         float totalWeight = Mathf.Max(0f, healthWeight)
             + Mathf.Max(0f, manaWeight)
             + Mathf.Max(0f, shieldWeight)
@@ -76,14 +118,15 @@ public class BreakableBox : MonoBehaviour
         float roll = Random.Range(0f, totalWeight);
 
         roll -= Mathf.Max(0f, coinWeight);
-        if (roll <= 0f) return coinPrefab;
+        if (roll <= 0f) { lootIndex = 0; return coinPrefab; }
 
         roll -= Mathf.Max(0f, healthWeight);
-        if (roll <= 0f) return healthBottlePrefab;
+        if (roll <= 0f) { lootIndex = 1; return healthBottlePrefab; }
 
         roll -= Mathf.Max(0f, manaWeight);
-        if (roll <= 0f) return manaBottlePrefab;
+        if (roll <= 0f) { lootIndex = 2; return manaBottlePrefab; }
 
+        lootIndex = 3;
         return shieldBottlePrefab;
     }
 }

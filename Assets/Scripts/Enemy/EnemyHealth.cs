@@ -54,12 +54,35 @@ public class EnemyHealth : MonoBehaviour
     public void TakeDamage(float amount)
     {
         if (isDead || amount <= 0f) return;
-        if (networkObject != null && networkObject.IsSpawned && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsServer) return;
+        if (MultiplayerGameplaySync.IsNetworkActive && !MultiplayerGameplaySync.IsServer)
+        {
+            MultiplayerGameplaySync.RequestEnemyDamage(this, amount);
+            return;
+        }
 
+        ApplyDamageAuthoritative(amount, true);
+    }
+
+    public void ApplyDamageAuthoritative(float amount, bool broadcast)
+    {
+        if (isDead || amount <= 0f) return;
         currentHealth = Mathf.Max(0f, currentHealth - amount);
         OnHealthChanged?.Invoke(currentHealth, MaxHealth);
         EnemyDamagePopup.Show(transform.position, amount);
+        if (broadcast)
+            MultiplayerGameplaySync.BroadcastEnemyHealth(this, amount);
         if (currentHealth <= 0f)
+            Die();
+    }
+
+    public void ApplyRemoteState(float health, float maxHealthValue, bool dead, float damageAmount, Vector3 popupPosition)
+    {
+        if (isDead) return;
+        currentHealth = Mathf.Clamp(health, 0f, Mathf.Max(1f, maxHealthValue));
+        OnHealthChanged?.Invoke(currentHealth, Mathf.Max(1f, maxHealthValue));
+        if (damageAmount > 0f)
+            EnemyDamagePopup.Show(popupPosition, damageAmount);
+        if (dead || currentHealth <= 0f)
             Die();
     }
 

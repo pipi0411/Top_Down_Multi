@@ -17,6 +17,7 @@ public class EnemyWaveSpawner : MonoBehaviour
     private Coroutine waveRoutine;
     private Room ownerRoom;
     private bool completed;
+    private int spawnPointCursor;
 
     public bool IsRunning => waveRoutine != null;
     public bool IsCompleted => completed;
@@ -37,9 +38,6 @@ public class EnemyWaveSpawner : MonoBehaviour
         if (completed || waveRoutine != null) return;
 
         ownerRoom = room;
-
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
-            return;
 
         if (waveData == null || !waveData.HasWaves)
         {
@@ -102,6 +100,7 @@ public class EnemyWaveSpawner : MonoBehaviour
         Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
 
         GameObject enemy = Instantiate(prefab, spawnPosition, spawnRotation, enemyParent);
+        AssignNetworkId(enemy, "Enemy");
 
         NetworkObject networkObject = enemy.GetComponent<NetworkObject>();
         if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !networkObject.IsSpawned)
@@ -113,6 +112,15 @@ public class EnemyWaveSpawner : MonoBehaviour
             aliveEnemies.Add(health);
             health.OnDied += () => HandleEnemyDied(health);
         }
+    }
+
+    private void AssignNetworkId(GameObject instance, string prefix)
+    {
+        if (instance == null || LevelManager.Instance == null) return;
+        NetworkedWorldEntity entity = instance.GetComponent<NetworkedWorldEntity>();
+        if (entity == null)
+            entity = instance.AddComponent<NetworkedWorldEntity>();
+        entity.Initialize(LevelManager.Instance.NextNetworkEntityId(prefix));
     }
 
     private void HandleEnemyDied(EnemyHealth health)
@@ -145,7 +153,8 @@ public class EnemyWaveSpawner : MonoBehaviour
 
         for (int i = 0; i < spawnPoints.Length; i++)
         {
-            Transform point = spawnPoints[Random.Range(0, spawnPoints.Length)];
+            Transform point = spawnPoints[spawnPointCursor % spawnPoints.Length];
+            spawnPointCursor++;
             if (point != null) return point;
         }
 

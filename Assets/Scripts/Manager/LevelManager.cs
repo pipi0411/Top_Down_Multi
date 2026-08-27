@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using UnityEngine;
 
 public class LevelManager : MonoBehaviour
@@ -26,11 +27,13 @@ public class LevelManager : MonoBehaviour
     private int currentLevelIndex;
     private int currentDungeonIndex;
     private GameObject currentDungeonGO;
+    private int networkEntitySequence;
     
     private void Awake()
     {
         Instance = this;
         boxBudgetInitialized = false;
+        MultiplayerGameplaySync.Ensure();
     }
 
     private void  Start()
@@ -64,6 +67,7 @@ public class LevelManager : MonoBehaviour
         currentRoom = null;
         closedRooms.Clear();
         boxBudgetInitialized = false;
+        networkEntitySequence = 0;
 
         if (!TryInstantiateCurrentDungeon())
             return false;
@@ -109,9 +113,26 @@ public class LevelManager : MonoBehaviour
         if (dungeonPrefab == null)
             return false;
 
+        int mapOrdinal = currentLevelIndex * 1000 + currentDungeonIndex;
+        networkEntitySequence = 0;
+        UnityEngine.Random.InitState(73001 + mapOrdinal);
         currentDungeonGO = Instantiate(dungeonPrefab, transform);
         currentDungeonIndex++;
         return true;
+    }
+
+    public string NextNetworkEntityId(string prefix)
+    {
+        networkEntitySequence++;
+        int levelNumber = Mathf.Max(0, currentLevelIndex);
+        int dungeonNumber = Mathf.Max(0, currentDungeonIndex - 1);
+        return $"{prefix}_{levelNumber}_{dungeonNumber}_{networkEntitySequence}";
+    }
+
+    public bool ShouldRunWorldSimulation()
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        return manager == null || !manager.IsListening || manager.IsServer;
     }
 
     private bool HasNextDungeon()

@@ -174,9 +174,6 @@ public class CharactersClient : MonoBehaviour
         }
     }
 
-    [Serializable]
-    private class CharacterRequest { public string character; }
-
     public void SetUserCharacter(string userId, string character)
     {
         string token = AuthClient.Instance.GetStoredToken();

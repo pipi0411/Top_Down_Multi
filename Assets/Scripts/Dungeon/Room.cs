@@ -3,6 +3,7 @@ using UnityEngine.Tilemaps;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
 using System;
+using Unity.Netcode;
 
 public enum RoomType
 {
@@ -107,6 +108,7 @@ public class Room : MonoBehaviour
 
                         GameObject propInstance = Instantiate(prop.ProPrefab, extraTilemap.transform);
                         propInstance.transform.position = spawnPosition;
+                        AssignNetworkId(propInstance, "Prop");
                         MarkTileOccupied(spawnPosition);
                     }
                 }
@@ -240,7 +242,17 @@ public class Room : MonoBehaviour
         if (point.Prop == null || point.Prop.ProPrefab == null) return;
         GameObject boxInstance = Instantiate(point.Prop.ProPrefab, extraTilemap.transform);
         boxInstance.transform.position = point.Position;
+        AssignNetworkId(boxInstance, "Box");
         MarkTileOccupied(point.Position);
+    }
+
+    private void AssignNetworkId(GameObject instance, string prefix)
+    {
+        if (instance == null || LevelManager.Instance == null) return;
+        NetworkedWorldEntity entity = instance.GetComponent<NetworkedWorldEntity>();
+        if (entity == null)
+            entity = instance.AddComponent<NetworkedWorldEntity>();
+        entity.Initialize(LevelManager.Instance.NextNetworkEntityId(prefix));
     }
 
     private void MarkTileOccupied(Vector3 position)

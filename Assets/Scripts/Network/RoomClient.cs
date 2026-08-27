@@ -100,10 +100,10 @@ public class RoomClient : MonoBehaviour
     [System.Serializable]
     private class ErrorResponse
     {
-        public string message;
-        public string character;
-        public string takenBy;
-        public string username;
+        public string message = string.Empty;
+        public string character = string.Empty;
+        public string takenBy = string.Empty;
+        public string username = string.Empty;
     }
 
     public class RoomResult

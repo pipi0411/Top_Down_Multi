@@ -22,6 +22,7 @@ public class PlayerWeaponController : NetworkBehaviour
     readonly Weapon[] slotWeapons = new Weapon[2];
     float lastSentAimAngle;
     int selectedSlotIndex;
+    int weaponDropSequence;
     HotbarUI hotbarUI;
 
     public Weapon EquippedWeapon { get; private set; }
@@ -116,12 +117,13 @@ public class PlayerWeaponController : NetworkBehaviour
         if (pickup == null || pickup.Weapon == null) return;
         Weapon pickedWeapon = pickup.Weapon;
         int slotIndex = GetSlotIndexForWeapon(pickedWeapon);
+        string pickupId = pickup.GetComponent<NetworkedWorldEntity>()?.NetworkId;
 
         Weapon oldWeapon = slotWeapons[slotIndex];
         if (oldWeapon == pickedWeapon) return;
 
         if (oldWeapon != null)
-            DropWeapon(oldWeapon, slotIndex, transform.position + GetDropDirection() * dropDistance, false);
+            DropWeapon(oldWeapon, slotIndex, transform.position + GetDropDirection() * dropDistance, false, CreateDropId(slotIndex));
 
         PreparePickedWeapon(pickup, pickedWeapon);
         Transform socket = GetOrCreateWeaponSocket();
@@ -132,6 +134,9 @@ public class PlayerWeaponController : NetworkBehaviour
         slotWeapons[slotIndex] = pickedWeapon;
         selectedSlotIndex = slotIndex;
         EquipSlot(slotIndex);
+
+        if (IsSpawned && IsOwner && !string.IsNullOrWhiteSpace(pickupId))
+            PickupWeaponServerRpc(pickupId, slotIndex);
     }
 
     Weapon CreateWeaponForSlot(GameObject weaponPrefab, Transform socket)
@@ -195,8 +200,12 @@ public class PlayerWeaponController : NetworkBehaviour
         int slotIndex = GetSlotIndexForWeapon(EquippedWeapon);
         Weapon weaponToDrop = EquippedWeapon;
         Vector3 dropPosition = transform.position + GetDropDirection() * dropDistance;
+        string dropId = CreateDropId(slotIndex);
 
-        DropWeapon(weaponToDrop, slotIndex, dropPosition, true);
+        DropWeapon(weaponToDrop, slotIndex, dropPosition, true, dropId);
+
+        if (IsSpawned && IsOwner)
+            DropWeaponServerRpc(slotIndex, dropPosition, dropId);
 
         int fallbackSlot = slotIndex == 0 ? 1 : 0;
         if (slotWeapons[fallbackSlot] != null)
@@ -205,11 +214,13 @@ public class PlayerWeaponController : NetworkBehaviour
         {
             EquippedWeapon = null;
             selectedSlotIndex = slotIndex;
+            if (IsSpawned && IsOwner)
+                networkSelectedSlotIndex.Value = selectedSlotIndex;
             TryBindHotbar();
         }
     }
 
-    void DropWeapon(Weapon weapon, int slotIndex, Vector3 dropPosition, bool clearSlot)
+    void DropWeapon(Weapon weapon, int slotIndex, Vector3 dropPosition, bool clearSlot, string dropId = null)
     {
         if (weapon == null) return;
 
@@ -223,10 +234,10 @@ public class PlayerWeaponController : NetworkBehaviour
         weapon.transform.localScale = Vector3.one * droppedWeaponScale;
         weapon.SetDroppedState();
 
-        ConfigureDroppedWeapon(weapon);
+        ConfigureDroppedWeapon(weapon, dropId);
     }
 
-    void ConfigureDroppedWeapon(Weapon weapon)
+    void ConfigureDroppedWeapon(Weapon weapon, string dropId = null)
     {
         if (weapon == null) return;
 
@@ -249,15 +260,28 @@ public class PlayerWeaponController : NetworkBehaviour
             pickup = weapon.gameObject.AddComponent<WeaponPickup>();
         pickup.Initialize(weapon, dropPickupDelay);
 
+        if (!string.IsNullOrWhiteSpace(dropId))
+        {
+            NetworkedWorldEntity entity = weapon.GetComponent<NetworkedWorldEntity>();
+            if (entity == null)
+                entity = weapon.gameObject.AddComponent<NetworkedWorldEntity>();
+            entity.Initialize(dropId);
+        }
+
         foreach (SpriteRenderer renderer in weapon.GetComponentsInChildren<SpriteRenderer>(true))
         {
             renderer.sortingLayerID = SortingLayer.NameToID(nameof(Weapon));
             renderer.sortingOrder = 8;
+            renderer.flipY = false;
         }
     }
 
     void PreparePickedWeapon(WeaponPickup pickup, Weapon weapon)
     {
+        NetworkedWorldEntity entity = weapon.GetComponent<NetworkedWorldEntity>();
+        if (entity != null)
+            Destroy(entity);
+
         if (pickup != null)
             Destroy(pickup);
 
@@ -477,6 +501,67 @@ public class PlayerWeaponController : NetworkBehaviour
     bool CanControlSelection()
     {
         return !IsSpawned || IsOwner;
+    }
+
+    string CreateDropId(int slotIndex)
+    {
+        ulong ownerId = IsSpawned ? OwnerClientId : 0;
+        weaponDropSequence++;
+        return $"WeaponDrop_{ownerId}_{slotIndex}_{weaponDropSequence}";
+    }
+
+    [Rpc(SendTo.Server)]
+    void DropWeaponServerRpc(int slotIndex, Vector3 dropPosition, string dropId)
+    {
+        DropWeaponClientRpc(slotIndex, dropPosition, dropId);
+    }
+
+    [ClientRpc]
+    void DropWeaponClientRpc(int slotIndex, Vector3 dropPosition, string dropId)
+    {
+        if (IsOwner) return;
+        slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
+        RebuildSlotAssignmentsFromChildren();
+        Weapon weapon = slotWeapons[slotIndex];
+        if (weapon == null) return;
+        DropWeapon(weapon, slotIndex, dropPosition, true, dropId);
+        if (selectedSlotIndex == slotIndex)
+        {
+            int fallbackSlot = slotIndex == 0 ? 1 : 0;
+            if (slotWeapons[fallbackSlot] != null)
+                EquipSlot(fallbackSlot, false);
+            else
+                EquippedWeapon = null;
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    void PickupWeaponServerRpc(string pickupId, int slotIndex)
+    {
+        PickupWeaponClientRpc(pickupId, slotIndex);
+    }
+
+    [ClientRpc]
+    void PickupWeaponClientRpc(string pickupId, int slotIndex)
+    {
+        if (IsOwner) return;
+        if (string.IsNullOrWhiteSpace(pickupId)) return;
+        if (!NetworkedWorldEntity.TryFind(pickupId, out WeaponPickup pickup) || pickup.Weapon == null) return;
+
+        Weapon pickedWeapon = pickup.Weapon;
+        slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
+
+        Weapon oldWeapon = slotWeapons[slotIndex];
+        if (oldWeapon != null && oldWeapon != pickedWeapon)
+            DropWeapon(oldWeapon, slotIndex, transform.position + GetDropDirection() * dropDistance, false, CreateDropId(slotIndex));
+
+        PreparePickedWeapon(pickup, pickedWeapon);
+        Transform socket = GetOrCreateWeaponSocket();
+        AttachWeaponToSocket(pickedWeapon.transform, socket);
+        PrepareWeaponForEquip(pickedWeapon);
+        ConfigureWeaponRendering(pickedWeapon.gameObject);
+        slotWeapons[slotIndex] = pickedWeapon;
+        EquipSlot(slotIndex, false);
     }
 
     public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius, float speed, float lifetime)

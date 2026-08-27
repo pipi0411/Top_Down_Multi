@@ -22,6 +22,10 @@ public class PlayerMovement : NetworkBehaviour
     private bool isDashing;
     private bool useOfflineControl;
     private PlayerHealth playerHealth;
+    private readonly NetworkVariable<bool> networkFacingLeft = new(
+        false,
+        NetworkVariableReadPermission.Everyone,
+        NetworkVariableWritePermission.Owner);
 
     private void Awake()
     {
@@ -33,8 +37,9 @@ public class PlayerMovement : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        // Only the server simulates physics for this object.
-        rb.simulated = IsServer;
+        // Owner simulates its own player for responsive WebGL/client movement.
+        // NetworkTransform then syncs the transform to the server/other clients.
+        rb.simulated = IsServer || IsOwner;
         useOfflineControl = false;
 
         if (IsOwner)
@@ -42,10 +47,18 @@ public class PlayerMovement : NetworkBehaviour
             actions.Enable();
             SetupCameraFollow();
         }
+        else
+        {
+            ApplyFacing(networkFacingLeft.Value);
+        }
+
+        networkFacingLeft.OnValueChanged += HandleFacingChanged;
     }
 
     public override void OnNetworkDespawn()
     {
+        networkFacingLeft.OnValueChanged -= HandleFacingChanged;
+
         if (!useOfflineControl)
         {
             actions.Disable();
@@ -90,19 +103,10 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
-        if (IsServer)
-        {
-            if (IsOwner)
-            {
-                serverMoveDirection = moveDirection;
-            }
-
-            MovePlayer();
-            return;
-        }
-
         if (IsOwner)
         {
+            serverMoveDirection = moveDirection;
+            MovePlayer();
             SubmitMoveInputServerRpc(moveDirection);
         }
     }
@@ -148,12 +152,32 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (moveDirection.x >= 0.1f)
         {
-            spriteRenderer.flipX = false;
+            SetFacing(false);
         }
         else if (moveDirection.x < 0f)
         {
-            spriteRenderer.flipX = true;
+            SetFacing(true);
         }
+    }
+
+    private void SetFacing(bool facingLeft)
+    {
+        ApplyFacing(facingLeft);
+
+        if (IsSpawned && IsOwner && networkFacingLeft.Value != facingLeft)
+            networkFacingLeft.Value = facingLeft;
+    }
+
+    private void ApplyFacing(bool facingLeft)
+    {
+        if (spriteRenderer != null)
+            spriteRenderer.flipX = facingLeft;
+    }
+
+    private void HandleFacingChanged(bool previousValue, bool newValue)
+    {
+        if (IsOwner) return;
+        ApplyFacing(newValue);
     }
 
     private void CaptureInput()

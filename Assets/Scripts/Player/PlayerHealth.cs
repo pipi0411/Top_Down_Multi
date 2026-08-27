@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public class PlayerHealth : NetworkBehaviour
 {
     const int WallsSortingLayerId = unchecked((int)2393433307u);
+    static float nextServerPortalRequestTime;
     [SerializeField] PlayerConfig playerConfig;
     [SerializeField] int magazineSize = 30;
     [SerializeField] float reloadDuration = 1.2f;
@@ -159,14 +160,17 @@ public class PlayerHealth : NetworkBehaviour
     void Update()
     {
         SyncConfig();
-        bool canControlResources = !IsSpawned || IsOwner;
-        if (canControlResources)
+        bool canControlOwnerResources = !IsSpawned || IsOwner;
+        if (canControlOwnerResources)
         {
             RegenerateEnergy();
-            RegenerateHealthAndArmor();
             UpdateReload();
         }
-        if (!canControlResources || Keyboard.current == null) return;
+
+        if (!IsSpawned || IsServer)
+            RegenerateHealthAndArmor();
+
+        if (!canControlOwnerResources || Keyboard.current == null) return;
         if (Keyboard.current.rKey.wasPressedThisFrame) TryStartReload();
         if (Keyboard.current.pKey.wasPressedThisFrame) RecoverHealth(1);
     }
@@ -758,6 +762,78 @@ public class PlayerHealth : NetworkBehaviour
     {
         if (!IsSpawned || !IsOwner) return;
         RequestTeamRetryToRoomLobbyServerRpc();
+    }
+
+    public void RequestPortalTeleport(
+        Vector3 playerArrivalOffset,
+        bool showLoadingScreen,
+        float loadingBeforeMapSwitch,
+        float loadingAfterMapSwitch)
+    {
+        if (!IsSpawned)
+        {
+            PlayPortalTeleportLocally(playerArrivalOffset, showLoadingScreen, loadingBeforeMapSwitch, loadingAfterMapSwitch);
+            return;
+        }
+
+        if (!IsOwner) return;
+
+        RequestPortalTeleportServerRpc(
+            playerArrivalOffset,
+            showLoadingScreen,
+            loadingBeforeMapSwitch,
+            loadingAfterMapSwitch);
+    }
+
+    [Rpc(SendTo.Server)]
+    void RequestPortalTeleportServerRpc(
+        Vector3 playerArrivalOffset,
+        bool showLoadingScreen,
+        float loadingBeforeMapSwitch,
+        float loadingAfterMapSwitch)
+    {
+        if (Time.unscaledTime < nextServerPortalRequestTime)
+            return;
+
+        nextServerPortalRequestTime = Time.unscaledTime + 1.25f;
+        PortalTeleportClientRpc(
+            playerArrivalOffset,
+            showLoadingScreen,
+            loadingBeforeMapSwitch,
+            loadingAfterMapSwitch);
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    void PortalTeleportClientRpc(
+        Vector3 playerArrivalOffset,
+        bool showLoadingScreen,
+        float loadingBeforeMapSwitch,
+        float loadingAfterMapSwitch)
+    {
+        PlayPortalTeleportLocally(playerArrivalOffset, showLoadingScreen, loadingBeforeMapSwitch, loadingAfterMapSwitch);
+    }
+
+    void PlayPortalTeleportLocally(
+        Vector3 playerArrivalOffset,
+        bool showLoadingScreen,
+        float loadingBeforeMapSwitch,
+        float loadingAfterMapSwitch)
+    {
+        if (LevelManager.Instance == null)
+            return;
+
+        if (showLoadingScreen)
+        {
+            PortalMapLoadingUI.Instance.PlayTransition(
+                loadingBeforeMapSwitch,
+                () => LevelManager.Instance != null &&
+                      LevelManager.Instance.LoadNextDungeonFromPortal(playerArrivalOffset),
+                loadingAfterMapSwitch);
+        }
+        else
+        {
+            LevelManager.Instance.LoadNextDungeonFromPortal(playerArrivalOffset);
+        }
     }
 
     [Rpc(SendTo.Server)]

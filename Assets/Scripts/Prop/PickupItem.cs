@@ -72,7 +72,14 @@ public class PickupItem : MonoBehaviour
 
         PlayerHealth player = other.GetComponentInParent<PlayerHealth>();
         if (player == null || player.IsDead) return;
-        if (player.IsSpawned && !player.IsOwner && !player.IsServer) return;
+        if (player.IsSpawned && !player.IsOwner) return;
+
+        if (MultiplayerGameplaySync.IsNetworkActive)
+        {
+            MultiplayerGameplaySync.RequestPickup(this, player);
+            return;
+        }
+
         if (!CanPickup(player)) return;
 
         picked = true;
@@ -80,6 +87,36 @@ public class PickupItem : MonoBehaviour
 
         if (destroyOnPickup)
             Destroy(gameObject);
+    }
+
+    public bool TryPickupAuthoritative(PlayerHealth player, ulong ownerClientId)
+    {
+        if (picked || player == null || player.IsDead || !CanPickup(player)) return false;
+
+        picked = true;
+        ApplyPickup(player, ownerClientId);
+
+        if (destroyOnPickup)
+        {
+            MultiplayerGameplaySync.BroadcastPickupConsumed(this);
+            Destroy(gameObject);
+        }
+
+        return true;
+    }
+
+    public void ConsumeRemote()
+    {
+        if (picked) return;
+        picked = true;
+        if (destroyOnPickup)
+            Destroy(gameObject);
+    }
+
+    public static void AddCoinsLocal(int amount)
+    {
+        Coins += Mathf.Max(1, amount);
+        OnCoinsChanged?.Invoke(Coins);
     }
 
     bool CanPickup(PlayerHealth player)
@@ -99,7 +136,7 @@ public class PickupItem : MonoBehaviour
         }
     }
 
-    void ApplyPickup(PlayerHealth player)
+    void ApplyPickup(PlayerHealth player, ulong ownerClientId = ulong.MaxValue)
     {
         switch (pickupType)
         {
@@ -113,8 +150,18 @@ public class PickupItem : MonoBehaviour
                 player.RecoverArmor(amount);
                 break;
             case PickupType.Coin:
-                Coins += Mathf.Max(1, coinAmount);
-                OnCoinsChanged?.Invoke(Coins);
+                int gained = Mathf.Max(1, coinAmount);
+                if (MultiplayerGameplaySync.IsNetworkActive && MultiplayerGameplaySync.IsServer && ownerClientId != ulong.MaxValue)
+                {
+                    if (Unity.Netcode.NetworkManager.Singleton != null
+                        && ownerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId)
+                    {
+                        AddCoinsLocal(gained);
+                    }
+                    MultiplayerGameplaySync.SendCoinGain(ownerClientId, gained);
+                }
+                else
+                    AddCoinsLocal(gained);
                 Debug.Log($"Coin collected. Total coins: {Coins}");
                 break;
         }
