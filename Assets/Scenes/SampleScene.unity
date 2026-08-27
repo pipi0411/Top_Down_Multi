@@ -6506,52 +6506,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!61 &1604164433
-BoxCollider2D:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7447721888445036770}
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Density: 1
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ForceSendLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ForceReceiveLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_ContactCaptureLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_CallbackLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  m_IsTrigger: 0
-  m_UsedByEffector: 0
-  m_CompositeOperation: 0
-  m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0}
-  m_SpriteTilingProperty:
-    border: {x: 0, y: 0, z: 0, w: 0}
-    pivot: {x: 0.5, y: 0.5}
-    oldSize: {x: 1, y: 1}
-    newSize: {x: 1, y: 1}
-    adaptiveTilingThreshold: 0.5
-    drawMode: 0
-    adaptiveTiling: 0
-  m_AutoTiling: 0
-  m_Size: {x: 1, y: 1}
-  m_EdgeRadius: 0
 --- !u!1 &1672780277
 GameObject:
   m_ObjectHideFlags: 0
@@ -7771,6 +7725,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   coinText: {fileID: 567495716}
   minimumDigits: 3
+<<<<<<< HEAD
+=======
 --- !u!114 &910000000420916769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8272,6 +8228,7 @@ Transform:
   - {fileID: 4987192727437078924}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+>>>>>>> 4f09897fd45fee33d6bb72bfa6280f5661347725
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -8285,6 +8242,15 @@ SceneRoots:
   - {fileID: 863706240}
   - {fileID: 1913638115}
   - {fileID: 119570254}
+<<<<<<< Updated upstream
   - {fileID: 2578112379602986257}
   - {fileID: 8672452201228655575}
   - {fileID: 1046430213}
+=======
+<<<<<<< HEAD
+=======
+  - {fileID: 2578112379602986257}
+  - {fileID: 8672452201228655575}
+  - {fileID: 1046430213}
+>>>>>>> 4f09897fd45fee33d6bb72bfa6280f5661347725
+>>>>>>> Stashed changes

@@ -40,13 +40,23 @@ public class EnemyStateMachine : MonoBehaviour
     float nextAttackTime;
     bool hasRangedWeapon;
     Collider2D bodyCollider;
+    float nextTransformSyncTime;
+    bool remoteMoving;
     const float meleeContactAttackPadding = 0.25f;
+    const float transformSyncInterval = 0.08f;
 
     public PlayerHealth Target { get; private set; }
     public float IdleWanderRadius => enemyData != null ? enemyData.IdleWanderRadius : idleWanderRadius;
     public float IdleWanderInterval => enemyData != null ? enemyData.IdleWanderInterval : idleWanderInterval;
     public bool CanAttack => Time.time >= nextAttackTime;
-    public bool CanSimulate => networkObject == null || !networkObject.IsSpawned || NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
+    public bool CanSimulate
+    {
+        get
+        {
+            NetworkManager manager = NetworkManager.Singleton;
+            return manager == null || !manager.IsListening || manager.IsServer;
+        }
+    }
     public string DeathTrigger => deathTrigger;
 
     void OnValidate()
@@ -98,12 +108,14 @@ public class EnemyStateMachine : MonoBehaviour
     {
         if (!CanSimulate) return;
         currentState?.Tick();
+        TryBroadcastTransform();
     }
 
     void FixedUpdate()
     {
         if (!CanSimulate) return;
         currentState?.FixedTick();
+        TryBroadcastTransform();
     }
 
     public void ChangeState(IEnemyState nextState)
@@ -189,7 +201,43 @@ public class EnemyStateMachine : MonoBehaviour
         if (Target == null || !CanAttack || !TargetInAttackRange()) return;
         nextAttackTime = Time.time + AttackCooldown;
         SetTrigger(attackTrigger);
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
+            return;
+
         Target.TakeDamage(AttackDamage);
+    }
+
+    public void ApplyRemoteTransform(Vector3 worldPosition, bool facingLeft, bool moving)
+    {
+        if (CanSimulate) return;
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector2.zero;
+            rb.position = worldPosition;
+        }
+        else
+        {
+            transform.position = worldPosition;
+        }
+
+        ApplyFacing(facingLeft);
+        if (remoteMoving != moving)
+        {
+            remoteMoving = moving;
+            SetMoving(moving);
+        }
+    }
+
+    void TryBroadcastTransform()
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsListening || !manager.IsServer) return;
+        if (Time.unscaledTime < nextTransformSyncTime) return;
+
+        nextTransformSyncTime = Time.unscaledTime + transformSyncInterval;
+        MultiplayerGameplaySync.BroadcastEnemyTransform(this, transform.position, IsFacingLeft(), moveDirection.sqrMagnitude > 0.001f);
     }
 
     bool HasLineOfSight(Transform target)
@@ -222,7 +270,18 @@ public class EnemyStateMachine : MonoBehaviour
     void FaceDirection(Vector2 direction)
     {
         if (spriteRenderer == null || Mathf.Abs(direction.x) < 0.05f) return;
-        spriteRenderer.flipX = direction.x < 0f;
+        ApplyFacing(direction.x < 0f);
+    }
+
+    void ApplyFacing(bool facingLeft)
+    {
+        if (spriteRenderer != null)
+            spriteRenderer.flipX = facingLeft;
+    }
+
+    bool IsFacingLeft()
+    {
+        return spriteRenderer != null && spriteRenderer.flipX;
     }
 
     void SetMoving(bool moving)

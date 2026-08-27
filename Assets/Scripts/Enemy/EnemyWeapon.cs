@@ -85,7 +85,7 @@ public class EnemyWeapon : MonoBehaviour
         if (ownerHealth != null && ownerHealth.IsDead) return false;
 
         NetworkManager networkManager = NetworkManager.Singleton;
-        if (networkManager != null && networkManager.IsListening && ownerNetworkObject != null)
+        if (networkManager != null && networkManager.IsListening)
             return networkManager.IsServer;
 
         return true;
@@ -134,6 +134,14 @@ public class EnemyWeapon : MonoBehaviour
             projectileLifetime,
             ownerRoot,
             projectileSprite);
+
+        MultiplayerGameplaySync.BroadcastEnemyProjectile(
+            spawnPosition,
+            aimDirection,
+            projectileSpeed,
+            damage,
+            projectileHitRadius,
+            projectileLifetime);
     }
 
     void ApplyVisualSorting()

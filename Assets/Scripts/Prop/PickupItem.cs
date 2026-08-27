@@ -1,4 +1,5 @@
 using System;
+using Unity.Netcode;
 using UnityEngine;
 
 public class PickupItem : MonoBehaviour
@@ -28,6 +29,7 @@ public class PickupItem : MonoBehaviour
     [SerializeField] float idleBobSpeed = 3.5f;
 
     bool picked;
+    NetworkObject networkObject;
     Vector3 basePosition;
     Vector3 baseScale;
     float spawnTime;
@@ -35,6 +37,7 @@ public class PickupItem : MonoBehaviour
 
     void Awake()
     {
+        networkObject = GetComponent<NetworkObject>();
         Collider2D pickupCollider = GetComponent<Collider2D>();
         if (pickupCollider != null)
             pickupCollider.isTrigger = true;
@@ -98,8 +101,13 @@ public class PickupItem : MonoBehaviour
 
         if (destroyOnPickup)
         {
-            MultiplayerGameplaySync.BroadcastPickupConsumed(this);
-            Destroy(gameObject);
+            if (networkObject != null && networkObject.IsSpawned)
+                networkObject.Despawn(true);
+            else
+            {
+                MultiplayerGameplaySync.BroadcastPickupConsumed(this);
+                Destroy(gameObject);
+            }
         }
 
         return true;

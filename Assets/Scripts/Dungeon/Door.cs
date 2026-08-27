@@ -23,6 +23,8 @@ public class Door : MonoBehaviour
     private int closedStateHash;
 
     public bool BlocksProjectiles => !isOpen;
+    public bool IsLocked => isLocked;
+    public bool IsOpen => isOpen;
 
     private void Awake()
     {
@@ -47,6 +49,9 @@ public class Door : MonoBehaviour
 
     private void Update()
     {
+        if (MultiplayerGameplaySync.IsNetworkActive && !MultiplayerGameplaySync.IsServer)
+            return;
+
         if (isLocked || !openWhenPlayerNear || Time.time < nextCheckTime) return;
 
         nextCheckTime = Time.time + checkInterval;
@@ -176,6 +181,7 @@ public class Door : MonoBehaviour
         SetDoorPassable(false);
         isOpen = false;
         lastStateChangeTime = Time.time;
+        MultiplayerGameplaySync.BroadcastDoorState(this, isLocked, isOpen);
     }
 
     public void ShowOpenAnimation()
@@ -189,6 +195,7 @@ public class Door : MonoBehaviour
         SetDoorPassable(true);
         isOpen = true;
         lastStateChangeTime = Time.time;
+        MultiplayerGameplaySync.BroadcastDoorState(this, isLocked, isOpen);
     }
 
     public void LockClosed()
@@ -201,12 +208,25 @@ public class Door : MonoBehaviour
         SetDoorPassable(false);
         isOpen = false;
         lastStateChangeTime = Time.time;
+        MultiplayerGameplaySync.BroadcastDoorState(this, isLocked, isOpen);
     }
 
     public void UnlockAndOpen()
     {
         isLocked = false;
         ShowOpenAnimation();
+    }
+
+    public void ApplyRemoteState(bool locked, bool open)
+    {
+        isLocked = locked;
+
+        if (animator != null)
+            animator.CrossFade(open ? openedStateHash : closedStateHash, animationFadeDuration, 0, 0f);
+
+        SetDoorPassable(open);
+        isOpen = open;
+        lastStateChangeTime = Time.time;
     }
 
     private void ResolveAnimationStates()

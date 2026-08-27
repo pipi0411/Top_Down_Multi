@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 public class BreakableBox : MonoBehaviour
@@ -25,9 +26,11 @@ public class BreakableBox : MonoBehaviour
 
     float currentHealth;
     bool isBroken;
+    NetworkObject networkObject;
 
     void Awake()
     {
+        networkObject = GetComponent<NetworkObject>();
         currentHealth = Mathf.Max(1f, maxHealth);
     }
 
@@ -59,10 +62,16 @@ public class BreakableBox : MonoBehaviour
         int lootIndex = -1;
         Vector3 dropPosition = transform.position;
         GameObject lootPrefab = TryPickLoot(out lootIndex, out dropPosition);
-        if (broadcast)
+        bool spawnedNetworkObject = networkObject != null && networkObject.IsSpawned;
+        if (broadcast && !spawnedNetworkObject)
             MultiplayerGameplaySync.BroadcastBoxBroken(this, lootIndex, dropPosition);
+
         SpawnLoot(lootPrefab, lootIndex, dropPosition);
-        Destroy(gameObject);
+
+        if (spawnedNetworkObject)
+            networkObject.Despawn(true);
+        else
+            Destroy(gameObject);
     }
 
     GameObject TryPickLoot(out int lootIndex, out Vector3 dropPosition)
@@ -93,6 +102,16 @@ public class BreakableBox : MonoBehaviour
         Collider2D lootCollider = loot.GetComponent<Collider2D>();
         if (lootCollider != null)
             lootCollider.isTrigger = true;
+
+        NetworkObject lootNetworkObject = loot.GetComponent<NetworkObject>();
+        if (lootNetworkObject != null
+            && NetworkManager.Singleton != null
+            && NetworkManager.Singleton.IsListening
+            && NetworkManager.Singleton.IsServer
+            && !lootNetworkObject.IsSpawned)
+        {
+            lootNetworkObject.Spawn(true);
+        }
     }
 
     public void BreakRemote(int lootIndex, Vector3 dropPosition)

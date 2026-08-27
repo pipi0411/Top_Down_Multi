@@ -29,8 +29,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -127,7 +127,7 @@ BoxCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: 0, y: 0.25}
+  m_Offset: {x: -0.050306797, y: -0.37045062}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -137,7 +137,7 @@ BoxCollider2D:
     drawMode: 0
     adaptiveTiling: 0
   m_AutoTiling: 0
-  m_Size: {x: 1.45, y: 2.15}
+  m_Size: {x: 2.288447, y: 4.296424}
   m_EdgeRadius: 0
 --- !u!114 &5675330409182182690
 MonoBehaviour:
@@ -160,6 +160,7 @@ MonoBehaviour:
   playReverseOnArrival: 1
   playerArrivalOffset: {x: 0, y: -1.25, z: 0}
   reuseCooldown: 1.5
+  requireAllPlayersInsideInMultiplayer: 1
   showLoadingScreen: 1
   loadingBeforeMapSwitch: 0.85
   loadingAfterMapSwitch: 0.35

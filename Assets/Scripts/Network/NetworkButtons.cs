@@ -392,7 +392,9 @@ public class NetworkButtons : MonoBehaviour
     public void ResetNetworkStartupState()
     {
         isNetworkStarted = false;
+        relayHostConfigured = false;
         nextGameplayHeartbeat = 0f;
+        approvedClientCharacters.Clear();
         StopEnterGameWhenPlayerReady();
     }
 

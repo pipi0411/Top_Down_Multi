@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using Unity.Netcode;
 
 public class SpikeTrap : MonoBehaviour
 {
@@ -38,6 +39,13 @@ public class SpikeTrap : MonoBehaviour
     private void DealDamage(Collider2D player)
     {
         if (hasDamaged) return;
+
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager != null && manager.IsListening && !manager.IsServer)
+        {
+            hasDamaged = true;
+            return;
+        }
 
         var health = player.GetComponent<PlayerHealth>();
         if (health == null)

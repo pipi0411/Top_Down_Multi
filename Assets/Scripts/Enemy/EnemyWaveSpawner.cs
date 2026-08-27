@@ -95,6 +95,13 @@ public class EnemyWaveSpawner : MonoBehaviour
 
     private void SpawnEnemy(GameObject prefab)
     {
+        if (prefab == null) return;
+
+        bool networkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        bool prefabIsNetworked = prefab.GetComponent<NetworkObject>() != null;
+        if (networkActive && prefabIsNetworked && !NetworkManager.Singleton.IsServer)
+            return;
+
         Transform spawnPoint = GetRandomSpawnPoint();
         Vector3 spawnPosition = spawnPoint != null ? spawnPoint.position : transform.position;
         Quaternion spawnRotation = spawnPoint != null ? spawnPoint.rotation : Quaternion.identity;
@@ -103,7 +110,7 @@ public class EnemyWaveSpawner : MonoBehaviour
         AssignNetworkId(enemy, "Enemy");
 
         NetworkObject networkObject = enemy.GetComponent<NetworkObject>();
-        if (networkObject != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !networkObject.IsSpawned)
+        if (networkObject != null && networkActive && NetworkManager.Singleton.IsServer && !networkObject.IsSpawned)
             networkObject.Spawn(true);
 
         EnemyHealth health = enemy.GetComponentInChildren<EnemyHealth>();

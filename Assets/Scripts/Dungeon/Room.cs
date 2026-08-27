@@ -240,10 +240,20 @@ public class Room : MonoBehaviour
     private void SpawnBox(BoxSpawnPoint point)
     {
         if (point.Prop == null || point.Prop.ProPrefab == null) return;
+
+        bool networkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        bool prefabIsNetworked = point.Prop.ProPrefab.GetComponent<NetworkObject>() != null;
+        if (networkActive && prefabIsNetworked && !NetworkManager.Singleton.IsServer)
+            return;
+
         GameObject boxInstance = Instantiate(point.Prop.ProPrefab, extraTilemap.transform);
         boxInstance.transform.position = point.Position;
         AssignNetworkId(boxInstance, "Box");
         MarkTileOccupied(point.Position);
+
+        NetworkObject networkObject = boxInstance.GetComponent<NetworkObject>();
+        if (networkObject != null && networkActive && NetworkManager.Singleton.IsServer && !networkObject.IsSpawned)
+            networkObject.Spawn(true);
     }
 
     private void AssignNetworkId(GameObject instance, string prefix)
@@ -396,6 +406,7 @@ public class Room : MonoBehaviour
        GameObject doorGO = Instantiate(doorPrefab, objTransform);
        doorGO.transform.localPosition = Vector3.zero;
        doorGO.transform.localRotation = Quaternion.identity;
+       AssignNetworkId(doorGO, "Door");
 
        Door door = doorGO.GetComponent<Door>();
        if (door == null)
@@ -420,6 +431,11 @@ public class Room : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
+        {
+            return;
+        }
+
         if (NormalRoom())
         {
             return;

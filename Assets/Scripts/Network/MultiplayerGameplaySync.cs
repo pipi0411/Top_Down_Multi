@@ -12,6 +12,11 @@ public class MultiplayerGameplaySync : MonoBehaviour
     const string PickupRequest = "tdm_pickup_request";
     const string PickupConsumedState = "tdm_pickup_consumed_state";
     const string CoinGainState = "tdm_coin_gain_state";
+    const string EnemyTransformState = "tdm_enemy_transform_state";
+    const string EnemyProjectileState = "tdm_enemy_projectile_state";
+    const string DoorState = "tdm_door_state";
+    const string WeaponChestOpenRequest = "tdm_weapon_chest_open_request";
+    const string WeaponChestOpenedState = "tdm_weapon_chest_opened_state";
 
     static MultiplayerGameplaySync instance;
     NetworkManager registeredManager;
@@ -154,6 +159,80 @@ public class MultiplayerGameplaySync : MonoBehaviour
         NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(CoinGainState, clientId, writer);
     }
 
+    public static void BroadcastEnemyTransform(EnemyStateMachine enemy, Vector3 position, bool facingLeft, bool moving)
+    {
+        if (!IsNetworkActive || !IsServer || enemy == null) return;
+        Instance.EnsureRegistered();
+        if (!TryGetId(enemy, out string id)) return;
+
+        using FastBufferWriter writer = new FastBufferWriter(256, Allocator.Temp);
+        writer.WriteValueSafe(id);
+        writer.WriteValueSafe(position);
+        writer.WriteValueSafe(facingLeft);
+        writer.WriteValueSafe(moving);
+        BroadcastToClientsOnly(EnemyTransformState, writer);
+    }
+
+    public static void BroadcastEnemyProjectile(Vector3 origin, Vector2 direction, float speed, float damage, float hitRadius, float lifetime)
+    {
+        if (!IsNetworkActive || !IsServer) return;
+        Instance.EnsureRegistered();
+
+        using FastBufferWriter writer = new FastBufferWriter(128, Allocator.Temp);
+        writer.WriteValueSafe(origin);
+        writer.WriteValueSafe(direction);
+        writer.WriteValueSafe(speed);
+        writer.WriteValueSafe(damage);
+        writer.WriteValueSafe(hitRadius);
+        writer.WriteValueSafe(lifetime);
+        BroadcastToClientsOnly(EnemyProjectileState, writer);
+    }
+
+    public static void BroadcastDoorState(Door door, bool locked, bool open)
+    {
+        if (!IsNetworkActive || !IsServer || door == null) return;
+        Instance.EnsureRegistered();
+        if (!TryGetId(door, out string id)) return;
+
+        using FastBufferWriter writer = new FastBufferWriter(128, Allocator.Temp);
+        writer.WriteValueSafe(id);
+        writer.WriteValueSafe(locked);
+        writer.WriteValueSafe(open);
+        BroadcastToClientsOnly(DoorState, writer);
+    }
+
+    public static void RequestWeaponChestOpen(WeaponChest chest, PlayerHealth player)
+    {
+        if (!IsNetworkActive || chest == null || player == null) return;
+        Instance.EnsureRegistered();
+        if (!TryGetId(chest, out string id)) return;
+
+        ulong ownerClientId = player.IsSpawned ? player.OwnerClientId : NetworkManager.Singleton.LocalClientId;
+        if (IsServer)
+        {
+            chest.TryOpenAuthoritative(player);
+            return;
+        }
+
+        using FastBufferWriter writer = new FastBufferWriter(256, Allocator.Temp);
+        writer.WriteValueSafe(id);
+        writer.WriteValueSafe(ownerClientId);
+        NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(WeaponChestOpenRequest, NetworkManager.ServerClientId, writer);
+    }
+
+    public static void BroadcastWeaponChestOpened(WeaponChest chest, int weaponIndex, Vector3 dropPosition)
+    {
+        if (!IsNetworkActive || !IsServer || chest == null) return;
+        Instance.EnsureRegistered();
+        if (!TryGetId(chest, out string id)) return;
+
+        using FastBufferWriter writer = new FastBufferWriter(256, Allocator.Temp);
+        writer.WriteValueSafe(id);
+        writer.WriteValueSafe(weaponIndex);
+        writer.WriteValueSafe(dropPosition);
+        BroadcastToClientsOnly(WeaponChestOpenedState, writer);
+    }
+
     public static void Ensure()
     {
         _ = Instance;
@@ -180,6 +259,11 @@ public class MultiplayerGameplaySync : MonoBehaviour
         messages.RegisterNamedMessageHandler(PickupRequest, HandlePickupRequest);
         messages.RegisterNamedMessageHandler(PickupConsumedState, HandlePickupConsumedState);
         messages.RegisterNamedMessageHandler(CoinGainState, HandleCoinGainState);
+        messages.RegisterNamedMessageHandler(EnemyTransformState, HandleEnemyTransformState);
+        messages.RegisterNamedMessageHandler(EnemyProjectileState, HandleEnemyProjectileState);
+        messages.RegisterNamedMessageHandler(DoorState, HandleDoorState);
+        messages.RegisterNamedMessageHandler(WeaponChestOpenRequest, HandleWeaponChestOpenRequest);
+        messages.RegisterNamedMessageHandler(WeaponChestOpenedState, HandleWeaponChestOpenedState);
     }
 
     void OnDestroy()
@@ -200,6 +284,11 @@ public class MultiplayerGameplaySync : MonoBehaviour
             messages.UnregisterNamedMessageHandler(PickupRequest);
             messages.UnregisterNamedMessageHandler(PickupConsumedState);
             messages.UnregisterNamedMessageHandler(CoinGainState);
+            messages.UnregisterNamedMessageHandler(EnemyTransformState);
+            messages.UnregisterNamedMessageHandler(EnemyProjectileState);
+            messages.UnregisterNamedMessageHandler(DoorState);
+            messages.UnregisterNamedMessageHandler(WeaponChestOpenRequest);
+            messages.UnregisterNamedMessageHandler(WeaponChestOpenedState);
         }
         registeredManager = null;
     }
@@ -270,6 +359,64 @@ public class MultiplayerGameplaySync : MonoBehaviour
         PickupItem.AddCoinsLocal(amount);
     }
 
+    void HandleEnemyTransformState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out string id);
+        reader.ReadValueSafe(out Vector3 position);
+        reader.ReadValueSafe(out bool facingLeft);
+        reader.ReadValueSafe(out bool moving);
+        if (NetworkedWorldEntity.TryFind(id, out EnemyStateMachine enemy))
+            enemy.ApplyRemoteTransform(position, facingLeft, moving);
+    }
+
+    void HandleEnemyProjectileState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out Vector3 origin);
+        reader.ReadValueSafe(out Vector2 direction);
+        reader.ReadValueSafe(out float speed);
+        reader.ReadValueSafe(out float damage);
+        reader.ReadValueSafe(out float hitRadius);
+        reader.ReadValueSafe(out float lifetime);
+
+        GameObject projectileObject = new GameObject("EnemyProjectile_RemoteVisual");
+        projectileObject.transform.position = origin;
+        EnemyProjectile projectile = projectileObject.AddComponent<EnemyProjectile>();
+        projectile.Initialize(direction, speed, damage, hitRadius, lifetime, null, null);
+    }
+
+    void HandleDoorState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out string id);
+        reader.ReadValueSafe(out bool locked);
+        reader.ReadValueSafe(out bool open);
+        if (NetworkedWorldEntity.TryFind(id, out Door door))
+            door.ApplyRemoteState(locked, open);
+    }
+
+    void HandleWeaponChestOpenRequest(ulong senderClientId, FastBufferReader reader)
+    {
+        if (!IsServer) return;
+        reader.ReadValueSafe(out string id);
+        reader.ReadValueSafe(out ulong ownerClientId);
+        if (!NetworkedWorldEntity.TryFind(id, out WeaponChest chest)) return;
+        PlayerHealth player = FindPlayer(ownerClientId);
+        if (player != null)
+            chest.TryOpenAuthoritative(player);
+    }
+
+    void HandleWeaponChestOpenedState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out string id);
+        reader.ReadValueSafe(out int weaponIndex);
+        reader.ReadValueSafe(out Vector3 dropPosition);
+        if (NetworkedWorldEntity.TryFind(id, out WeaponChest chest))
+            chest.ApplyRemoteOpened(weaponIndex, dropPosition);
+    }
+
     static PlayerHealth FindPlayer(ulong ownerClientId)
     {
         foreach (PlayerHealth player in FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude))
@@ -285,5 +432,17 @@ public class MultiplayerGameplaySync : MonoBehaviour
 
         foreach (ulong clientId in manager.ConnectedClientsIds)
             manager.CustomMessagingManager.SendNamedMessage(messageName, clientId, writer);
+    }
+
+    static void BroadcastToClientsOnly(string messageName, FastBufferWriter writer)
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsListening || !manager.IsServer) return;
+
+        foreach (ulong clientId in manager.ConnectedClientsIds)
+        {
+            if (clientId == manager.LocalClientId) continue;
+            manager.CustomMessagingManager.SendNamedMessage(messageName, clientId, writer);
+        }
     }
 }

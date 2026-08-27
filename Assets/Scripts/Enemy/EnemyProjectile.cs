@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 
 public class EnemyProjectile : MonoBehaviour
@@ -64,7 +65,9 @@ public class EnemyProjectile : MonoBehaviour
             PlayerHealth player = hit.collider.GetComponentInParent<PlayerHealth>();
             if (player != null)
             {
-                player.TakeDamage(damage);
+                if (CanApplyDamage())
+                    player.TakeDamage(damage);
+
                 Destroy(gameObject);
                 return;
             }
@@ -86,6 +89,12 @@ public class EnemyProjectile : MonoBehaviour
         transform.position += (Vector3)(direction * distance);
         remainingLife -= Time.deltaTime;
         if (remainingLife <= 0f) Destroy(gameObject);
+    }
+
+    bool CanApplyDamage()
+    {
+        NetworkManager manager = NetworkManager.Singleton;
+        return manager == null || !manager.IsListening || manager.IsServer;
     }
 
     void TickVisual()

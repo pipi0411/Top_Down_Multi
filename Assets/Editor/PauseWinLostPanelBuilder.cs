@@ -23,7 +23,7 @@ public static class PauseWinLostPanelBuilder
     public static void CreatePauseWinLostPanels()
     {
         Canvas canvas = FindOrCreateCanvas();
-        InGameHUDUIManager hudManager = Object.FindFirstObjectByType<InGameHUDUIManager>(FindObjectsInactive.Include);
+        InGameHUDUIManager hudManager = Object.FindAnyObjectByType<InGameHUDUIManager>(FindObjectsInactive.Include);
 
         Sprite windowSprite = FindSprite(WindowSpriteName);
         Sprite buttonSprite = FindSprite(ButtonSpriteName);
@@ -120,7 +120,7 @@ public static class PauseWinLostPanelBuilder
 
     private static Canvas FindOrCreateCanvas()
     {
-        Canvas canvas = Object.FindFirstObjectByType<Canvas>(FindObjectsInactive.Include);
+        Canvas canvas = Object.FindAnyObjectByType<Canvas>(FindObjectsInactive.Include);
         if (canvas != null)
             return canvas;
 
@@ -140,7 +140,7 @@ public static class PauseWinLostPanelBuilder
 
     private static void EnsureEventSystem()
     {
-        if (Object.FindFirstObjectByType<EventSystem>(FindObjectsInactive.Include) != null)
+        if (Object.FindAnyObjectByType<EventSystem>(FindObjectsInactive.Include) != null)
             return;
 
         GameObject eventSystemObject = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));

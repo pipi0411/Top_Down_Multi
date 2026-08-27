@@ -651,7 +651,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CharacterPrefabManager
   characterMappings:
   - characterName: Knight
-    prefabPath: 'Prefabs/Player_Shadowblade '
+    prefabPath: Prefabs/Player_Shadowblade
     prefabReference: {fileID: 66633144740670258, guid: f21e6bcda43f6944896b4d31e3b6599a, type: 3}
   - characterName: Archer
     prefabPath: Prefabs/Player_Novak

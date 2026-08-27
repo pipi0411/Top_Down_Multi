@@ -28,6 +28,10 @@ public class StoryManager : MonoBehaviour
     [Header("Cài đặt Fade")]
     public float fadeDuration = 0.6f;       // Thời gian fade (giây)
 
+    [Header("Scene Flow")]
+    [SerializeField] private string endGameSceneName = "EndGame";
+    [SerializeField] private string mainMenuSceneName = "Main Manager";
+
     private int currentPage = 0;
     private bool isTyping = false;
     private bool isTransitioning = false;
@@ -139,6 +143,12 @@ public class StoryManager : MonoBehaviour
     {
         isTransitioning = true;
         yield return StartCoroutine(Fade(0f, 1f)); // Fade ra đen
+        if (IsEndGameScene())
+        {
+            ReturnAfterEndGame();
+            yield break;
+        }
+
         if (GameManager.Instance != null &&
             GameManager.Instance.IsMultiplayer &&
             !string.IsNullOrEmpty(GameManager.Instance.CurrentRoomCode) &&
@@ -175,6 +185,42 @@ public class StoryManager : MonoBehaviour
         }
 
         GameSceneLoader.LoadPendingGameplaySceneOrDefault("SampleScene");
+    }
+
+    private bool IsEndGameScene()
+    {
+        return string.Equals(SceneManager.GetActiveScene().name, endGameSceneName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ReturnAfterEndGame()
+    {
+        Time.timeScale = 1f;
+        bool isMultiplayer = GameManager.Instance != null && GameManager.Instance.IsMultiplayer;
+
+        if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
+            Unity.Netcode.NetworkManager.Singleton.Shutdown();
+
+        if (NetworkButtons.Instance != null)
+            NetworkButtons.Instance.ResetNetworkStartupState();
+
+        if (GameManager.Instance != null)
+        {
+            if (isMultiplayer)
+            {
+                GameManager.Instance.SetMultiplayerMode(true);
+                GameManager.Instance.SetSuppressRoomGameplayAutoLoad(true);
+                GameManager.Instance.ChangeState(GameManager.GameState.RoomLobby);
+            }
+            else
+            {
+                GameManager.Instance.ClearCurrentRoom();
+                GameManager.Instance.SetMultiplayerMode(false);
+                GameManager.Instance.SetSuppressRoomGameplayAutoLoad(false);
+                GameManager.Instance.ChangeState(GameManager.GameState.MainMenu);
+            }
+        }
+
+        SceneManager.LoadScene(mainMenuSceneName);
     }
 
     IEnumerator WaitForHostGameplayReady()
