@@ -26,8 +26,13 @@ public class LevelManager : MonoBehaviour
     private readonly HashSet<Room> closedRooms = new HashSet<Room>();
     private int currentLevelIndex;
     private int currentDungeonIndex;
+    private int activeLevelIndex;
+    private int activeDungeonIndex;
     private GameObject currentDungeonGO;
     private int networkEntitySequence;
+
+    public int ActiveLevelIndex => activeLevelIndex;
+    public int ActiveDungeonIndex => activeDungeonIndex;
     
     private void Awake()
     {
@@ -118,9 +123,36 @@ public class LevelManager : MonoBehaviour
         int mapOrdinal = currentLevelIndex * 1000 + currentDungeonIndex;
         networkEntitySequence = 0;
         UnityEngine.Random.InitState(73001 + mapOrdinal);
+        activeLevelIndex = currentLevelIndex;
+        activeDungeonIndex = currentDungeonIndex;
         currentDungeonGO = Instantiate(dungeonPrefab, transform);
         currentDungeonIndex++;
         return true;
+    }
+
+    public bool LoadSavedDungeon(int levelIndex, int dungeonIndex)
+    {
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null || dungeonLibrary.Levels.Length == 0)
+            return false;
+
+        int targetLevel = Mathf.Clamp(levelIndex, 0, dungeonLibrary.Levels.Length - 1);
+        Level level = dungeonLibrary.Levels[targetLevel];
+        if (level == null || level.Dungeons == null || level.Dungeons.Length == 0)
+            return false;
+
+        int targetDungeon = Mathf.Clamp(dungeonIndex, 0, level.Dungeons.Length - 1);
+
+        if (currentDungeonGO != null)
+            Destroy(currentDungeonGO);
+
+        currentRoom = null;
+        closedRooms.Clear();
+        boxBudgetInitialized = false;
+        networkEntitySequence = 0;
+        currentLevelIndex = targetLevel;
+        currentDungeonIndex = targetDungeon;
+
+        return TryInstantiateCurrentDungeon();
     }
 
     public string NextNetworkEntityId(string prefix)

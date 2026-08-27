@@ -85,6 +85,9 @@ public class EnemyWaveSpawner : MonoBehaviour
             if (waitForWaveClear)
                 yield return new WaitUntil(() => aliveEnemies.Count == 0);
 
+            if (ownerRoom != null)
+                SaveGameManager.RecordWaveCompleted(ownerRoom.SaveId, i + 1);
+
             if (i < waveData.Waves.Count - 1)
                 yield return Wait(wave.NextWaveDelay);
         }

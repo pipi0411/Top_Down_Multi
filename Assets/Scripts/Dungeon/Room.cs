@@ -39,16 +39,25 @@ public class Room : MonoBehaviour
     private Dictionary<Vector3, bool> tiles = new Dictionary<Vector3, bool>();
     private List<Door> doorList = new List<Door>();
     private readonly List<BoxSpawnPoint> pendingBoxPoints = new List<BoxSpawnPoint>();
+    private NetworkedWorldEntity roomEntity;
 
     public bool CanSpawnBoxes => !NormalRoom();
     public bool HasEnemyWave => IsCombatRoom() && waveData != null;
+    public string SaveId => roomEntity != null ? roomEntity.NetworkId : gameObject.name;
 
     private void Start()
     {
+        EnsureRoomEntity();
         GetTiles();
         CreateDoors();
         EnsureWaveSpawner();
         GenerateRoomUsingTemplate();
+
+        if (SaveGameManager.IsRoomCompleted(SaveId))
+        {
+            RoomCompleted = true;
+            OpenDoors();
+        }
     }
     
   private void GetTiles()
@@ -348,6 +357,7 @@ public class Room : MonoBehaviour
         RoomCompleted = true;
         OpenDoors();
         OnCombatEndedEvent?.Invoke(this);
+        SaveGameManager.RecordRoomCompleted(SaveId);
         if (roomType == RoomType.RoomBoss)
             GameAudioManager.Instance?.PlayRandomMapBgm();
     }
@@ -378,6 +388,15 @@ public class Room : MonoBehaviour
 
         if (waveSpawner != null)
             waveSpawner.SetWaveData(waveData);
+    }
+
+    private void EnsureRoomEntity()
+    {
+        if (roomEntity == null)
+            roomEntity = GetComponent<NetworkedWorldEntity>();
+
+        if (roomEntity == null)
+            roomEntity = gameObject.AddComponent<NetworkedWorldEntity>();
     }
     
     private void CreateDoors() 

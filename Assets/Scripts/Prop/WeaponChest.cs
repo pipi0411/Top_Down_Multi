@@ -46,6 +46,18 @@ public class WeaponChest : MonoBehaviour
         ShowClosed();
     }
 
+    void Start()
+    {
+        string id = GetComponent<NetworkedWorldEntity>()?.NetworkId;
+        if (!string.IsNullOrWhiteSpace(id) && SaveGameManager.IsChestOpened(id))
+        {
+            opened = true;
+            opening = false;
+            ShowOpen();
+            SetPromptVisible(false);
+        }
+    }
+
     void Update()
     {
         PlayerHealth player = opened || opening ? null : FindLocalPlayerInRange();
@@ -114,6 +126,7 @@ public class WeaponChest : MonoBehaviour
 
         ShowOpen();
         SpawnDroppedWeapon(weaponIndex, dropPosition);
+        SaveGameManager.RecordChestOpened(GetComponent<NetworkedWorldEntity>()?.NetworkId);
         opening = false;
     }
 

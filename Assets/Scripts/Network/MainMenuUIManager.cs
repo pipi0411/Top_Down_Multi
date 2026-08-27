@@ -7,6 +7,7 @@ public class MainMenuUIManager : MonoBehaviour
     
     [Header("Buttons")]
     [SerializeField] private Button startButton;
+    [SerializeField] private Button continueButton;
     [SerializeField] private Button settingsButton;
     [SerializeField] private Button logoutButton;
     [SerializeField] private Button exitButton;
@@ -39,6 +40,7 @@ public class MainMenuUIManager : MonoBehaviour
 
         // Auto-find buttons if not assigned
         if (startButton == null) startButton = mainMenuPanel.transform.Find("Start")?.GetComponent<Button>();
+        if (continueButton == null) continueButton = mainMenuPanel.transform.Find("Continue")?.GetComponent<Button>();
         if (settingsButton == null) settingsButton = mainMenuPanel.transform.Find("Setting")?.GetComponent<Button>();
         if (logoutButton == null) logoutButton = mainMenuPanel.transform.Find("Logout")?.GetComponent<Button>();
         if (exitButton == null) exitButton = mainMenuPanel.transform.Find("Exit")?.GetComponent<Button>();
@@ -57,6 +59,8 @@ public class MainMenuUIManager : MonoBehaviour
         Debug.Log("MainMenuUIManager: OnEnable - all references found");
 
         startButton.onClick.AddListener(OnStartClicked);
+        if (continueButton != null)
+            continueButton.onClick.AddListener(OnContinueClicked);
         settingsButton.onClick.AddListener(OnSettingsClicked);
         logoutButton.onClick.AddListener(OnLogoutClicked);
         exitButton.onClick.AddListener(OnExitClicked);
@@ -77,6 +81,8 @@ public class MainMenuUIManager : MonoBehaviour
     {
         if (startButton != null)
             startButton.onClick.RemoveListener(OnStartClicked);
+        if (continueButton != null)
+            continueButton.onClick.RemoveListener(OnContinueClicked);
         if (settingsButton != null)
             settingsButton.onClick.RemoveListener(OnSettingsClicked);
         if (logoutButton != null)
@@ -121,6 +127,12 @@ public class MainMenuUIManager : MonoBehaviour
     {
         Debug.Log("Starting game - Going to Mode Select");
         GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
+    }
+
+    private void OnContinueClicked()
+    {
+        Debug.Log("Continue single-player save");
+        SaveGameManager.ContinueSinglePlayer();
     }
 
     public void ShowMainMenuUI()
@@ -174,6 +186,7 @@ public class MainMenuUIManager : MonoBehaviour
         if (newState == GameManager.GameState.MainMenu)
         {
             RefreshUsernameText();
+            RefreshContinueButton();
         }
     }
 
@@ -188,6 +201,12 @@ public class MainMenuUIManager : MonoBehaviour
 
         usernameText.text = $"{username}!";
         Debug.Log($"MainMenuUIManager: Username text set to: {usernameText.text}");
+    }
+
+    private void RefreshContinueButton()
+    {
+        if (continueButton != null)
+            continueButton.gameObject.SetActive(SaveGameManager.HasSingleSave);
     }
     private void OnDestroy()
     {

@@ -1,3 +1,4 @@
+using System;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -26,6 +27,7 @@ public class PlayerWeaponController : NetworkBehaviour
     HotbarUI hotbarUI;
 
     public Weapon EquippedWeapon { get; private set; }
+    public int SelectedSlotIndex => selectedSlotIndex;
 
     void Awake()
     {
@@ -134,6 +136,7 @@ public class PlayerWeaponController : NetworkBehaviour
         slotWeapons[slotIndex] = pickedWeapon;
         selectedSlotIndex = slotIndex;
         EquipSlot(slotIndex);
+        SaveGameManager.AutoSave("Weapon picked up");
 
         if (IsSpawned && IsOwner && !string.IsNullOrWhiteSpace(pickupId))
             PickupWeaponServerRpc(pickupId, slotIndex);
@@ -173,6 +176,7 @@ public class PlayerWeaponController : NetworkBehaviour
             if (updateNetwork && IsSpawned && IsOwner)
                 networkSelectedSlotIndex.Value = selectedSlotIndex;
             TryBindHotbar();
+            SaveGameManager.AutoSave("Weapon slot changed");
             return;
         }
 
@@ -191,6 +195,7 @@ public class PlayerWeaponController : NetworkBehaviour
             networkSelectedSlotIndex.Value = selectedSlotIndex;
 
         TryBindHotbar();
+        SaveGameManager.AutoSave("Weapon slot changed");
     }
 
     void DropEquippedWeapon()
@@ -218,6 +223,56 @@ public class PlayerWeaponController : NetworkBehaviour
                 networkSelectedSlotIndex.Value = selectedSlotIndex;
             TryBindHotbar();
         }
+
+        SaveGameManager.AutoSave("Weapon dropped");
+    }
+
+    public string GetWeaponSaveId(int slotIndex)
+    {
+        slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
+        RebuildSlotAssignmentsFromChildren();
+        Weapon weapon = slotWeapons[slotIndex];
+        if (weapon == null) return string.Empty;
+        if (weapon.WeaponData != null)
+            return SaveGameManager.NormalizeObjectId(weapon.WeaponData.name);
+        return SaveGameManager.NormalizeObjectId(weapon.gameObject.name);
+    }
+
+    public void RestoreWeaponsFromSave(string gunWeaponId, string meleeWeaponId, int savedSelectedSlotIndex, Func<string, GameObject> prefabResolver)
+    {
+        if (prefabResolver == null) return;
+
+        Transform socket = GetOrCreateWeaponSocket();
+        ClearEquippedWeapons();
+
+        GameObject gunPrefab = prefabResolver(gunWeaponId);
+        GameObject meleePrefab = prefabResolver(meleeWeaponId);
+
+        if (gunPrefab != null)
+            slotWeapons[0] = CreateWeaponForSlot(gunPrefab, socket);
+
+        if (meleePrefab != null)
+            slotWeapons[1] = CreateWeaponForSlot(meleePrefab, socket);
+
+        NormalizeWeaponSlots();
+        int slot = Mathf.Clamp(savedSelectedSlotIndex, 0, slotWeapons.Length - 1);
+        if (slotWeapons[slot] == null)
+            slot = slotWeapons[0] != null ? 0 : slotWeapons[1] != null ? 1 : 0;
+
+        EquipSlot(slot, IsSpawned && IsOwner);
+    }
+
+    void ClearEquippedWeapons()
+    {
+        RebuildSlotAssignmentsFromChildren();
+        for (int i = 0; i < slotWeapons.Length; i++)
+        {
+            if (slotWeapons[i] != null)
+                Destroy(slotWeapons[i].gameObject);
+            slotWeapons[i] = null;
+        }
+
+        EquippedWeapon = null;
     }
 
     void DropWeapon(Weapon weapon, int slotIndex, Vector3 dropPosition, bool clearSlot, string dropId = null)

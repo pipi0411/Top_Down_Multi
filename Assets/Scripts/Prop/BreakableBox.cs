@@ -34,6 +34,13 @@ public class BreakableBox : MonoBehaviour
         currentHealth = Mathf.Max(1f, maxHealth);
     }
 
+    void Start()
+    {
+        string id = GetComponent<NetworkedWorldEntity>()?.NetworkId;
+        if (!string.IsNullOrWhiteSpace(id) && SaveGameManager.IsBoxBroken(id))
+            Destroy(gameObject);
+    }
+
     public void TakeDamage(float amount)
     {
         if (isBroken) return;
@@ -72,6 +79,8 @@ public class BreakableBox : MonoBehaviour
             networkObject.Despawn(true);
         else
             Destroy(gameObject);
+
+        SaveGameManager.RecordBoxBroken(GetComponent<NetworkedWorldEntity>()?.NetworkId);
     }
 
     GameObject TryPickLoot(out int lootIndex, out Vector3 dropPosition)

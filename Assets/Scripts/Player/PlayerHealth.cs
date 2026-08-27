@@ -231,6 +231,49 @@ public class PlayerHealth : NetworkBehaviour
         return true;
     }
 
+    public void RestoreSingleRunState(float health, float armor, float energy, int lives, int ammo)
+    {
+        if (playerConfig == null) return;
+
+        float restoredHealth = Mathf.Clamp(health, 1f, playerConfig.MaxHealth);
+        float restoredArmor = Mathf.Clamp(armor, 0f, playerConfig.MaxArmor);
+        float restoredEnergy = Mathf.Clamp(energy, 0f, playerConfig.MaxEnergy);
+        int restoredLives = Mathf.Clamp(lives, 1, MaxLives);
+        int restoredAmmo = currentWeaponUsesAmmo ? Mathf.Clamp(ammo, 0, Mathf.Max(1, magazineSize)) : 0;
+
+        isReloading = false;
+        offlineIsDead = false;
+        isInvulnerable = false;
+
+        if (IsSpawned)
+        {
+            if (IsServer)
+            {
+                networkHealth.Value = restoredHealth;
+                networkArmor.Value = restoredArmor;
+                networkLives.Value = restoredLives;
+                networkIsDead.Value = false;
+            }
+
+            if (IsOwner)
+            {
+                networkEnergy.Value = restoredEnergy;
+                networkMagazineAmmo.Value = restoredAmmo;
+            }
+        }
+        else
+        {
+            playerConfig.CurrentHealth = restoredHealth;
+            playerConfig.Armor = restoredArmor;
+            playerConfig.Energy = restoredEnergy;
+            offlineLives = restoredLives;
+            offlineMagazineAmmo = restoredAmmo;
+        }
+
+        SetDeadState(false);
+        BindLocalUI();
+    }
+
     void UpdateReload()
     {
         if (!isReloading || Time.time < reloadCompleteTime) return;

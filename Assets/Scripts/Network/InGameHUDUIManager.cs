@@ -31,6 +31,7 @@ public class InGameHUDUIManager : MonoBehaviour
 
     [Header("Pause")]
     [SerializeField] private Button pauseButton;
+    [SerializeField] private Button saveButton;
     [SerializeField] private GameObject pausePanel;
 
     [Header("Result Panels")]
@@ -61,6 +62,8 @@ public class InGameHUDUIManager : MonoBehaviour
 
         if (pauseButton != null)
             pauseButton.onClick.AddListener(OnPauseClicked);
+        if (saveButton != null)
+            saveButton.onClick.AddListener(SaveCurrentGame);
 
         if (GameManager.Instance != null)
         {
@@ -80,6 +83,8 @@ public class InGameHUDUIManager : MonoBehaviour
     {
         if (pauseButton != null)
             pauseButton.onClick.RemoveListener(OnPauseClicked);
+        if (saveButton != null)
+            saveButton.onClick.RemoveListener(SaveCurrentGame);
 
         if (GameManager.Instance != null)
         {
@@ -260,6 +265,7 @@ public class InGameHUDUIManager : MonoBehaviour
         {
             bool isPaused = pausePanel.activeSelf;
             pausePanel.SetActive(!isPaused);
+            RefreshSaveButton();
             Time.timeScale = isPaused ? 1f : 0f;
         }
     }
@@ -269,6 +275,17 @@ public class InGameHUDUIManager : MonoBehaviour
         if (pausePanel != null)
             pausePanel.SetActive(false);
         Time.timeScale = 1f;
+    }
+
+    public void SaveCurrentGame()
+    {
+        if (GameManager.Instance != null && GameManager.Instance.IsMultiplayer)
+        {
+            Debug.Log("[Save] Manual save is disabled in multiplayer.");
+            return;
+        }
+
+        SaveGameManager.SaveSingleRunNow("Pause menu");
     }
 
     public void ShowWinPanel()
@@ -470,5 +487,11 @@ public class InGameHUDUIManager : MonoBehaviour
     {
         Debug.Log("Player died!");
         // TODO: Show death screen / respawn menu
+    }
+
+    private void RefreshSaveButton()
+    {
+        if (saveButton != null)
+            saveButton.gameObject.SetActive(GameManager.Instance == null || !GameManager.Instance.IsMultiplayer);
     }
 }

@@ -2161,7 +2161,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &261676710
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2656,8 +2656,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 814, y: 481}
-  m_SizeDelta: {x: 210, y: 73}
+  m_AnchoredPosition: {x: 799, y: 454}
+  m_SizeDelta: {x: 248, y: 84}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &340948901
 MonoBehaviour:
@@ -10595,6 +10595,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MainMenuUIManager
   mainMenuPanel: {fileID: 261676709}
   startButton: {fileID: 1703257959}
+  continueButton: {fileID: 0}
   settingsButton: {fileID: 1573469775}
   logoutButton: {fileID: 340948901}
   exitButton: {fileID: 1237575178}
@@ -10660,7 +10661,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -33}
+  m_AnchoredPosition: {x: 0, y: -25}
   m_SizeDelta: {x: 248, y: 84}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1237575178
@@ -11913,7 +11914,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 87}
+  m_AnchoredPosition: {x: 0, y: 91}
   m_SizeDelta: {x: 248, y: 84}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1573469775

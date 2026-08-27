@@ -125,6 +125,13 @@ public class PickupItem : MonoBehaviour
     {
         Coins += Mathf.Max(1, amount);
         OnCoinsChanged?.Invoke(Coins);
+        SaveGameManager.AutoSave("Coin collected");
+    }
+
+    public static void SetCoinsLocal(int amount)
+    {
+        Coins = Mathf.Max(0, amount);
+        OnCoinsChanged?.Invoke(Coins);
     }
 
     bool CanPickup(PlayerHealth player)
