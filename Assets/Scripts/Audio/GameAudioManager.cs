@@ -36,7 +36,7 @@ public class GameAudioManager : MonoBehaviour
     float nextMonsterScreamTime;
     float nextKillSfxTime;
     float nextWeaponSfxTime;
-    int mapBgmSequence;
+    AudioClip lastMapBgm;
     string currentMusicName;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -275,18 +275,35 @@ public class GameAudioManager : MonoBehaviour
     {
         if (mapBgms == null || mapBgms.Length == 0) return null;
 
-        for (int i = 0; i < mapBgms.Length; i++)
+        AudioClip fallback = null;
+        int validCount = 0;
+
+        foreach (AudioClip clip in mapBgms)
         {
-            int index = (mapBgmSequence + i) % mapBgms.Length;
-            AudioClip clip = mapBgms[index];
-            if (clip != null)
+            if (clip == null) continue;
+            fallback ??= clip;
+            validCount++;
+        }
+
+        if (validCount <= 0) return null;
+        if (validCount == 1)
+        {
+            lastMapBgm = fallback;
+            return fallback;
+        }
+
+        for (int i = 0; i < 12; i++)
+        {
+            AudioClip clip = mapBgms[Random.Range(0, mapBgms.Length)];
+            if (clip != null && clip != lastMapBgm)
             {
-                mapBgmSequence = index + 1;
+                lastMapBgm = clip;
                 return clip;
             }
         }
 
-        return null;
+        lastMapBgm = fallback;
+        return fallback;
     }
 
     AudioClip Pick(AudioClip[] clips)
