@@ -52,6 +52,7 @@ app.use("/auth", require("./Routes/auth"));
 app.use("/characters", require("./Routes/characters"));
 app.use("/rooms", require("./Routes/rooms"));
 app.use("/game", require("./Routes/game"));
+app.use("/saves", require("./Routes/saves"));
 
 app.get("/", (req, res) => {
     res.send("API Running");

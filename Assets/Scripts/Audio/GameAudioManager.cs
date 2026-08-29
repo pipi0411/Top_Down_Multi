@@ -76,6 +76,7 @@ public class GameAudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
         BuildSources();
+        GameSettings.ApplyAll();
         LoadClips();
         SceneManager.sceneLoaded += HandleSceneLoaded;
     }
@@ -166,6 +167,20 @@ public class GameAudioManager : MonoBehaviour
     public void PlayWinSong()
     {
         PlayMusic(winSong, "Win Song", false);
+    }
+
+    public void SetMusicVolume(float value)
+    {
+        musicVolume = Mathf.Clamp01(value);
+        if (musicSource != null)
+            musicSource.volume = musicVolume;
+    }
+
+    public void SetSfxVolume(float value)
+    {
+        sfxVolume = Mathf.Clamp01(value);
+        if (sfxSource != null)
+            sfxSource.volume = sfxVolume;
     }
 
     public void PlayFootstep()

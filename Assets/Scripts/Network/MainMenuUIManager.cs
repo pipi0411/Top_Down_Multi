@@ -15,6 +15,8 @@ public class MainMenuUIManager : MonoBehaviour
     [Header("UI Elements")]
     [SerializeField] private TMP_Text usernameText;
 
+    int continueRefreshVersion;
+
     private void Awake()
     {
         Debug.Log($"MainMenuUIManager.Awake called. Script is on: {gameObject.name}, active: {gameObject.activeInHierarchy}");
@@ -44,15 +46,18 @@ public class MainMenuUIManager : MonoBehaviour
         if (settingsButton == null) settingsButton = FindButtonInPanel(mainMenuPanel, "setting", "settings");
         if (logoutButton == null) logoutButton = FindButtonInPanel(mainMenuPanel, "logout");
         if (exitButton == null) exitButton = FindButtonInPanel(mainMenuPanel, "exit");
+        if (settingsButton != null && settingsButton.GetComponent<SettingsButtonRelay>() == null)
+            settingsButton.gameObject.AddComponent<SettingsButtonRelay>();
 
-        if (mainMenuPanel == null || startButton == null || settingsButton == null || logoutButton == null || exitButton == null)
+        if (mainMenuPanel == null || startButton == null || settingsButton == null)
         {
             Debug.LogError("MainMenuUIManager is missing required references in the Inspector.");
             Debug.LogError($"  mainMenuPanel: {mainMenuPanel}");
             Debug.LogError($"  startButton: {startButton}");
             Debug.LogError($"  settingsButton: {settingsButton}");
-            Debug.LogError($"  logoutButton: {logoutButton}");
-            Debug.LogError($"  exitButton: {exitButton}");
+            Debug.LogWarning($"  optional continueButton: {continueButton}");
+            Debug.LogWarning($"  optional logoutButton: {logoutButton}");
+            Debug.LogWarning($"  optional exitButton: {exitButton}");
             return;
         }
 
@@ -62,8 +67,10 @@ public class MainMenuUIManager : MonoBehaviour
         if (continueButton != null)
             continueButton.onClick.AddListener(OnContinueClicked);
         settingsButton.onClick.AddListener(OnSettingsClicked);
-        logoutButton.onClick.AddListener(OnLogoutClicked);
-        exitButton.onClick.AddListener(OnExitClicked);
+        if (logoutButton != null)
+            logoutButton.onClick.AddListener(OnLogoutClicked);
+        if (exitButton != null)
+            exitButton.onClick.AddListener(OnExitClicked);
         RefreshContinueButton();
 
         // GameManager might not be initialized yet, so wait for it
@@ -156,8 +163,8 @@ public class MainMenuUIManager : MonoBehaviour
 
     private void OnSettingsClicked()
     {
-        Debug.Log("Settings clicked (not implemented yet)");
-        // TODO: Implement settings panel
+        Debug.Log("Settings clicked");
+        SettingsPopupUI.Show();
     }
 
     private void OnLogoutClicked()
@@ -206,8 +213,19 @@ public class MainMenuUIManager : MonoBehaviour
 
     private void RefreshContinueButton()
     {
-        if (continueButton != null)
-            continueButton.gameObject.SetActive(SaveGameManager.HasSingleSave);
+        if (continueButton == null)
+            return;
+
+        int refreshVersion = ++continueRefreshVersion;
+        continueButton.gameObject.SetActive(SaveGameManager.HasSingleSave);
+
+        SaveGameManager.CheckAnySingleSave(hasSave =>
+        {
+            if (refreshVersion != continueRefreshVersion || continueButton == null)
+                return;
+
+            continueButton.gameObject.SetActive(hasSave);
+        });
     }
 
     private Button FindButtonInPanel(GameObject panel, params string[] keywords)

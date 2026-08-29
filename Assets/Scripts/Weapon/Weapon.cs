@@ -108,7 +108,8 @@ public class Weapon : MonoBehaviour
                     targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             }
         }
-        currentAimAngle = Mathf.LerpAngle(currentAimAngle, targetAngle, aimSmoothSpeed * Time.deltaTime);
+        float sensitivity = Mathf.Max(0.1f, GameSettings.MouseSensitivity);
+        currentAimAngle = Mathf.LerpAngle(currentAimAngle, targetAngle, aimSmoothSpeed * sensitivity * Time.deltaTime);
         ApplyAimPose(currentAimAngle);
     }
 

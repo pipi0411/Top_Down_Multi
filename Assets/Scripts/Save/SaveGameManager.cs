@@ -81,6 +81,26 @@ public class SaveGameManager : MonoBehaviour
         Instance.BeginContinueSinglePlayer();
     }
 
+    public static void CheckAnySingleSave(Action<bool> callback)
+    {
+        if (HasSingleSave)
+        {
+            callback?.Invoke(true);
+            return;
+        }
+
+        if (AuthClient.Instance == null || string.IsNullOrEmpty(AuthClient.Instance.GetStoredToken()))
+        {
+            callback?.Invoke(false);
+            return;
+        }
+
+        SaveClient.Instance.GetCloudSave(result =>
+        {
+            callback?.Invoke(result != null && result.success && result.hasSave && result.saveData != null);
+        });
+    }
+
     public static void SaveSingleRunNow(string reason = "Manual save")
     {
         Instance.SaveSingleRun(reason, true);
@@ -96,6 +116,8 @@ public class SaveGameManager : MonoBehaviour
     {
         if (File.Exists(SavePath))
             File.Delete(SavePath);
+        if (AuthClient.Instance != null && !string.IsNullOrEmpty(AuthClient.Instance.GetStoredToken()))
+            SaveClient.Instance.DeleteCloudSave();
     }
 
     public static bool IsBoxBroken(string id)
@@ -165,11 +187,50 @@ public class SaveGameManager : MonoBehaviour
         if (pendingContinue || applyingSave)
             return;
 
-        if (!TryLoadSave(out loadedSave))
+        if (AuthClient.Instance != null && !string.IsNullOrEmpty(AuthClient.Instance.GetStoredToken()))
+        {
+            SaveClient.Instance.GetCloudSave(result =>
+            {
+                if (pendingContinue || applyingSave)
+                    return;
+
+                if (result != null && result.success && result.hasSave && result.saveData != null)
+                {
+                    Debug.Log("[Save] Loaded single-player save from cloud.");
+                    StartContinueWithSave(result.saveData, true);
+                    return;
+                }
+
+                Debug.LogWarning($"[Save] Cloud save unavailable. Falling back to local save. Error: {result?.error}");
+                BeginContinueFromLocalSave();
+            });
+            return;
+        }
+
+        BeginContinueFromLocalSave();
+    }
+
+    void BeginContinueFromLocalSave()
+    {
+        if (!TryLoadSave(out SingleRunSaveData localSave))
         {
             Debug.LogWarning("[Save] No single-player save found.");
             return;
         }
+
+        StartContinueWithSave(localSave, false);
+    }
+
+    void StartContinueWithSave(SingleRunSaveData save, bool writeLocalCopy)
+    {
+        if (save == null)
+            return;
+
+        save.EnsureLists();
+        loadedSave = save;
+
+        if (writeLocalCopy)
+            WriteLocalSave(save, "Cloud continue cache");
 
         pendingContinue = true;
 
@@ -247,10 +308,35 @@ public class SaveGameManager : MonoBehaviour
         SingleRunSaveData save = CaptureSave(player);
         loadedSave = save;
 
-        Directory.CreateDirectory(Application.persistentDataPath);
-        File.WriteAllText(SavePath, JsonUtility.ToJson(save, true));
+        WriteLocalSave(save, reason);
+        if (force && AuthClient.Instance != null && !string.IsNullOrEmpty(AuthClient.Instance.GetStoredToken()))
+        {
+            SaveClient.Instance.UploadCloudSave(save, result =>
+            {
+                if (result != null && result.success)
+                    Debug.Log("[Save] Single run uploaded to cloud.");
+                else
+                    Debug.LogWarning($"[Save] Cloud upload failed. Local save is still kept. Error: {result?.error}");
+            });
+        }
+
         nextSaveAllowedTime = Time.unscaledTime + 0.35f;
         Debug.Log($"[Save] Single run saved: {reason}. Path: {SavePath}");
+    }
+
+    void WriteLocalSave(SingleRunSaveData save, string reason)
+    {
+        if (save == null) return;
+
+        try
+        {
+            Directory.CreateDirectory(Application.persistentDataPath);
+            File.WriteAllText(SavePath, JsonUtility.ToJson(save, true));
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"[Save] Failed to write local save ({reason}): {ex.Message}");
+        }
     }
 
     SingleRunSaveData CaptureSave(PlayerHealth player)
