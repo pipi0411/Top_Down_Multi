@@ -60,6 +60,8 @@ public class InGameHUDUIManager : MonoBehaviour
             return;
         }
 
+        FindExistingPauseReferences();
+
         if (pauseButton != null)
             pauseButton.onClick.AddListener(OnPauseClicked);
         if (saveButton != null)
@@ -77,6 +79,7 @@ public class InGameHUDUIManager : MonoBehaviour
         UpdateMana();
         UpdateLives();
         EnsureHotbar();
+        RefreshSaveButton();
     }
 
     private void OnDisable()
@@ -487,6 +490,65 @@ public class InGameHUDUIManager : MonoBehaviour
     {
         Debug.Log("Player died!");
         // TODO: Show death screen / respawn menu
+    }
+
+    private void FindExistingPauseReferences()
+    {
+        if (pausePanel == null)
+            pausePanel = FindGameObjectInChildren(transform.root, "pausepanel", "pause panel");
+
+        if (saveButton == null && pausePanel != null)
+            saveButton = FindButtonInPanel(pausePanel, "save", "save game");
+    }
+
+    private GameObject FindGameObjectInChildren(Transform root, params string[] keywords)
+    {
+        if (root == null || keywords == null)
+            return null;
+
+        Transform[] children = root.GetComponentsInChildren<Transform>(true);
+        foreach (Transform child in children)
+        {
+            if (child == null)
+                continue;
+
+            string childName = child.name.ToLowerInvariant();
+            foreach (string keyword in keywords)
+            {
+                if (!string.IsNullOrWhiteSpace(keyword) && childName.Contains(keyword.ToLowerInvariant()))
+                    return child.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private Button FindButtonInPanel(GameObject panel, params string[] keywords)
+    {
+        if (panel == null || keywords == null)
+            return null;
+
+        Button[] buttons = panel.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            if (button == null)
+                continue;
+
+            string objectName = button.name.ToLowerInvariant();
+            string labelText = button.GetComponentInChildren<TextMeshProUGUI>(true)?.text?.ToLowerInvariant() ?? string.Empty;
+
+            foreach (string keyword in keywords)
+            {
+                if (string.IsNullOrWhiteSpace(keyword))
+                    continue;
+
+                string lowerKeyword = keyword.ToLowerInvariant();
+                if (objectName.Contains(lowerKeyword) || labelText.Contains(lowerKeyword))
+                    return button;
+            }
+        }
+
+        return null;
     }
 
     private void RefreshSaveButton()

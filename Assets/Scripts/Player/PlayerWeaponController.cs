@@ -24,6 +24,7 @@ public class PlayerWeaponController : NetworkBehaviour
     float lastSentAimAngle;
     int selectedSlotIndex;
     int weaponDropSequence;
+    bool suppressChildWeaponRebuild;
     HotbarUI hotbarUI;
 
     public Weapon EquippedWeapon { get; private set; }
@@ -162,7 +163,9 @@ public class PlayerWeaponController : NetworkBehaviour
 
     public void EquipSlot(int slotIndex, bool updateNetwork = true)
     {
-        RebuildSlotAssignmentsFromChildren();
+        if (!suppressChildWeaponRebuild)
+            RebuildSlotAssignmentsFromChildren();
+
         slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
         NormalizeWeaponSlots();
         if (slotWeapons[slotIndex] == null)
@@ -172,6 +175,7 @@ public class PlayerWeaponController : NetworkBehaviour
             for (int i = 0; i < slotWeapons.Length; i++)
                 if (slotWeapons[i] != null)
                     slotWeapons[i].gameObject.SetActive(false);
+            HideUnslottedWeaponChildren();
 
             if (updateNetwork && IsSpawned && IsOwner)
                 networkSelectedSlotIndex.Value = selectedSlotIndex;
@@ -186,6 +190,8 @@ public class PlayerWeaponController : NetworkBehaviour
         for (int i = 0; i < slotWeapons.Length; i++)
             if (slotWeapons[i] != null)
                 slotWeapons[i].gameObject.SetActive(i == selectedSlotIndex);
+
+        HideUnslottedWeaponChildren();
 
         PlayerHealth playerStats = GetComponent<PlayerHealth>();
         if (playerStats != null && EquippedWeapon != null)
@@ -243,34 +249,53 @@ public class PlayerWeaponController : NetworkBehaviour
         if (prefabResolver == null) return;
 
         Transform socket = GetOrCreateWeaponSocket();
-        ClearEquippedWeapons();
+        suppressChildWeaponRebuild = true;
+        try
+        {
+            ClearEquippedWeapons();
 
-        GameObject gunPrefab = prefabResolver(gunWeaponId);
-        GameObject meleePrefab = prefabResolver(meleeWeaponId);
+            GameObject gunPrefab = prefabResolver(gunWeaponId);
+            GameObject meleePrefab = prefabResolver(meleeWeaponId);
 
-        if (gunPrefab != null)
-            slotWeapons[0] = CreateWeaponForSlot(gunPrefab, socket);
+            if (gunPrefab != null)
+                slotWeapons[0] = CreateWeaponForSlot(gunPrefab, socket);
 
-        if (meleePrefab != null)
-            slotWeapons[1] = CreateWeaponForSlot(meleePrefab, socket);
+            if (meleePrefab != null)
+                slotWeapons[1] = CreateWeaponForSlot(meleePrefab, socket);
 
-        NormalizeWeaponSlots();
-        int slot = Mathf.Clamp(savedSelectedSlotIndex, 0, slotWeapons.Length - 1);
-        if (slotWeapons[slot] == null)
-            slot = slotWeapons[0] != null ? 0 : slotWeapons[1] != null ? 1 : 0;
+            NormalizeWeaponSlots();
+            int slot = Mathf.Clamp(savedSelectedSlotIndex, 0, slotWeapons.Length - 1);
+            if (slotWeapons[slot] == null)
+                slot = slotWeapons[0] != null ? 0 : slotWeapons[1] != null ? 1 : 0;
 
-        EquipSlot(slot, IsSpawned && IsOwner);
+            EquipSlot(slot, IsSpawned && IsOwner);
+        }
+        finally
+        {
+            suppressChildWeaponRebuild = false;
+        }
     }
 
     void ClearEquippedWeapons()
     {
-        RebuildSlotAssignmentsFromChildren();
-        for (int i = 0; i < slotWeapons.Length; i++)
+        Weapon[] childWeapons = GetComponentsInChildren<Weapon>(true);
+        foreach (Weapon weapon in childWeapons)
         {
-            if (slotWeapons[i] != null)
-                Destroy(slotWeapons[i].gameObject);
-            slotWeapons[i] = null;
+            if (weapon == null)
+                continue;
+
+            foreach (Renderer renderer in weapon.GetComponentsInChildren<Renderer>(true))
+                renderer.enabled = false;
+            foreach (Collider2D collider in weapon.GetComponentsInChildren<Collider2D>(true))
+                collider.enabled = false;
+
+            weapon.gameObject.SetActive(false);
+            weapon.transform.SetParent(null, true);
+            Destroy(weapon.gameObject);
         }
+
+        for (int i = 0; i < slotWeapons.Length; i++)
+            slotWeapons[i] = null;
 
         EquippedWeapon = null;
     }
@@ -424,7 +449,9 @@ public class PlayerWeaponController : NetworkBehaviour
             hotbarUI = HotbarUI.Instance;
         if (hotbarUI == null) return;
 
-        RebuildSlotAssignmentsFromChildren();
+        if (!suppressChildWeaponRebuild)
+            RebuildSlotAssignmentsFromChildren();
+
         NormalizeWeaponSlots();
 
         Weapon gun = FindWeaponByType(false);
@@ -460,6 +487,27 @@ public class PlayerWeaponController : NetworkBehaviour
             slotWeapons[0] = gun;
         if (melee != null)
             slotWeapons[1] = melee;
+
+        HideUnslottedWeaponChildren();
+        ApplyEquippedWeaponVisibility();
+    }
+
+    void HideUnslottedWeaponChildren()
+    {
+        Weapon[] weapons = GetComponentsInChildren<Weapon>(true);
+        foreach (Weapon weapon in weapons)
+        {
+            if (weapon == null) continue;
+            if (weapon == slotWeapons[0] || weapon == slotWeapons[1]) continue;
+            weapon.gameObject.SetActive(false);
+        }
+    }
+
+    void ApplyEquippedWeaponVisibility()
+    {
+        for (int i = 0; i < slotWeapons.Length; i++)
+            if (slotWeapons[i] != null)
+                slotWeapons[i].gameObject.SetActive(i == selectedSlotIndex);
     }
 
     Weapon FindWeaponByType(bool melee)

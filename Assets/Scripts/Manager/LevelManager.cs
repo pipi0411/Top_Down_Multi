@@ -43,6 +43,12 @@ public class LevelManager : MonoBehaviour
 
     private void  Start()
     {
+        if (SaveGameManager.IsContinueLoading)
+        {
+            Debug.Log("[LevelManager] Continue loading is active. Skip default dungeon spawn.");
+            return;
+        }
+
         CreateDungeon();
     }
 
@@ -66,8 +72,7 @@ public class LevelManager : MonoBehaviour
             return false;
         }
 
-        if (currentDungeonGO != null)
-            Destroy(currentDungeonGO);
+        ClearCurrentDungeon();
 
         currentRoom = null;
         closedRooms.Clear();
@@ -142,8 +147,7 @@ public class LevelManager : MonoBehaviour
 
         int targetDungeon = Mathf.Clamp(dungeonIndex, 0, level.Dungeons.Length - 1);
 
-        if (currentDungeonGO != null)
-            Destroy(currentDungeonGO);
+        ClearCurrentDungeon();
 
         currentRoom = null;
         closedRooms.Clear();
@@ -153,6 +157,78 @@ public class LevelManager : MonoBehaviour
         currentDungeonIndex = targetDungeon;
 
         return TryInstantiateCurrentDungeon();
+    }
+
+    private void ClearCurrentDungeon()
+    {
+        HashSet<GameObject> objectsToClear = new HashSet<GameObject>();
+
+        if (currentDungeonGO != null)
+        {
+            objectsToClear.Add(currentDungeonGO);
+            currentDungeonGO.SetActive(false);
+            Destroy(currentDungeonGO);
+            currentDungeonGO = null;
+        }
+
+        for (int i = transform.childCount - 1; i >= 0; i--)
+        {
+            Transform child = transform.GetChild(i);
+            if (child == null)
+                continue;
+
+            objectsToClear.Add(child.gameObject);
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+
+        CollectRuntimeWorldObjects(objectsToClear);
+        foreach (GameObject worldObject in objectsToClear)
+        {
+            if (worldObject == null || worldObject == gameObject)
+                continue;
+
+            if (worldObject.GetComponentInParent<PlayerHealth>() != null)
+                continue;
+
+            worldObject.SetActive(false);
+            Destroy(worldObject);
+        }
+    }
+
+    private void CollectRuntimeWorldObjects(HashSet<GameObject> objectsToClear)
+    {
+        if (objectsToClear == null)
+            return;
+
+        AddComponentsToClear(FindObjectsByType<Room>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<Door>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<TeleportGate>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<BreakableBox>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<PickupItem>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<WeaponPickup>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<EnemyHealth>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<EnemyStateMachine>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<EnemyProjectile>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<Projectile>(FindObjectsInactive.Include), objectsToClear);
+        AddComponentsToClear(FindObjectsByType<RoomTrapSpawner>(FindObjectsInactive.Include), objectsToClear);
+    }
+
+    private void AddComponentsToClear<T>(T[] components, HashSet<GameObject> objectsToClear) where T : Component
+    {
+        if (components == null)
+            return;
+
+        foreach (T component in components)
+        {
+            if (component == null || component.gameObject == gameObject)
+                continue;
+
+            if (component.GetComponentInParent<PlayerHealth>() != null)
+                continue;
+
+            objectsToClear.Add(component.gameObject);
+        }
     }
 
     public string NextNetworkEntityId(string prefix)

@@ -39,11 +39,11 @@ public class MainMenuUIManager : MonoBehaviour
         }
 
         // Auto-find buttons if not assigned
-        if (startButton == null) startButton = mainMenuPanel.transform.Find("Start")?.GetComponent<Button>();
-        if (continueButton == null) continueButton = mainMenuPanel.transform.Find("Continue")?.GetComponent<Button>();
-        if (settingsButton == null) settingsButton = mainMenuPanel.transform.Find("Setting")?.GetComponent<Button>();
-        if (logoutButton == null) logoutButton = mainMenuPanel.transform.Find("Logout")?.GetComponent<Button>();
-        if (exitButton == null) exitButton = mainMenuPanel.transform.Find("Exit")?.GetComponent<Button>();
+        if (startButton == null) startButton = FindButtonInPanel(mainMenuPanel, "start");
+        if (continueButton == null) continueButton = FindButtonInPanel(mainMenuPanel, "continue");
+        if (settingsButton == null) settingsButton = FindButtonInPanel(mainMenuPanel, "setting", "settings");
+        if (logoutButton == null) logoutButton = FindButtonInPanel(mainMenuPanel, "logout");
+        if (exitButton == null) exitButton = FindButtonInPanel(mainMenuPanel, "exit");
 
         if (mainMenuPanel == null || startButton == null || settingsButton == null || logoutButton == null || exitButton == null)
         {
@@ -64,6 +64,7 @@ public class MainMenuUIManager : MonoBehaviour
         settingsButton.onClick.AddListener(OnSettingsClicked);
         logoutButton.onClick.AddListener(OnLogoutClicked);
         exitButton.onClick.AddListener(OnExitClicked);
+        RefreshContinueButton();
 
         // GameManager might not be initialized yet, so wait for it
         if (GameManager.Instance != null)
@@ -207,6 +208,34 @@ public class MainMenuUIManager : MonoBehaviour
     {
         if (continueButton != null)
             continueButton.gameObject.SetActive(SaveGameManager.HasSingleSave);
+    }
+
+    private Button FindButtonInPanel(GameObject panel, params string[] keywords)
+    {
+        if (panel == null || keywords == null)
+            return null;
+
+        Button[] buttons = panel.GetComponentsInChildren<Button>(true);
+        foreach (Button button in buttons)
+        {
+            if (button == null)
+                continue;
+
+            string objectName = button.name.ToLowerInvariant();
+            string labelText = button.GetComponentInChildren<TMP_Text>(true)?.text?.ToLowerInvariant() ?? string.Empty;
+
+            foreach (string keyword in keywords)
+            {
+                if (string.IsNullOrWhiteSpace(keyword))
+                    continue;
+
+                string lowerKeyword = keyword.ToLowerInvariant();
+                if (objectName.Contains(lowerKeyword) || labelText.Contains(lowerKeyword))
+                    return button;
+            }
+        }
+
+        return null;
     }
     private void OnDestroy()
     {

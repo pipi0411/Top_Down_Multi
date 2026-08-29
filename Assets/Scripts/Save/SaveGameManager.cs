@@ -13,7 +13,7 @@ public class SaveGameManager : MonoBehaviour
 
     [SerializeField] WeaponPrefabRegistry weaponRegistry;
     [SerializeField] GameObject[] weaponPrefabs;
-    [SerializeField] bool autoSaveSinglePlayer = true;
+    [SerializeField] bool autoSaveSinglePlayer = false;
 
     SingleRunSaveData loadedSave;
     bool pendingContinue;
@@ -40,6 +40,7 @@ public class SaveGameManager : MonoBehaviour
 
     public static bool HasSingleSave => File.Exists(SavePath);
     public static bool IsApplyingSave => Instance.applyingSave;
+    public static bool IsContinueLoading => instance != null && (instance.pendingContinue || instance.applyingSave);
     static string SavePath => Path.Combine(Application.persistentDataPath, SaveFileName);
 
     void Awake()
@@ -51,6 +52,7 @@ public class SaveGameManager : MonoBehaviour
         }
 
         instance = this;
+        autoSaveSinglePlayer = false;
         DontDestroyOnLoad(gameObject);
         LoadRegistryIfNeeded();
         SceneManager.sceneLoaded += HandleSceneLoaded;
@@ -64,13 +66,14 @@ public class SaveGameManager : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
-        if (paused)
-            SaveSingleRun("Application paused", true);
+        if (paused && autoSaveSinglePlayer)
+            SaveSingleRun("Application paused", false);
     }
 
     void OnApplicationQuit()
     {
-        SaveSingleRun("Application quit", true);
+        if (autoSaveSinglePlayer)
+            SaveSingleRun("Application quit", false);
     }
 
     public static void ContinueSinglePlayer()
@@ -159,6 +162,9 @@ public class SaveGameManager : MonoBehaviour
 
     void BeginContinueSinglePlayer()
     {
+        if (pendingContinue || applyingSave)
+            return;
+
         if (!TryLoadSave(out loadedSave))
         {
             Debug.LogWarning("[Save] No single-player save found.");
@@ -227,7 +233,6 @@ public class SaveGameManager : MonoBehaviour
 
         pendingContinue = false;
         applyingSave = false;
-        AutoSave("Continue loaded");
     }
 
     void SaveSingleRun(string reason, bool force)
