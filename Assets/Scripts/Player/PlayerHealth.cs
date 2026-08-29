@@ -385,6 +385,13 @@ public class PlayerHealth : NetworkBehaviour
                 return;
             }
 
+            BossManager boss = hit.collider.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+                boss.TakeDamage(Mathf.Max(0, damage));
+                return;
+            }
+
             PlayerHealth target = hit.collider.GetComponentInParent<PlayerHealth>();
             if (target != null && target != this)
             {
@@ -421,6 +428,13 @@ public class PlayerHealth : NetworkBehaviour
             if (enemy != null)
             {
                 enemy.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
+
+            BossManager boss = hit.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+                boss.TakeDamage(Mathf.Max(0f, damage));
                 return;
             }
 

@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 6529284509789690356}
   - component: {fileID: 2292942998615923622}
   - component: {fileID: 1550236186557944965}
+  - component: {fileID: 6139482176054924831}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Boss
@@ -229,3 +230,31 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NetworkedWorldEntity
   networkId: 
+--- !u!114 &6139482176054924831
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7333421241368496453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44b890049095301448460d5ff0c6775f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BossManager
+  animator: {fileID: 7944761083114279536}
+  rb: {fileID: 4284216039072210565}
+  firePoint: {fileID: 0}
+  fireballPrefab: {fileID: 7780844818957235712, guid: ac335685b4b17034cb70d4d376265d06, type: 3}
+  maxHealth: 50
+  currentHealth: 50
+  isInvincible: 1
+  startFightRange: 12
+  preferredRange: 6.5
+  minRange: 3.5
+  maxRange: 9
+  moveSpeed: 3.2
+  retreatSpeed: 2.8
+  lastAttackTime: 0
+  attackCooldown: 2.2
+  fireballDelay: 0.4

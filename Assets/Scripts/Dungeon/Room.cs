@@ -38,6 +38,7 @@ public class Room : MonoBehaviour
     // Position (Key) - Free/ Not Free (Value)
     private Dictionary<Vector3, bool> tiles = new Dictionary<Vector3, bool>();
     private List<Door> doorList = new List<Door>();
+    private readonly List<BossManager> activeBosses = new List<BossManager>();
     private readonly List<BoxSpawnPoint> pendingBoxPoints = new List<BoxSpawnPoint>();
     private NetworkedWorldEntity roomEntity;
 
@@ -338,6 +339,9 @@ public class Room : MonoBehaviour
         if (roomType == RoomType.RoomBoss)
             GameAudioManager.Instance?.PlayFinalBossBgm();
 
+        if (roomType == RoomType.RoomBoss && TryBeginBossEncounter())
+            return;
+
         EnsureWaveSpawner();
         if (waveSpawner != null)
         {
@@ -388,6 +392,40 @@ public class Room : MonoBehaviour
 
         if (waveSpawner != null)
             waveSpawner.SetWaveData(waveData);
+    }
+
+    private bool TryBeginBossEncounter()
+    {
+        activeBosses.Clear();
+        BossManager[] bosses = GetComponentsInChildren<BossManager>(true);
+        foreach (BossManager boss in bosses)
+        {
+            if (boss == null || boss.IsDead) continue;
+            if (!boss.gameObject.activeInHierarchy)
+                boss.gameObject.SetActive(true);
+            boss.OnDied -= HandleBossDied;
+            boss.OnDied += HandleBossDied;
+            boss.StartFight();
+            activeBosses.Add(boss);
+        }
+
+        return activeBosses.Count > 0;
+    }
+
+    private void HandleBossDied(BossManager boss)
+    {
+        if (boss != null)
+            boss.OnDied -= HandleBossDied;
+
+        activeBosses.Remove(boss);
+        for (int i = activeBosses.Count - 1; i >= 0; i--)
+        {
+            if (activeBosses[i] == null || activeBosses[i].IsDead)
+                activeBosses.RemoveAt(i);
+        }
+
+        if (activeBosses.Count == 0)
+            CompleteEncounter();
     }
 
     private void EnsureRoomEntity()

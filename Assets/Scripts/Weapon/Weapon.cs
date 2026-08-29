@@ -248,6 +248,13 @@ public class Weapon : MonoBehaviour
                 return;
             }
 
+            BossManager boss = hit.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+                boss.TakeDamage(Mathf.Max(0f, damage));
+                return;
+            }
+
             BreakableBox box = hit.GetComponentInParent<BreakableBox>();
             if (box != null)
             {

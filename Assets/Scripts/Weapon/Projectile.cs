@@ -75,6 +75,15 @@ public class Projectile : MonoBehaviour
                 return;
             }
 
+            BossManager boss = hit.collider.GetComponentInParent<BossManager>();
+            if (boss != null)
+            {
+                if (applyLocalDamage)
+                    boss.TakeDamage(damage);
+                Destroy(gameObject);
+                return;
+            }
+
             BreakableBox box = hit.collider.GetComponentInParent<BreakableBox>();
             if (box != null)
             {
