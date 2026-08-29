@@ -81,6 +81,13 @@ public class NetworkButtons : MonoBehaviour
         // Check if we're in the gameplay scene
         if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
         {
+            if (!GameManager.Instance.IsMultiplayer)
+            {
+                Debug.Log("[NetworkButtons] Single-player scene loaded. Spawning offline player.");
+                StartCoroutine(StartOfflineSinglePlayer());
+                return;
+            }
+
             Debug.Log("[NetworkButtons] Game scene loaded. Waiting for NetworkManager...");
             
             // Wait a frame for NetworkManager to be ready
@@ -513,6 +520,60 @@ public class NetworkButtons : MonoBehaviour
     /// <summary>
     /// Extract character name từ ConnectionData
     /// </summary>
+    private System.Collections.IEnumerator StartOfflineSinglePlayer()
+    {
+        isNetworkStarted = false;
+        relayHostConfigured = false;
+        StopEnterGameWhenPlayerReady();
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+            yield return null;
+        }
+
+        yield return null;
+
+        PlayerHealth existingPlayer = FindAnyObjectByType<PlayerHealth>(FindObjectsInactive.Exclude);
+        if (existingPlayer != null)
+        {
+            Debug.Log($"[NetworkButtons] Offline single-player already has player '{existingPlayer.name}'. Entering InGame.");
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
+                GameManager.Instance.ChangeState(GameManager.GameState.InGame);
+            yield break;
+        }
+
+        string selectedCharacter = GetCharacterForNetworkStartup();
+        if (string.IsNullOrEmpty(selectedCharacter))
+        {
+            Debug.LogError("[NetworkButtons] Cannot start offline single-player because selected character is empty.");
+            yield break;
+        }
+
+        CharacterPrefabManager prefabManager = CharacterPrefabManager.Instance;
+        if (prefabManager == null)
+        {
+            Debug.LogError("[NetworkButtons] CharacterPrefabManager not found. Cannot spawn offline single-player.");
+            yield break;
+        }
+
+        GameObject prefab = prefabManager.GetPrefabForCharacter(selectedCharacter);
+        if (prefab == null)
+        {
+            Debug.LogError($"[NetworkButtons] Cannot spawn offline single-player. No prefab for character '{selectedCharacter}'.");
+            yield break;
+        }
+
+        Vector3 position = GetSpawnPosition(0);
+        GameObject playerInstance = Instantiate(prefab, position, Quaternion.identity);
+        playerInstance.name = $"Player_{selectedCharacter}";
+
+        Debug.Log($"[NetworkButtons] Offline single-player spawned '{selectedCharacter}' using prefab '{prefab.name}'.");
+
+        if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameManager.GameState.GameStarting)
+            GameManager.Instance.ChangeState(GameManager.GameState.InGame);
+    }
+
     private string ExtractCharacterFromConnectionData(byte[] data)
     {
         if (data == null || data.Length == 0)
