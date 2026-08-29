@@ -620,6 +620,8 @@ MonoBehaviour:
   - illustration: {fileID: 4457835537561387818, guid: e8b3864d6d0c08548b1be0ce302fb8dd, type: 3}
     dialogueText: '... '
   fadeDuration: 0.6
+  endGameSceneName: EndGame
+  mainMenuSceneName: Main Manager
 --- !u!4 &787824452
 Transform:
   m_ObjectHideFlags: 0
@@ -747,7 +749,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 105}
-  m_SizeDelta: {x: 1500, y: 700}
+  m_SizeDelta: {x: 1350, y: 800}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &1319516365
 CanvasRenderer:

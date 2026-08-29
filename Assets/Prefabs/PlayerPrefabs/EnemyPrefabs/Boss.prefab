@@ -13,6 +13,8 @@ GameObject:
   - component: {fileID: 7105180445354032015}
   - component: {fileID: 4284216039072210565}
   - component: {fileID: 6529284509789690356}
+  - component: {fileID: 2292942998615923622}
+  - component: {fileID: 1550236186557944965}
   m_Layer: 0
   m_Name: Boss
   m_TagString: Boss
@@ -103,7 +105,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: -817630071
-  m_SortingLayer: 7
+  m_SortingLayer: 0
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: 815424164945274260, guid: 8f036acb1ab98664b96faf36f67ca402, type: 3}
@@ -189,3 +191,41 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 3.3333333, y: 2.4583333}
   m_EdgeRadius: 0
+--- !u!114 &2292942998615923622
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7333421241368496453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1550236186557944965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7333421241368496453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7f530a158b5cf44bbe43f591f5541f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkedWorldEntity
+  networkId: 
