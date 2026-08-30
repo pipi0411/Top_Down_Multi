@@ -1,9 +1,11 @@
 using UnityEngine;
 using UnityEngine.Tilemaps;
+using System.Collections;
 using System.Collections.Generic;
 using Random = UnityEngine.Random;
 using System;
 using Unity.Netcode;
+using UnityEngine.SceneManagement;
 
 public enum RoomType
 {
@@ -29,6 +31,16 @@ public class Room : MonoBehaviour
     [HideInInspector]
     [SerializeField] private EnemyWaveSpawner waveSpawner;
 
+    [Header("Reward Chest")]
+    [SerializeField] private GameObject weaponChestPrefab;
+    [SerializeField] private int minRewardChests = 1;
+    [SerializeField] private int maxRewardChests = 2;
+    [SerializeField] private float chestSpawnTilePadding = 1.5f;
+
+    [Header("Boss End Game")]
+    [SerializeField] private string endGameSceneName = "EndGame";
+    [SerializeField] private float bossEndGameDelay = 5f;
+
     [Header("Doors")]
     [SerializeField] private Transform[] posDoorNS;
     [SerializeField] private Transform[] posDoorWE;
@@ -40,7 +52,9 @@ public class Room : MonoBehaviour
     private List<Door> doorList = new List<Door>();
     private readonly List<BossManager> activeBosses = new List<BossManager>();
     private readonly List<BoxSpawnPoint> pendingBoxPoints = new List<BoxSpawnPoint>();
+    private readonly List<WeaponChest> rewardChests = new List<WeaponChest>();
     private NetworkedWorldEntity roomEntity;
+    private Coroutine bossEndGameCoroutine;
 
     public bool CanSpawnBoxes => !NormalRoom();
     public bool HasEnemyWave => IsCombatRoom() && waveData != null;
@@ -51,13 +65,14 @@ public class Room : MonoBehaviour
         EnsureRoomEntity();
         GetTiles();
         CreateDoors();
-        EnsureWaveSpawner();
+        EnsureWaveSpawner(false);
         GenerateRoomUsingTemplate();
 
         if (SaveGameManager.IsRoomCompleted(SaveId))
         {
             RoomCompleted = true;
             OpenDoors();
+            SpawnRewardChestsIfNeeded();
         }
     }
     
@@ -342,10 +357,10 @@ public class Room : MonoBehaviour
         if (roomType == RoomType.RoomBoss && TryBeginBossEncounter())
             return;
 
-        EnsureWaveSpawner();
+        EnsureWaveSpawner(true);
         if (waveSpawner != null)
         {
-            waveSpawner.SetWaveData(waveData);
+            waveSpawner.SetWaveData(GetEncounterWaveData(true));
             waveSpawner.StartWaves(this);
         }
         else
@@ -362,8 +377,13 @@ public class Room : MonoBehaviour
         OpenDoors();
         OnCombatEndedEvent?.Invoke(this);
         SaveGameManager.RecordRoomCompleted(SaveId);
+        SpawnRewardChestsIfNeeded();
+
         if (roomType == RoomType.RoomBoss)
-            GameAudioManager.Instance?.PlayRandomMapBgm();
+        {
+            GameAudioManager.Instance?.PlayWinSong();
+            StartBossEndGameCountdown();
+        }
     }
 
     public void ResetEncounter()
@@ -371,7 +391,7 @@ public class Room : MonoBehaviour
         if (!IsCombatRoom()) return;
 
         RoomCompleted = false;
-        EnsureWaveSpawner();
+        EnsureWaveSpawner(false);
 
         if (waveSpawner != null)
             waveSpawner.ResetWaves();
@@ -380,18 +400,142 @@ public class Room : MonoBehaviour
         OnCombatEndedEvent?.Invoke(this);
     }
 
-    private void EnsureWaveSpawner()
+    private void EnsureWaveSpawner(bool reserveLevelWave)
     {
         if (!IsCombatRoom()) return;
+
+        EnemyWaveData encounterWaveData = GetEncounterWaveData(reserveLevelWave);
 
         if (waveSpawner == null)
             waveSpawner = GetComponent<EnemyWaveSpawner>();
 
-        if (waveSpawner == null && waveData != null)
+        if (waveSpawner == null && (roomType == RoomType.RoomEnemy || encounterWaveData != null))
             waveSpawner = gameObject.AddComponent<EnemyWaveSpawner>();
 
         if (waveSpawner != null)
-            waveSpawner.SetWaveData(waveData);
+            waveSpawner.SetWaveData(encounterWaveData);
+    }
+
+    private EnemyWaveData GetEncounterWaveData(bool reserveLevelWave)
+    {
+        if (roomType == RoomType.RoomEnemy && LevelManager.Instance != null)
+        {
+            EnemyWaveData levelWaveData = reserveLevelWave
+                ? LevelManager.Instance.GetWaveDataForRoom(this)
+                : LevelManager.Instance.GetActiveDungeonWaveData();
+            if (levelWaveData != null)
+                return levelWaveData;
+        }
+
+        return waveData;
+    }
+
+    private void SpawnRewardChestsIfNeeded()
+    {
+        if (roomType != RoomType.RoomEnemy) return;
+        if (rewardChests.Count > 0) return;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
+            return;
+
+        int chestCount = GetRewardChestCount();
+        List<Vector3> positions = PickRewardChestPositions(chestCount);
+        for (int i = 0; i < positions.Count; i++)
+        {
+            string chestId = $"{SaveId}_RewardChest_{i + 1}";
+            SpawnRewardChestLocal(chestId, positions[i]);
+            MultiplayerGameplaySync.BroadcastRewardChestSpawned(this, chestId, positions[i]);
+        }
+    }
+
+    public void ApplyRemoteRewardChestSpawned(string chestId, Vector3 position)
+    {
+        if (string.IsNullOrWhiteSpace(chestId)) return;
+        if (NetworkedWorldEntity.TryFind(chestId, out WeaponChest _)) return;
+
+        SpawnRewardChestLocal(chestId, position);
+    }
+
+    private void SpawnRewardChestLocal(string chestId, Vector3 position)
+    {
+        if (weaponChestPrefab == null) return;
+
+        GameObject chestObject = Instantiate(weaponChestPrefab, position, Quaternion.identity, transform);
+        NetworkedWorldEntity entity = chestObject.GetComponent<NetworkedWorldEntity>();
+        if (entity == null)
+            entity = chestObject.AddComponent<NetworkedWorldEntity>();
+
+        entity.Initialize(chestId);
+
+        WeaponChest chest = chestObject.GetComponent<WeaponChest>();
+        if (chest != null)
+            rewardChests.Add(chest);
+    }
+
+    private int GetRewardChestCount()
+    {
+        int min = Mathf.Clamp(minRewardChests, 0, 2);
+        int max = Mathf.Clamp(maxRewardChests, min, 2);
+        if (max <= min) return min;
+
+        float twoChestChance = 0.35f;
+        if (LevelManager.Instance != null)
+            twoChestChance = Mathf.Clamp01(0.25f + LevelManager.Instance.ActiveDungeonIndex * 0.12f);
+
+        return Random.value <= twoChestChance ? max : min;
+    }
+
+    private List<Vector3> PickRewardChestPositions(int count)
+    {
+        List<Vector3> result = new List<Vector3>();
+        if (count <= 0) return result;
+
+        List<Vector3> candidates = new List<Vector3>();
+        foreach (KeyValuePair<Vector3, bool> tile in tiles)
+        {
+            if (!tile.Value) continue;
+            if (IsTooCloseToDoor(tile.Key)) continue;
+            candidates.Add(tile.Key);
+        }
+
+        if (candidates.Count == 0)
+            candidates.Add(transform.position);
+
+        while (result.Count < count && candidates.Count > 0)
+        {
+            int index = Random.Range(0, candidates.Count);
+            Vector3 position = candidates[index];
+            candidates.RemoveAt(index);
+
+            bool tooCloseToOtherChest = false;
+            foreach (Vector3 existingPosition in result)
+            {
+                if (Vector2.Distance(existingPosition, position) < chestSpawnTilePadding)
+                {
+                    tooCloseToOtherChest = true;
+                    break;
+                }
+            }
+
+            if (tooCloseToOtherChest && candidates.Count > 0)
+                continue;
+
+            result.Add(new Vector3(position.x, position.y, -0.2f));
+        }
+
+        return result;
+    }
+
+    private bool IsTooCloseToDoor(Vector3 position)
+    {
+        foreach (Door door in doorList)
+        {
+            if (door == null) continue;
+            if (Vector2.Distance(position, door.transform.position) < chestSpawnTilePadding)
+                return true;
+        }
+
+        return false;
     }
 
     private bool TryBeginBossEncounter()
@@ -426,6 +570,31 @@ public class Room : MonoBehaviour
 
         if (activeBosses.Count == 0)
             CompleteEncounter();
+    }
+
+    private void StartBossEndGameCountdown()
+    {
+        if (bossEndGameCoroutine != null) return;
+        bossEndGameCoroutine = StartCoroutine(BossEndGameCountdownRoutine());
+    }
+
+    private IEnumerator BossEndGameCountdownRoutine()
+    {
+        yield return new WaitForSeconds(Mathf.Max(0f, bossEndGameDelay));
+
+        if (string.IsNullOrWhiteSpace(endGameSceneName))
+            yield break;
+
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            if (!NetworkManager.Singleton.IsServer)
+                yield break;
+
+            MultiplayerGameplaySync.BroadcastLoadScene(endGameSceneName);
+        }
+
+        if (SceneManager.GetActiveScene().name != endGameSceneName)
+            SceneManager.LoadScene(endGameSceneName);
     }
 
     private void EnsureRoomEntity()

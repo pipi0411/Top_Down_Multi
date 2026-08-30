@@ -20,5 +20,37 @@ MonoBehaviour:
     - {fileID: 6550446182209057907, guid: 9d24661355b38bd48bed2bf90e16cf52, type: 3}
     - {fileID: 2628770328114923572, guid: 9c2f9e7299bc9ba4796ce74413d197ba, type: 3}
     - {fileID: 6243869940527183153, guid: 7f9529421db28c74a8c5bb9705b3361c, type: 3}
+    WaveDataByDungeon:
+    - {fileID: 11400000, guid: 7be8856afc4e3d24c9aefb2a3cfe8604, type: 2}
+    - {fileID: 11400000, guid: 265d6def27d04a3c9afd743705cf1445, type: 2}
+    - {fileID: 11400000, guid: 2140c1a77e6544af9b5a5e243e967e5c, type: 2}
+    - {fileID: 11400000, guid: 99547b8bd8f44e2aa82dd6ddffb95333, type: 2}
+    - {fileID: 11400000, guid: 64b1b25a480c41bca4a977cf0066e9fd, type: 2}
+    WaveSetsByDungeon:
+    - Name: Map1
+      RoomWaves:
+      - {fileID: 11400000, guid: 7be8856afc4e3d24c9aefb2a3cfe8604, type: 2}
+      - {fileID: 11400000, guid: 21b312b3070c4c368193ba4647578c5c, type: 2}
+      - {fileID: 11400000, guid: cf42b452415c4404af238be5cc23e280, type: 2}
+    - Name: Map2
+      RoomWaves:
+      - {fileID: 11400000, guid: 265d6def27d04a3c9afd743705cf1445, type: 2}
+      - {fileID: 11400000, guid: 1f2598155d044af798e1a801956adab8, type: 2}
+      - {fileID: 11400000, guid: 21334023fe6743dc815d0eb94e5b207a, type: 2}
+    - Name: Map3
+      RoomWaves:
+      - {fileID: 11400000, guid: 2140c1a77e6544af9b5a5e243e967e5c, type: 2}
+      - {fileID: 11400000, guid: 4bf3df128331423389ba5952967607b9, type: 2}
+      - {fileID: 11400000, guid: 31bad63cca174e16b431c4d8f3b9b440, type: 2}
+    - Name: Map4
+      RoomWaves:
+      - {fileID: 11400000, guid: 99547b8bd8f44e2aa82dd6ddffb95333, type: 2}
+      - {fileID: 11400000, guid: d573400972db4389a1482cb267adeecf, type: 2}
+      - {fileID: 11400000, guid: 686c9fe998d048efa214f4ae5b6b7f5d, type: 2}
+    - Name: Map5
+      RoomWaves:
+      - {fileID: 11400000, guid: 64b1b25a480c41bca4a977cf0066e9fd, type: 2}
+      - {fileID: 11400000, guid: f42578255c2049f1b3dbe17d12d44846, type: 2}
+      - {fileID: 11400000, guid: 381bbca4fb324bedaa0b8e8da98f08c8, type: 2}
   DoorNS: {fileID: 8761839046180524636, guid: 428c5d727ce32e242b25a7dfcc400546, type: 3}
   DoorWE: {fileID: 414494077919614872, guid: 4f6e00977a31f8e46b48e6bdd4f199c4, type: 3}

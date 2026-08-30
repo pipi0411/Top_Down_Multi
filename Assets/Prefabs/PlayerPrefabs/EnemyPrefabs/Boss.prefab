@@ -105,8 +105,8 @@ SpriteRenderer:
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
   m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: -817630071
-  m_SortingLayer: 0
+  m_SortingLayerID: -705057007
+  m_SortingLayer: 5
   m_SortingOrder: 10
   m_MaskInteraction: 0
   m_Sprite: {fileID: 815424164945274260, guid: 8f036acb1ab98664b96faf36f67ca402, type: 3}
@@ -127,14 +127,14 @@ Rigidbody2D:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7333421241368496453}
-  m_BodyType: 1
+  m_BodyType: 0
   m_Simulated: 1
-  m_UseFullKinematicContacts: 0
+  m_UseFullKinematicContacts: 1
   m_UseAutoMass: 0
   m_Mass: 1
   m_LinearDamping: 0
   m_AngularDamping: 0.05
-  m_GravityScale: 1
+  m_GravityScale: 0
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -204,7 +204,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 2372307369
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -242,19 +242,43 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 44b890049095301448460d5ff0c6775f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossManager
+  ShowTopMostFoldoutHeaderGroup: 1
   animator: {fileID: 7944761083114279536}
   rb: {fileID: 4284216039072210565}
   firePoint: {fileID: 0}
   fireballPrefab: {fileID: 7780844818957235712, guid: ac335685b4b17034cb70d4d376265d06, type: 3}
+  summonPrefabs:
+  - {fileID: 29814264549648042, guid: bef6a482f71c32b48ada81ae21bc6e81, type: 3}
+  - {fileID: 4336388598401004960, guid: 33eb4107298cfa54485b584904a7b28f, type: 3}
+  - {fileID: 29814264549648042, guid: e2bcd6a5539ca9f42a6bbd7ba5701a5a, type: 3}
   maxHealth: 50
   currentHealth: 50
   isInvincible: 1
+  phase2HealthPercent: 0.5
+  phase2MoveMultiplier: 1.25
+  phase2AttackCooldownMultiplier: 0.8
   startFightRange: 12
   preferredRange: 6.5
   minRange: 3.5
-  maxRange: 9
-  moveSpeed: 3.2
-  retreatSpeed: 2.8
+  maxRange: 6
+  moveSpeed: 5
+  retreatSpeed: 3
+  movementBlockMask:
+    serializedVersion: 2
+    m_Bits: 192
+  movementSkin: 0.04
   lastAttackTime: 0
   attackCooldown: 2.2
   fireballDelay: 0.4
+  aoeCooldown: 6
+  aoeFireballCount: 7
+  aoeSpreadAngle: 90
+  aoeDelay: 0.5
+  summonCooldown: 9
+  summonCount: 2
+  summonRadius: 2.2
+  dashCooldown: 7
+  dashSpeed: 8
+  dashDuration: 0.35
+  dashDamage: 3
+  dashHitRadius: 0.8

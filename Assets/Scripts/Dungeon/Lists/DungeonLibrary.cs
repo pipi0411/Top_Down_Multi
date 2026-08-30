@@ -16,4 +16,13 @@ public class Level
 {
     public string Name;
     public GameObject[] Dungeons;
+    public EnemyWaveData[] WaveDataByDungeon;
+    public DungeonWaveSet[] WaveSetsByDungeon;
+}
+
+[Serializable]
+public class DungeonWaveSet
+{
+    public string Name;
+    public EnemyWaveData[] RoomWaves;
 }

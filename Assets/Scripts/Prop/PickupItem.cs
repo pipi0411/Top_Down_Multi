@@ -18,6 +18,8 @@ public class PickupItem : MonoBehaviour
     [SerializeField] PickupType pickupType;
     [SerializeField] float amount = 1f;
     [SerializeField] int coinAmount = 1;
+    [SerializeField] int minCoinAmount = 10;
+    [SerializeField] int maxCoinAmount = 20;
     [SerializeField] bool destroyOnPickup = true;
 
     [Header("Drop Animation")]
@@ -165,20 +167,26 @@ public class PickupItem : MonoBehaviour
                 player.RecoverArmor(amount);
                 break;
             case PickupType.Coin:
-                int gained = Mathf.Max(1, coinAmount);
+                int gained = GetCoinAmount();
                 if (MultiplayerGameplaySync.IsNetworkActive && MultiplayerGameplaySync.IsServer && ownerClientId != ulong.MaxValue)
                 {
-                    if (Unity.Netcode.NetworkManager.Singleton != null
-                        && ownerClientId == Unity.Netcode.NetworkManager.Singleton.LocalClientId)
-                    {
-                        AddCoinsLocal(gained);
-                    }
-                    MultiplayerGameplaySync.SendCoinGain(ownerClientId, gained);
+                    MultiplayerGameplaySync.DistributeCoinGain(ownerClientId, gained);
                 }
                 else
                     AddCoinsLocal(gained);
                 Debug.Log($"Coin collected. Total coins: {Coins}");
                 break;
         }
+    }
+
+    int GetCoinAmount()
+    {
+        int min = Mathf.Max(1, minCoinAmount);
+        int max = Mathf.Max(min, maxCoinAmount);
+
+        if (max > min)
+            return UnityEngine.Random.Range(min, max + 1);
+
+        return Mathf.Max(1, Mathf.Max(coinAmount, min));
     }
 }

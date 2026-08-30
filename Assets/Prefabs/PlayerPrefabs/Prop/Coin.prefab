@@ -156,6 +156,8 @@ MonoBehaviour:
   pickupType: 3
   amount: 1
   coinAmount: 1
+  minCoinAmount: 10
+  maxCoinAmount: 20
   destroyOnPickup: 1
   animateDrop: 1
   popDuration: 0.28

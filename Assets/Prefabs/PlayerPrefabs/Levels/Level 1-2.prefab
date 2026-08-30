@@ -1089,11 +1089,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.89
+      value: -33.7
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 7.31
+      value: 61.41
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1161,6 +1161,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 920831629335792429}
     m_Modifications:
+    - target: {fileID: -660572500726916434, guid: b7eca0aa8050805408342f4b6583f8f7, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 4065588882118265212, guid: b7eca0aa8050805408342f4b6583f8f7, type: 3}
       propertyPath: m_LocalPosition.x
       value: 28.2
@@ -1223,6 +1227,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 920831629335792429}
     m_Modifications:
+    - target: {fileID: -794087229078899532, guid: 4320e8762d4f7f74c9fb6ea750da5bc7, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 1699779451008897407, guid: 4320e8762d4f7f74c9fb6ea750da5bc7, type: 3}
       propertyPath: m_Tiles.Array.size
       value: 168
@@ -1615,6 +1623,10 @@ PrefabInstance:
     - target: {fileID: 7449036129356611205, guid: 25d55935b0477574d9a6ca759f9a04cd, type: 3}
       propertyPath: m_Enabled
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8039435863489860812, guid: 25d55935b0477574d9a6ca759f9a04cd, type: 3}
+      propertyPath: roomType
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

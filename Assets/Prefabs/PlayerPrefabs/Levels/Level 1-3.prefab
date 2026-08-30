@@ -4592,11 +4592,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4.0730577
+      value: -33.5
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6.1398277
+      value: 34.35
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -39191,6 +39191,10 @@ PrefabInstance:
       propertyPath: m_ColliderPaths.Array.data[0].m_ColliderPaths.Array.data[24].Array.data[10].Y
       value: -70000016
       objectReference: {fileID: 0}
+    - target: {fileID: 8008862205514897786, guid: db59870cd280f4d4fb42a50025c70b77, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -41834,6 +41838,10 @@ PrefabInstance:
     - target: {fileID: 5561926403903914444, guid: 0c54f3a716b4cb549992dd1b0723e95d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8721450908773133534, guid: 0c54f3a716b4cb549992dd1b0723e95d, type: 3}
+      propertyPath: roomType
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 8792150703100092192, guid: 0c54f3a716b4cb549992dd1b0723e95d, type: 3}
       propertyPath: m_CompositePaths.m_Paths.Array.data[0].Array.data[0].x
@@ -46672,6 +46680,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7299853232916360071}
     m_Modifications:
+    - target: {fileID: -660572500726916434, guid: b7eca0aa8050805408342f4b6583f8f7, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 861932379885252671, guid: b7eca0aa8050805408342f4b6583f8f7, type: 3}
       propertyPath: m_CompositePaths.m_Paths.Array.data[0].Array.data[0].x
       value: 6.9999704
@@ -51146,6 +51158,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7299853232916360071}
     m_Modifications:
+    - target: {fileID: -5205741003234772623, guid: 2ee31aaeb8e5f2c4c82cc458015f005b, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2794786099112356370, guid: 2ee31aaeb8e5f2c4c82cc458015f005b, type: 3}
       propertyPath: m_Name
       value: Room_2C_NW

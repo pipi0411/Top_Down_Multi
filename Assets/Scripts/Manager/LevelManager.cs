@@ -30,6 +30,8 @@ public class LevelManager : MonoBehaviour
     private int activeDungeonIndex;
     private GameObject currentDungeonGO;
     private int networkEntitySequence;
+    private int activeRoomWaveIndex;
+    private readonly Dictionary<Room, EnemyWaveData> roomWaveAssignments = new Dictionary<Room, EnemyWaveData>();
 
     public int ActiveLevelIndex => activeLevelIndex;
     public int ActiveDungeonIndex => activeDungeonIndex;
@@ -76,8 +78,10 @@ public class LevelManager : MonoBehaviour
 
         currentRoom = null;
         closedRooms.Clear();
+        roomWaveAssignments.Clear();
         boxBudgetInitialized = false;
         networkEntitySequence = 0;
+        activeRoomWaveIndex = 0;
 
         if (!TryInstantiateCurrentDungeon())
             return false;
@@ -127,6 +131,8 @@ public class LevelManager : MonoBehaviour
 
         int mapOrdinal = currentLevelIndex * 1000 + currentDungeonIndex;
         networkEntitySequence = 0;
+        activeRoomWaveIndex = 0;
+        roomWaveAssignments.Clear();
         UnityEngine.Random.InitState(73001 + mapOrdinal);
         activeLevelIndex = currentLevelIndex;
         activeDungeonIndex = currentDungeonIndex;
@@ -151,8 +157,10 @@ public class LevelManager : MonoBehaviour
 
         currentRoom = null;
         closedRooms.Clear();
+        roomWaveAssignments.Clear();
         boxBudgetInitialized = false;
         networkEntitySequence = 0;
+        activeRoomWaveIndex = 0;
         currentLevelIndex = targetLevel;
         currentDungeonIndex = targetDungeon;
 
@@ -243,6 +251,64 @@ public class LevelManager : MonoBehaviour
     {
         NetworkManager manager = NetworkManager.Singleton;
         return manager == null || !manager.IsListening || manager.IsServer;
+    }
+
+    public EnemyWaveData GetActiveDungeonWaveData()
+    {
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null)
+            return null;
+
+        if (activeLevelIndex < 0 || activeLevelIndex >= dungeonLibrary.Levels.Length)
+            return null;
+
+        Level level = dungeonLibrary.Levels[activeLevelIndex];
+        if (level == null || level.WaveDataByDungeon == null)
+            return null;
+
+        if (activeDungeonIndex < 0 || activeDungeonIndex >= level.WaveDataByDungeon.Length)
+            return null;
+
+        return level.WaveDataByDungeon[activeDungeonIndex];
+    }
+
+    public EnemyWaveData GetWaveDataForRoom(Room room)
+    {
+        if (room == null)
+            return GetNextActiveDungeonRoomWaveData();
+
+        if (roomWaveAssignments.TryGetValue(room, out EnemyWaveData assignedWaveData))
+            return assignedWaveData;
+
+        EnemyWaveData waveData = GetNextActiveDungeonRoomWaveData();
+        roomWaveAssignments[room] = waveData;
+        return waveData;
+    }
+
+    private EnemyWaveData GetNextActiveDungeonRoomWaveData()
+    {
+        EnemyWaveData fallbackWaveData = GetActiveDungeonWaveData();
+
+        if (dungeonLibrary == null || dungeonLibrary.Levels == null)
+            return fallbackWaveData;
+
+        if (activeLevelIndex < 0 || activeLevelIndex >= dungeonLibrary.Levels.Length)
+            return fallbackWaveData;
+
+        Level level = dungeonLibrary.Levels[activeLevelIndex];
+        if (level == null || level.WaveSetsByDungeon == null)
+            return fallbackWaveData;
+
+        if (activeDungeonIndex < 0 || activeDungeonIndex >= level.WaveSetsByDungeon.Length)
+            return fallbackWaveData;
+
+        DungeonWaveSet waveSet = level.WaveSetsByDungeon[activeDungeonIndex];
+        if (waveSet == null || waveSet.RoomWaves == null || waveSet.RoomWaves.Length == 0)
+            return fallbackWaveData;
+
+        int waveIndex = Mathf.Clamp(activeRoomWaveIndex, 0, waveSet.RoomWaves.Length - 1);
+        activeRoomWaveIndex++;
+
+        return waveSet.RoomWaves[waveIndex] != null ? waveSet.RoomWaves[waveIndex] : fallbackWaveData;
     }
 
     private bool HasNextDungeon()

@@ -13,6 +13,9 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float dashSpeed = 15f;
     [SerializeField] private float dashTime = 0.2f;
     [SerializeField] private float transperency = 0.5f;
+    [Header("Collision")]
+    [SerializeField] private LayerMask movementBlockMask = (1 << 6) | (1 << 7);
+    [SerializeField] private float movementSkin = 0.03f;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
     private PlayerActions actions;
@@ -22,6 +25,7 @@ public class PlayerMovement : NetworkBehaviour
     private bool isDashing;
     private bool useOfflineControl;
     private PlayerHealth playerHealth;
+    private readonly RaycastHit2D[] movementHits = new RaycastHit2D[8];
     private readonly NetworkVariable<bool> networkFacingLeft = new(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -117,9 +121,33 @@ public class PlayerMovement : NetworkBehaviour
             rb.linearVelocity = Vector2.zero;
             return;
         }
-        rb.MovePosition(rb.position + serverMoveDirection * (currentSpeed * Time.fixedDeltaTime));
+        MoveWithCollision(serverMoveDirection * (currentSpeed * Time.fixedDeltaTime));
         if ((IsOwner || useOfflineControl) && serverMoveDirection.sqrMagnitude > 0.01f)
             GameAudioManager.Instance?.PlayFootstep();
+    }
+
+    private void MoveWithCollision(Vector2 movement)
+    {
+        if (rb == null || movement.sqrMagnitude <= 0.000001f)
+            return;
+
+        Vector2 direction = movement.normalized;
+        float distance = movement.magnitude;
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(movementBlockMask);
+        filter.useTriggers = false;
+
+        int hitCount = rb.Cast(direction, filter, movementHits, distance + movementSkin);
+        float allowedDistance = distance;
+        for (int i = 0; i < hitCount; i++)
+        {
+            RaycastHit2D hit = movementHits[i];
+            if (hit.collider == null || hit.collider.isTrigger) continue;
+            allowedDistance = Mathf.Min(allowedDistance, Mathf.Max(0f, hit.distance - movementSkin));
+        }
+
+        if (allowedDistance > 0f)
+            rb.MovePosition(rb.position + direction * allowedDistance);
     }
     private void Dash()
     {

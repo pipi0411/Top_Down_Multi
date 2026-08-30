@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MultiplayerGameplaySync : MonoBehaviour
 {
@@ -17,6 +18,8 @@ public class MultiplayerGameplaySync : MonoBehaviour
     const string DoorState = "tdm_door_state";
     const string WeaponChestOpenRequest = "tdm_weapon_chest_open_request";
     const string WeaponChestOpenedState = "tdm_weapon_chest_opened_state";
+    const string RewardChestSpawnedState = "tdm_reward_chest_spawned_state";
+    const string LoadSceneState = "tdm_load_scene_state";
 
     static MultiplayerGameplaySync instance;
     NetworkManager registeredManager;
@@ -159,6 +162,30 @@ public class MultiplayerGameplaySync : MonoBehaviour
         NetworkManager.Singleton.CustomMessagingManager.SendNamedMessage(CoinGainState, clientId, writer);
     }
 
+    public static void DistributeCoinGain(ulong collectorClientId, int totalAmount)
+    {
+        if (!IsNetworkActive || !IsServer || totalAmount <= 0) return;
+        Instance.EnsureRegistered();
+
+        NetworkManager manager = NetworkManager.Singleton;
+        if (manager == null || !manager.IsListening) return;
+
+        int playerCount = Mathf.Max(1, manager.ConnectedClientsIds.Count);
+        int baseShare = Mathf.Max(1, totalAmount / playerCount);
+        int remainder = Mathf.Max(0, totalAmount - baseShare * playerCount);
+
+        foreach (ulong clientId in manager.ConnectedClientsIds)
+        {
+            int share = baseShare + (clientId == collectorClientId ? remainder : 0);
+            if (share <= 0) continue;
+
+            if (clientId == manager.LocalClientId)
+                PickupItem.AddCoinsLocal(share);
+            else
+                SendCoinGain(clientId, share);
+        }
+    }
+
     public static void BroadcastEnemyTransform(EnemyStateMachine enemy, Vector3 position, bool facingLeft, bool moving)
     {
         if (!IsNetworkActive || !IsServer || enemy == null) return;
@@ -233,6 +260,28 @@ public class MultiplayerGameplaySync : MonoBehaviour
         BroadcastToClientsOnly(WeaponChestOpenedState, writer);
     }
 
+    public static void BroadcastRewardChestSpawned(Room room, string chestId, Vector3 position)
+    {
+        if (!IsNetworkActive || !IsServer || room == null || string.IsNullOrWhiteSpace(chestId)) return;
+        Instance.EnsureRegistered();
+        if (!TryGetId(room, out string roomId)) return;
+
+        using FastBufferWriter writer = new FastBufferWriter(512, Allocator.Temp);
+        writer.WriteValueSafe(roomId);
+        writer.WriteValueSafe(chestId);
+        writer.WriteValueSafe(position);
+        BroadcastToClientsOnly(RewardChestSpawnedState, writer);
+    }
+
+    public static void BroadcastLoadScene(string sceneName)
+    {
+        if (!IsNetworkActive || !IsServer || string.IsNullOrWhiteSpace(sceneName)) return;
+        Instance.EnsureRegistered();
+        using FastBufferWriter writer = new FastBufferWriter(256, Allocator.Temp);
+        writer.WriteValueSafe(sceneName);
+        BroadcastToClientsOnly(LoadSceneState, writer);
+    }
+
     public static void Ensure()
     {
         _ = Instance;
@@ -264,6 +313,8 @@ public class MultiplayerGameplaySync : MonoBehaviour
         messages.RegisterNamedMessageHandler(DoorState, HandleDoorState);
         messages.RegisterNamedMessageHandler(WeaponChestOpenRequest, HandleWeaponChestOpenRequest);
         messages.RegisterNamedMessageHandler(WeaponChestOpenedState, HandleWeaponChestOpenedState);
+        messages.RegisterNamedMessageHandler(RewardChestSpawnedState, HandleRewardChestSpawnedState);
+        messages.RegisterNamedMessageHandler(LoadSceneState, HandleLoadSceneState);
     }
 
     void OnDestroy()
@@ -289,6 +340,8 @@ public class MultiplayerGameplaySync : MonoBehaviour
             messages.UnregisterNamedMessageHandler(DoorState);
             messages.UnregisterNamedMessageHandler(WeaponChestOpenRequest);
             messages.UnregisterNamedMessageHandler(WeaponChestOpenedState);
+            messages.UnregisterNamedMessageHandler(RewardChestSpawnedState);
+            messages.UnregisterNamedMessageHandler(LoadSceneState);
         }
         registeredManager = null;
     }
@@ -417,12 +470,31 @@ public class MultiplayerGameplaySync : MonoBehaviour
             chest.ApplyRemoteOpened(weaponIndex, dropPosition);
     }
 
+    void HandleRewardChestSpawnedState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out string roomId);
+        reader.ReadValueSafe(out string chestId);
+        reader.ReadValueSafe(out Vector3 position);
+        if (NetworkedWorldEntity.TryFind(roomId, out Room room))
+            room.ApplyRemoteRewardChestSpawned(chestId, position);
+    }
+
     static PlayerHealth FindPlayer(ulong ownerClientId)
     {
         foreach (PlayerHealth player in FindObjectsByType<PlayerHealth>(FindObjectsInactive.Exclude))
             if (player != null && player.IsSpawned && player.OwnerClientId == ownerClientId)
                 return player;
         return null;
+    }
+
+    void HandleLoadSceneState(ulong senderClientId, FastBufferReader reader)
+    {
+        if (IsServer) return;
+        reader.ReadValueSafe(out string sceneName);
+        if (string.IsNullOrWhiteSpace(sceneName)) return;
+        if (SceneManager.GetActiveScene().name == sceneName) return;
+        SceneManager.LoadScene(sceneName);
     }
 
     static void Broadcast(string messageName, FastBufferWriter writer)

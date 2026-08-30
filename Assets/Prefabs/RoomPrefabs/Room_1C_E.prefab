@@ -5241,6 +5241,12 @@ MonoBehaviour:
   useDebug: 0
   roomType: 0
   extraTilemap: {fileID: 1176812856141918796}
+  waveData: {fileID: 0}
+  waveSpawner: {fileID: 0}
+  weaponChestPrefab: {fileID: 7061442224974337571, guid: c1f7099558dc3614e9e760aefd0b6db2, type: 3}
+  minRewardChests: 1
+  maxRewardChests: 2
+  chestSpawnTilePadding: 1.5
   posDoorNS: []
   posDoorWE:
   - {fileID: 2493409338210685800}

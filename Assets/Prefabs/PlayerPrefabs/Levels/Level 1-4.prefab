@@ -223,6 +223,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8721450908773133534, guid: 0c54f3a716b4cb549992dd1b0723e95d, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -375,6 +379,10 @@ PrefabInstance:
     - target: {fileID: 5067413096786595668, guid: f2ae448fdaca9b546a03ec421d15b02f, type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6961974241886035711, guid: f2ae448fdaca9b546a03ec421d15b02f, type: 3}
+      propertyPath: roomType
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 7562041952052218308, guid: f2ae448fdaca9b546a03ec421d15b02f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1003,6 +1011,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7919829312890724586}
     m_Modifications:
+    - target: {fileID: -5205741003234772623, guid: 2ee31aaeb8e5f2c4c82cc458015f005b, type: 3}
+      propertyPath: roomType
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2794786099112356370, guid: 2ee31aaeb8e5f2c4c82cc458015f005b, type: 3}
       propertyPath: m_Name
       value: Room_2C_NW
@@ -1112,6 +1124,10 @@ PrefabInstance:
     - target: {fileID: 5911968580559345039, guid: 25d55935b0477574d9a6ca759f9a04cd, type: 3}
       propertyPath: m_Name
       value: Room_3C_SEW
+      objectReference: {fileID: 0}
+    - target: {fileID: 8039435863489860812, guid: 25d55935b0477574d9a6ca759f9a04cd, type: 3}
+      propertyPath: roomType
+      value: 2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -1910,11 +1926,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2.45
+      value: -54.19
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 7.4
+      value: 34.49
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.z
