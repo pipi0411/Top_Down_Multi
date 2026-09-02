@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 public class GameAudioManager : MonoBehaviour
@@ -38,6 +39,7 @@ public class GameAudioManager : MonoBehaviour
     float nextWeaponSfxTime;
     AudioClip lastMapBgm;
     string currentMusicName;
+    bool hasUserAudioGesture;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void Bootstrap()
@@ -84,6 +86,14 @@ public class GameAudioManager : MonoBehaviour
     void Start()
     {
         AutoPlayForScene(SceneManager.GetActiveScene().name);
+    }
+
+    void Update()
+    {
+        if (!hasUserAudioGesture && HasAudioUnlockInput())
+            hasUserAudioGesture = true;
+
+        RetryBlockedWebGLMusic();
     }
 
     void OnDestroy()
@@ -258,6 +268,41 @@ public class GameAudioManager : MonoBehaviour
         musicSource.loop = loop;
         musicSource.volume = musicVolume;
         musicSource.Play();
+    }
+
+    void RetryBlockedWebGLMusic()
+    {
+        if (musicSource == null || musicSource.clip == null || musicSource.isPlaying)
+            return;
+
+        if (!Application.isFocused)
+            return;
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        if (!hasUserAudioGesture)
+            return;
+#endif
+
+        musicSource.Play();
+    }
+
+    bool HasAudioUnlockInput()
+    {
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard != null && keyboard.anyKey.wasPressedThisFrame)
+            return true;
+
+        Mouse mouse = Mouse.current;
+        if (mouse != null && (mouse.leftButton.wasPressedThisFrame
+                              || mouse.rightButton.wasPressedThisFrame
+                              || mouse.middleButton.wasPressedThisFrame))
+            return true;
+
+        Touchscreen touchscreen = Touchscreen.current;
+        if (touchscreen != null && touchscreen.primaryTouch.press.wasPressedThisFrame)
+            return true;
+
+        return false;
     }
 
     void PlaySfx(AudioClip clip, float volumeScale = 1f, Vector3? worldPosition = null)

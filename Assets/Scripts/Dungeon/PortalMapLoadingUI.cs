@@ -12,7 +12,9 @@ public class PortalMapLoadingUI : MonoBehaviour
 
     private Canvas canvas;
     private CanvasGroup canvasGroup;
+    private Image blackoutImage;
     private Image backgroundImage;
+    private AspectRatioFitter backgroundFitter;
     private TextMeshProUGUI loadingText;
 
     public static PortalMapLoadingUI Instance
@@ -108,6 +110,18 @@ public class PortalMapLoadingUI : MonoBehaviour
         canvasGroup = canvasObject.AddComponent<CanvasGroup>();
         canvasObject.AddComponent<GraphicRaycaster>();
 
+        GameObject blackoutObject = new GameObject("Blackout");
+        blackoutObject.transform.SetParent(canvasObject.transform, false);
+        blackoutImage = blackoutObject.AddComponent<Image>();
+        blackoutImage.color = Color.black;
+        blackoutImage.raycastTarget = true;
+
+        RectTransform blackoutRect = blackoutObject.GetComponent<RectTransform>();
+        blackoutRect.anchorMin = Vector2.zero;
+        blackoutRect.anchorMax = Vector2.one;
+        blackoutRect.offsetMin = Vector2.zero;
+        blackoutRect.offsetMax = Vector2.zero;
+
         GameObject imageObject = new GameObject("LoadNextMapImage");
         imageObject.transform.SetParent(canvasObject.transform, false);
         backgroundImage = imageObject.AddComponent<Image>();
@@ -115,6 +129,14 @@ public class PortalMapLoadingUI : MonoBehaviour
         backgroundImage.sprite = LoadLoadingSprite();
         backgroundImage.preserveAspect = true;
         backgroundImage.raycastTarget = true;
+        backgroundFitter = imageObject.AddComponent<AspectRatioFitter>();
+        backgroundFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        if (backgroundImage.sprite != null)
+        {
+            Rect spriteRect = backgroundImage.sprite.rect;
+            if (spriteRect.height > 0f)
+                backgroundFitter.aspectRatio = spriteRect.width / spriteRect.height;
+        }
 
         RectTransform imageRect = imageObject.GetComponent<RectTransform>();
         imageRect.anchorMin = Vector2.zero;

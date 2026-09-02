@@ -72,7 +72,8 @@ public class ModeSelectUIManager : MonoBehaviour
 
     private void OnSinglePlayerClicked()
     {
-        Debug.Log("Single Player Mode Selected");
+        Debug.Log("Single Player Mode Selected - Starting a fresh run");
+        SaveGameManager.ClearSingleRunSave();
         GameManager.Instance.SetMultiplayerMode(false);
         ShowCharacterSelectPanel();
         GameManager.Instance.ChangeState(GameManager.GameState.CharacterSelect);

@@ -114,10 +114,18 @@ public class SaveGameManager : MonoBehaviour
 
     public static void ClearSingleRunSave()
     {
+        Instance.loadedSave = null;
+        Instance.pendingContinue = false;
+        Instance.applyingSave = false;
+        Instance.autoSaveSinglePlayer = false;
+        Instance.nextSaveAllowedTime = 0f;
+
         if (File.Exists(SavePath))
             File.Delete(SavePath);
         if (AuthClient.Instance != null && !string.IsNullOrEmpty(AuthClient.Instance.GetStoredToken()))
             SaveClient.Instance.DeleteCloudSave();
+
+        Debug.Log("[Save] Cleared single-player run save.");
     }
 
     public static bool IsBoxBroken(string id)

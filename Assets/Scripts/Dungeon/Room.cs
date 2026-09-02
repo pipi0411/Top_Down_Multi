@@ -37,6 +37,10 @@ public class Room : MonoBehaviour
     [SerializeField] private int maxRewardChests = 2;
     [SerializeField] private float chestSpawnTilePadding = 1.5f;
 
+    [Header("Boss")]
+    [SerializeField] private GameObject bossPrefab;
+    [SerializeField] private Transform bossSpawnPoint;
+
     [Header("Boss End Game")]
     [SerializeField] private string endGameSceneName = "EndGame";
     [SerializeField] private float bossEndGameDelay = 5f;
@@ -55,6 +59,7 @@ public class Room : MonoBehaviour
     private readonly List<WeaponChest> rewardChests = new List<WeaponChest>();
     private NetworkedWorldEntity roomEntity;
     private Coroutine bossEndGameCoroutine;
+    private bool encounterStarted;
 
     public bool CanSpawnBoxes => !NormalRoom();
     public bool HasEnemyWave => IsCombatRoom() && waveData != null;
@@ -348,14 +353,23 @@ public class Room : MonoBehaviour
 
     public void BeginEncounter()
     {
-        if (RoomCompleted || !IsCombatRoom()) return;
+        if (RoomCompleted || !IsCombatRoom() || encounterStarted) return;
 
+        encounterStarted = true;
         OnCombatStartedEvent?.Invoke(this);
         if (roomType == RoomType.RoomBoss)
+        {
             GameAudioManager.Instance?.PlayFinalBossBgm();
 
-        if (roomType == RoomType.RoomBoss && TryBeginBossEncounter())
+            if (TryBeginBossEncounter())
+                return;
+
+            Debug.LogWarning($"[Room] Boss room '{name}' started but no BossManager/bossPrefab was available. Encounter will not auto-complete.");
+            encounterStarted = false;
+            OpenDoors();
+            OnCombatEndedEvent?.Invoke(this);
             return;
+        }
 
         EnsureWaveSpawner(true);
         if (waveSpawner != null)
@@ -391,6 +405,7 @@ public class Room : MonoBehaviour
         if (!IsCombatRoom()) return;
 
         RoomCompleted = false;
+        encounterStarted = false;
         EnsureWaveSpawner(false);
 
         if (waveSpawner != null)
@@ -432,7 +447,7 @@ public class Room : MonoBehaviour
 
     private void SpawnRewardChestsIfNeeded()
     {
-        if (roomType != RoomType.RoomEnemy) return;
+        if (roomType != RoomType.RoomEnemy && roomType != RoomType.RoomBoss) return;
         if (rewardChests.Count > 0) return;
 
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !NetworkManager.Singleton.IsServer)
@@ -541,19 +556,74 @@ public class Room : MonoBehaviour
     private bool TryBeginBossEncounter()
     {
         activeBosses.Clear();
+
+        BossManager existingBoss = GetComponentInChildren<BossManager>(true);
+        BossManager spawnedBoss = null;
+        if (existingBoss == null)
+            spawnedBoss = SpawnBossForEncounter();
+
+        RegisterBossForEncounter(spawnedBoss);
+
         BossManager[] bosses = GetComponentsInChildren<BossManager>(true);
         foreach (BossManager boss in bosses)
         {
-            if (boss == null || boss.IsDead) continue;
-            if (!boss.gameObject.activeInHierarchy)
-                boss.gameObject.SetActive(true);
-            boss.OnDied -= HandleBossDied;
-            boss.OnDied += HandleBossDied;
-            boss.StartFight();
-            activeBosses.Add(boss);
+            RegisterBossForEncounter(boss);
         }
 
         return activeBosses.Count > 0;
+    }
+
+    private BossManager SpawnBossForEncounter()
+    {
+        if (bossPrefab == null) return null;
+
+        bool networkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        if (networkActive && !NetworkManager.Singleton.IsServer)
+            return null;
+
+        Vector3 spawnPosition = GetBossSpawnPosition();
+        GameObject bossObject = Instantiate(bossPrefab, spawnPosition, Quaternion.identity);
+        BossManager boss = bossObject.GetComponentInChildren<BossManager>(true);
+
+        NetworkObject networkObject = bossObject.GetComponent<NetworkObject>();
+        if (networkObject != null && networkActive && NetworkManager.Singleton.IsServer && !networkObject.IsSpawned)
+        {
+            networkObject.Spawn(true);
+        }
+        else
+        {
+            bossObject.transform.SetParent(transform, true);
+        }
+
+        return boss;
+    }
+
+    private void RegisterBossForEncounter(BossManager boss)
+    {
+        if (boss == null || boss.IsDead || activeBosses.Contains(boss)) return;
+
+        if (!boss.gameObject.activeInHierarchy)
+            boss.gameObject.SetActive(true);
+
+        boss.OnDied -= HandleBossDied;
+        boss.OnDied += HandleBossDied;
+        boss.StartFight();
+        activeBosses.Add(boss);
+    }
+
+    private Vector3 GetBossSpawnPosition()
+    {
+        if (bossSpawnPoint != null)
+            return bossSpawnPoint.position;
+
+        Collider2D roomCollider = GetComponent<Collider2D>();
+        if (roomCollider != null)
+            return new Vector3(roomCollider.bounds.center.x, roomCollider.bounds.center.y, transform.position.z);
+
+        if (extraTilemap != null)
+            return extraTilemap.localBounds.center + extraTilemap.transform.position;
+
+        return transform.position;
     }
 
     private void HandleBossDied(BossManager boss)

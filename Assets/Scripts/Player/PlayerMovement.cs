@@ -18,6 +18,7 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float movementSkin = 0.03f;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;
+    private Collider2D bodyCollider;
     private PlayerActions actions;
     private Vector2 moveDirection;
     private Vector2 serverMoveDirection;
@@ -25,7 +26,7 @@ public class PlayerMovement : NetworkBehaviour
     private bool isDashing;
     private bool useOfflineControl;
     private PlayerHealth playerHealth;
-    private readonly RaycastHit2D[] movementHits = new RaycastHit2D[8];
+    private readonly Collider2D[] overlapHits = new Collider2D[12];
     private readonly NetworkVariable<bool> networkFacingLeft = new(
         false,
         NetworkVariableReadPermission.Everyone,
@@ -35,8 +36,10 @@ public class PlayerMovement : NetworkBehaviour
     {
         actions = new PlayerActions();
         rb = GetComponent<Rigidbody2D>();
+        bodyCollider = GetComponent<Collider2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         playerHealth = GetComponent<PlayerHealth>();
+        NormalizeMovementBlockMask();
     }
 
     public override void OnNetworkSpawn()
@@ -131,23 +134,95 @@ public class PlayerMovement : NetworkBehaviour
         if (rb == null || movement.sqrMagnitude <= 0.000001f)
             return;
 
-        Vector2 direction = movement.normalized;
-        float distance = movement.magnitude;
+        ResolveBlockingOverlaps();
+
+        Vector2 position = rb.position;
+        Vector2 nextPosition = position;
+
+        Vector2 horizontal = new Vector2(movement.x, 0f);
+        if (Mathf.Abs(horizontal.x) > 0.000001f && CanOccupyPosition(position + horizontal))
+            nextPosition += horizontal;
+
+        Vector2 vertical = new Vector2(0f, movement.y);
+        if (Mathf.Abs(vertical.y) > 0.000001f && CanOccupyPosition(nextPosition + vertical))
+            nextPosition += vertical;
+
+        if ((nextPosition - position).sqrMagnitude > 0.000001f)
+            rb.MovePosition(nextPosition);
+
+        ResolveBlockingOverlaps();
+    }
+
+    private bool CanOccupyPosition(Vector2 targetBodyPosition)
+    {
+        if (bodyCollider == null)
+            return true;
+
+        Bounds bounds = bodyCollider.bounds;
+        Vector2 currentBodyPosition = rb != null ? rb.position : (Vector2)transform.position;
+        Vector2 offset = targetBodyPosition - currentBodyPosition;
+        Vector2 center = (Vector2)bounds.center + offset;
+        Vector2 size = new Vector2(
+            Mathf.Max(0.01f, bounds.size.x - movementSkin * 2f),
+            Mathf.Max(0.01f, bounds.size.y - movementSkin * 2f));
+
         ContactFilter2D filter = new ContactFilter2D();
         filter.SetLayerMask(movementBlockMask);
         filter.useTriggers = false;
 
-        int hitCount = rb.Cast(direction, filter, movementHits, distance + movementSkin);
-        float allowedDistance = distance;
+        int hitCount = Physics2D.OverlapBox(center, size, 0f, filter, overlapHits);
         for (int i = 0; i < hitCount; i++)
         {
-            RaycastHit2D hit = movementHits[i];
-            if (hit.collider == null || hit.collider.isTrigger) continue;
-            allowedDistance = Mathf.Min(allowedDistance, Mathf.Max(0f, hit.distance - movementSkin));
+            Collider2D hit = overlapHits[i];
+            overlapHits[i] = null;
+
+            if (hit == null || hit == bodyCollider || hit.isTrigger || hit.transform.IsChildOf(transform))
+                continue;
+
+            return false;
         }
 
-        if (allowedDistance > 0f)
-            rb.MovePosition(rb.position + direction * allowedDistance);
+        return true;
+    }
+
+    private void ResolveBlockingOverlaps()
+    {
+        if (rb == null || bodyCollider == null)
+            return;
+
+        ContactFilter2D filter = new ContactFilter2D();
+        filter.SetLayerMask(movementBlockMask);
+        filter.useTriggers = false;
+
+        int overlapCount = bodyCollider.Overlap(filter, overlapHits);
+        Vector2 correction = Vector2.zero;
+
+        for (int i = 0; i < overlapCount; i++)
+        {
+            Collider2D other = overlapHits[i];
+            overlapHits[i] = null;
+
+            if (other == null || other == bodyCollider || other.isTrigger)
+                continue;
+
+            ColliderDistance2D distance = bodyCollider.Distance(other);
+            if (!distance.isOverlapped)
+                continue;
+
+            correction += distance.normal * (distance.distance - movementSkin);
+        }
+
+        if (correction.sqrMagnitude > 0.000001f)
+            rb.position += correction;
+    }
+
+    private void NormalizeMovementBlockMask()
+    {
+        int mask = movementBlockMask.value;
+        mask |= 1 << LayerMask.NameToLayer("Default");
+        mask |= 1 << LayerMask.NameToLayer("Room");
+        mask |= 1 << LayerMask.NameToLayer("Walls");
+        movementBlockMask = mask;
     }
     private void Dash()
     {

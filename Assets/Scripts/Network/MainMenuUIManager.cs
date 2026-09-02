@@ -133,7 +133,9 @@ public class MainMenuUIManager : MonoBehaviour
 
     private void OnStartClicked()
     {
-        Debug.Log("Starting game - Going to Mode Select");
+        Debug.Log("Starting new game - Clearing single-player save and going to Mode Select");
+        SaveGameManager.ClearSingleRunSave();
+        RefreshContinueButton();
         GameManager.Instance.ChangeState(GameManager.GameState.ModeSelect);
     }
 

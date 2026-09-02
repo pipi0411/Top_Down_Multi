@@ -21,6 +21,7 @@ public class PlayerWeaponController : NetworkBehaviour
     readonly NetworkVariable<float> networkAimAngle = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly NetworkVariable<int> networkSelectedSlotIndex = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     readonly Weapon[] slotWeapons = new Weapon[2];
+    readonly int[] slotMagazineAmmo = { -1, -1 };
     float lastSentAimAngle;
     int selectedSlotIndex;
     int weaponDropSequence;
@@ -125,6 +126,7 @@ public class PlayerWeaponController : NetworkBehaviour
         Weapon oldWeapon = slotWeapons[slotIndex];
         if (oldWeapon == pickedWeapon) return;
 
+        SaveEquippedSlotAmmo();
         if (oldWeapon != null)
             DropWeapon(oldWeapon, slotIndex, transform.position + GetDropDirection() * dropDistance, false, CreateDropId(slotIndex));
 
@@ -135,6 +137,7 @@ public class PlayerWeaponController : NetworkBehaviour
         ConfigureWeaponRendering(pickedWeapon.gameObject);
 
         slotWeapons[slotIndex] = pickedWeapon;
+        slotMagazineAmmo[slotIndex] = -1;
         selectedSlotIndex = slotIndex;
         EquipSlot(slotIndex);
         SaveGameManager.AutoSave("Weapon picked up");
@@ -167,6 +170,9 @@ public class PlayerWeaponController : NetworkBehaviour
             RebuildSlotAssignmentsFromChildren();
 
         slotIndex = Mathf.Clamp(slotIndex, 0, slotWeapons.Length - 1);
+        if (slotIndex != selectedSlotIndex)
+            SaveEquippedSlotAmmo();
+
         NormalizeWeaponSlots();
         if (slotWeapons[slotIndex] == null)
         {
@@ -195,7 +201,11 @@ public class PlayerWeaponController : NetworkBehaviour
 
         PlayerHealth playerStats = GetComponent<PlayerHealth>();
         if (playerStats != null && EquippedWeapon != null)
-            playerStats.ConfigureWeapon(EquippedWeapon.WeaponData);
+        {
+            int ammoOverride = GetAmmoForSlot(slotIndex, EquippedWeapon);
+            playerStats.ConfigureWeapon(EquippedWeapon.WeaponData, ammoOverride);
+            slotMagazineAmmo[slotIndex] = playerStats.CurrentAmmo;
+        }
 
         if (updateNetwork && IsSpawned && IsOwner)
             networkSelectedSlotIndex.Value = selectedSlotIndex;
@@ -258,10 +268,16 @@ public class PlayerWeaponController : NetworkBehaviour
             GameObject meleePrefab = prefabResolver(meleeWeaponId);
 
             if (gunPrefab != null)
+            {
                 slotWeapons[0] = CreateWeaponForSlot(gunPrefab, socket);
+                slotMagazineAmmo[0] = -1;
+            }
 
             if (meleePrefab != null)
+            {
                 slotWeapons[1] = CreateWeaponForSlot(meleePrefab, socket);
+                slotMagazineAmmo[1] = -1;
+            }
 
             NormalizeWeaponSlots();
             int slot = Mathf.Clamp(savedSelectedSlotIndex, 0, slotWeapons.Length - 1);
@@ -295,7 +311,10 @@ public class PlayerWeaponController : NetworkBehaviour
         }
 
         for (int i = 0; i < slotWeapons.Length; i++)
+        {
             slotWeapons[i] = null;
+            slotMagazineAmmo[i] = -1;
+        }
 
         EquippedWeapon = null;
     }
@@ -305,7 +324,10 @@ public class PlayerWeaponController : NetworkBehaviour
         if (weapon == null) return;
 
         if (clearSlot && slotIndex >= 0 && slotIndex < slotWeapons.Length && slotWeapons[slotIndex] == weapon)
+        {
             slotWeapons[slotIndex] = null;
+            slotMagazineAmmo[slotIndex] = -1;
+        }
 
         weapon.gameObject.SetActive(true);
         weapon.transform.SetParent(null, true);
@@ -533,12 +555,16 @@ public class PlayerWeaponController : NetworkBehaviour
         {
             slotWeapons[1] = first;
             slotWeapons[0] = null;
+            slotMagazineAmmo[1] = slotMagazineAmmo[0];
+            slotMagazineAmmo[0] = -1;
         }
 
         if (second != null && GetSlotIndexForWeapon(second) == 0 && first == null)
         {
             slotWeapons[0] = second;
             slotWeapons[1] = null;
+            slotMagazineAmmo[0] = slotMagazineAmmo[1];
+            slotMagazineAmmo[1] = -1;
         }
 
         if (slotWeapons[0] != null && slotWeapons[1] != null
@@ -546,6 +572,7 @@ public class PlayerWeaponController : NetworkBehaviour
             && GetSlotIndexForWeapon(slotWeapons[1]) == 0)
         {
             (slotWeapons[0], slotWeapons[1]) = (slotWeapons[1], slotWeapons[0]);
+            (slotMagazineAmmo[0], slotMagazineAmmo[1]) = (slotMagazineAmmo[1], slotMagazineAmmo[0]);
         }
     }
 
@@ -565,6 +592,7 @@ public class PlayerWeaponController : NetworkBehaviour
 
         Transform socket = GetOrCreateWeaponSocket();
         slotWeapons[slotIndex] = CreateWeaponForSlot(prefab, socket);
+        slotMagazineAmmo[slotIndex] = -1;
         if (slotWeapons[slotIndex] != null)
             slotWeapons[slotIndex].gameObject.SetActive(slotIndex == selectedSlotIndex);
     }
@@ -664,7 +692,38 @@ public class PlayerWeaponController : NetworkBehaviour
         PrepareWeaponForEquip(pickedWeapon);
         ConfigureWeaponRendering(pickedWeapon.gameObject);
         slotWeapons[slotIndex] = pickedWeapon;
+        slotMagazineAmmo[slotIndex] = -1;
         EquipSlot(slotIndex, false);
+    }
+
+    void SaveEquippedSlotAmmo()
+    {
+        if (selectedSlotIndex < 0 || selectedSlotIndex >= slotWeapons.Length)
+            return;
+
+        Weapon weapon = slotWeapons[selectedSlotIndex];
+        if (weapon == null || weapon.IsMelee)
+            return;
+
+        PlayerHealth playerStats = GetComponent<PlayerHealth>();
+        if (playerStats == null || !playerStats.CurrentWeaponUsesAmmo)
+            return;
+
+        slotMagazineAmmo[selectedSlotIndex] = playerStats.CurrentAmmo;
+    }
+
+    int GetAmmoForSlot(int slotIndex, Weapon weapon)
+    {
+        if (weapon == null || weapon.IsMelee)
+            return 0;
+
+        if (slotIndex < 0 || slotIndex >= slotMagazineAmmo.Length)
+            return -1;
+
+        if (slotMagazineAmmo[slotIndex] >= 0)
+            return slotMagazineAmmo[slotIndex];
+
+        return weapon.WeaponData != null ? Mathf.Max(1, weapon.WeaponData.MagazineSize) : -1;
     }
 
     public void SubmitNetworkFire(Vector2 origin, Vector2 direction, float damage, float range, float hitRadius, float speed, float lifetime)

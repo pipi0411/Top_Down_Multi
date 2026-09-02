@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 
 public class PlayerHealth : NetworkBehaviour
 {
+    const int FloorSortingLayerId = 673585699;
     const int WallsSortingLayerId = unchecked((int)2393433307u);
     static float nextServerPortalRequestTime;
     [SerializeField] PlayerConfig playerConfig;
@@ -207,18 +208,23 @@ public class PlayerHealth : NetworkBehaviour
         return true;
     }
 
-    public void ConfigureWeapon(ItemWeapon weaponData)
+    public void ConfigureWeapon(ItemWeapon weaponData, int magazineAmmoOverride = -1)
     {
         if (weaponData == null) return;
 
+        int previousAmmo = CurrentAmmo;
         currentWeaponUsesAmmo = weaponData.Type != WeaponType.Melee;
         isReloading = false;
         magazineSize = currentWeaponUsesAmmo ? Mathf.Max(1, weaponData.MagazineSize) : 0;
         reloadDuration = Mathf.Max(0.1f, weaponData.ReloadDuration);
-        offlineMagazineAmmo = currentWeaponUsesAmmo ? magazineSize : 0;
+        int targetAmmo = currentWeaponUsesAmmo
+            ? Mathf.Clamp(magazineAmmoOverride >= 0 ? magazineAmmoOverride : previousAmmo, 0, magazineSize)
+            : 0;
+
+        offlineMagazineAmmo = targetAmmo;
 
         if (IsSpawned && IsOwner)
-            networkMagazineAmmo.Value = currentWeaponUsesAmmo ? magazineSize : 0;
+            networkMagazineAmmo.Value = targetAmmo;
     }
 
     public bool TryStartReload()
@@ -451,11 +457,16 @@ public class PlayerHealth : NetworkBehaviour
     {
         Renderer[] renderers = collider.GetComponentsInChildren<Renderer>();
         foreach (Renderer hitRenderer in renderers)
+        {
+            if (hitRenderer.sortingLayerID == FloorSortingLayerId) return false;
             if (hitRenderer.sortingLayerID == WallsSortingLayerId) return true;
+        }
 
         Renderer ownRenderer = collider.GetComponent<Renderer>();
+        if (ownRenderer != null && ownRenderer.sortingLayerID == FloorSortingLayerId) return false;
         if (ownRenderer != null) return ownRenderer.sortingLayerID == WallsSortingLayerId;
         Renderer parentRenderer = collider.GetComponentInParent<Renderer>();
+        if (parentRenderer != null && parentRenderer.sortingLayerID == FloorSortingLayerId) return false;
         return parentRenderer != null && parentRenderer.sortingLayerID == WallsSortingLayerId;
     }
 
