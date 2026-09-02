@@ -291,10 +291,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 9017073248594050883, guid: c123d3c92120c4449bcac8ba8bc86612, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2867069894533279885}
+    m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c123d3c92120c4449bcac8ba8bc86612, type: 3}
 --- !u!4 &8142999923728213188 stripped
@@ -1910,7 +1907,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 8142999923728213188}
+    m_TransformParent: {fileID: 7343706945848141587}
     m_Modifications:
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalScale.x
@@ -1926,11 +1923,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -54.19
+      value: -2.2147255
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 34.49
+      value: 7.5096283
       objectReference: {fileID: 0}
     - target: {fileID: 1808931498323665728, guid: 92998a7507a2a0c47af5e06e66a8a75f, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2168,7 +2165,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 69515566255469948, guid: b83d6ebf2b8587b4da5c3cfd6c9f4d0e, type: 3}
+      insertIndex: 0
+      addedObject: {fileID: 2867069894533279885}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b83d6ebf2b8587b4da5c3cfd6c9f4d0e, type: 3}
 --- !u!4 &7343706945848141587 stripped

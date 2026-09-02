@@ -203,5 +203,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpikeTrap
   damage: 1
+  damageDelay: 0.2
   showDuration: 0.6
-  cooldown: 60
+  cooldown: 5

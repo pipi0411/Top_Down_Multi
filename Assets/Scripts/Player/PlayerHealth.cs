@@ -854,6 +854,21 @@ public class PlayerHealth : NetworkBehaviour
             loadingAfterMapSwitch);
     }
 
+    public void ForcePortalTeleportForTeam(
+        Vector3 playerArrivalOffset,
+        bool showLoadingScreen,
+        float loadingBeforeMapSwitch,
+        float loadingAfterMapSwitch)
+    {
+        if (!IsSpawned || !IsServer) return;
+
+        PortalTeleportClientRpc(
+            playerArrivalOffset,
+            showLoadingScreen,
+            loadingBeforeMapSwitch,
+            loadingAfterMapSwitch);
+    }
+
     [Rpc(SendTo.Server)]
     void RequestPortalTeleportServerRpc(
         Vector3 playerArrivalOffset,

@@ -14,7 +14,7 @@ public class PlayerMovement : NetworkBehaviour
     [SerializeField] private float dashTime = 0.2f;
     [SerializeField] private float transperency = 0.5f;
     [Header("Collision")]
-    [SerializeField] private LayerMask movementBlockMask = (1 << 6) | (1 << 7);
+    [SerializeField] private LayerMask movementBlockMask = (1 << 0) | (1 << 6) | (1 << 7);
     [SerializeField] private float movementSkin = 0.03f;
     private SpriteRenderer spriteRenderer;
     private Rigidbody2D rb;

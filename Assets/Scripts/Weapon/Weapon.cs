@@ -23,6 +23,7 @@ public class Weapon : MonoBehaviour
     [SerializeField] float recoveryDuration = 0.1f;
     [SerializeField] bool previewFireWithLeftClick = true;
     [SerializeField] bool mirrorSocketByAim = true;
+    [SerializeField] float aimDeadZone = 0.22f;
     [SerializeField] float handSwitchDeadZone = 0.18f;
     [SerializeField] float handSwitchAngleBuffer = 10f;
     [SerializeField] ItemWeapon weaponData;
@@ -101,11 +102,14 @@ public class Weapon : MonoBehaviour
             if (mainCamera != null)
             {
                 Vector3 mouseWorld = mainCamera.ScreenToWorldPoint(Mouse.current.position.ReadValue());
-                UpdateStableAimSideFromMouse(mouseWorld);
+                Vector3 aimOrigin = GetAimSideOrigin();
+                Vector2 direction = mouseWorld - aimOrigin;
 
-                Vector2 direction = mouseWorld - transform.position;
-                if (direction.sqrMagnitude > 0.0001f)
+                if (direction.sqrMagnitude > aimDeadZone * aimDeadZone)
+                {
+                    UpdateStableAimSideFromMouse(mouseWorld);
                     targetAngle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
+                }
             }
         }
         float sensitivity = Mathf.Max(0.1f, GameSettings.MouseSensitivity);
