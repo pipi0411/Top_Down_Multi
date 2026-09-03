@@ -128,6 +128,16 @@ MonoBehaviour:
   useDebug: 0
   roomType: 0
   extraTilemap: {fileID: 9030825889455808725}
+  waveData: {fileID: 0}
+  waveSpawner: {fileID: 0}
+  weaponChestPrefab: {fileID: 7061442224974337571, guid: c1f7099558dc3614e9e760aefd0b6db2, type: 3}
+  minRewardChests: 1
+  maxRewardChests: 2
+  chestSpawnTilePadding: 1.5
+  bossPrefab: {fileID: 0}
+  bossSpawnPoint: {fileID: 0}
+  endGameSceneName: EndGame
+  bossEndGameDelay: 20
   posDoorNS: []
   posDoorWE:
   - {fileID: 2446985130817828339}
